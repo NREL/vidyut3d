@@ -1,0 +1,93 @@
+max_step  = 1000
+stop_time = 5.9e-9
+
+# PROBLEM SIZE & GEOMETRY
+geometry.is_periodic =  0  0  1
+geometry.coord_sys   =  0       # 0 => cart
+geometry.prob_lo     =  -0.0125  0.0     0.0 
+geometry.prob_hi     =  0.0125   0.0125 3.90625e-4
+amr.n_cell           =   256  128  4
+
+# VERBOSITY
+amr.v              = 1       # verbosity in Amr
+
+# REFINEMENT
+amr.max_level       = 2       # maximum level number allowed
+amr.blocking_factor = 4       # block factor in grid generation
+amr.max_grid_size   = 16
+
+amr.regrid_int      = 5       # how often to regrid
+
+# TIME STEP CONTROL
+vidyut.dt             = 5e-13
+
+# Voltage settings
+vidyut.voltage_amp_1=0.0
+vidyut.voltage_amp_2=18.75e3
+
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
+
+# Tagging
+vidyut.tagged_vars = Potential 
+vidyut.Potential_refine = 1e20
+vidyut.Potential_refinegrad = 400.0
+
+#0 - periodic
+#1 - Dirichlet
+#2 - Homogenous Neumann
+#3 - Inhomogenous Neumann
+#4 - Robin
+
+vidyut.pot_bc_lo = 2 2 0
+vidyut.pot_bc_hi = 2 2 0
+
+vidyut.eden_bc_lo = 3 3 0
+vidyut.eden_bc_hi = 3 3 0 
+
+vidyut.eenrg_bc_lo = 2 2 0
+vidyut.eenrg_bc_hi = 2 2 0
+
+vidyut.ion_bc_lo = 2 2 0
+vidyut.ion_bc_hi = 2 2 0
+
+vidyut.neutral_bc_lo = 2 2 0
+vidyut.neutral_bc_hi = 2 2 0
+
+# PLOTFILES
+amr.plot_file  = plt    # root name of plot file
+amr.plot_int   = 100     # number of timesteps between plot files
+
+# CHECKPOINT
+amr.chk_file = chk      # root name of checkpoint file
+amr.chk_int  = -1       # number of timesteps between checkpoint files
+
+vidyut.bound_specden=1
+vidyut.min_species_density=1e13
+vidyut.linsolve_maxiter=200
+vidyut.bg_species_ids=1
+
+prob.loc_x=0.0
+prob.loc_y=0.85e-2
+prob.loc_z=1.5625e-3
+prob.rad=0.4e-3
+prob.ampl=0.0
+prob.bg=1e13
+prob.twod=1
+prob.nscale=1.0
+prob.potscale=1.0
+
+vidyut.cs_technique=1
+#turn on 2d if doing a 2d 
+#domain with extruded z
+vidyut.cs_2d=1
+vidyut.cs_ncharges=2
+vidyut.cs_rads=0.0002 0.0002
+vidyut.cs_locx=-0.005 0.005
+vidyut.cs_locy=0.014 0.014
+vidyut.cs_locz=1.953125e-4 1.953125e-4
+vidyut.cs_pin_locx=-0.005 0.005
+vidyut.cs_pin_locy=0.01248 0.01248
+vidyut.cs_pin_locz=1.953125e-4 1.953125e-4
+vidyut.cs_voltages=7e3 7e3

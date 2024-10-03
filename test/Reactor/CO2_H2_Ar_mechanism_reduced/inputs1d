@@ -1,0 +1,94 @@
+max_step  = 10000000
+stop_time = 2e-3
+
+# PROBLEM SIZE & GEOMETRY
+geometry.is_periodic =  0  1  1
+geometry.coord_sys   =  0       # 0 => cart
+geometry.prob_lo     =  0.0   0.0     0.0 
+geometry.prob_hi     =   0.00015625 0.00015625 0.00015625
+amr.n_cell           =   2  2  2
+
+# VERBOSITY
+amr.v              = 0       # verbosity in Amr
+
+# REFINEMENT
+amr.max_level       = 0       # maximum level number allowed
+amr.blocking_factor = 2       # block factor in grid generation
+amr.max_grid_size   = 2
+
+amr.regrid_int      = 5       # how often to regrid
+
+# TIME STEP CONTROL
+vidyut.dt             = 1e-12
+
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
+
+# Voltage
+vidyut.voltage_profile = 2
+vidyut.voltage_amp_1 = 650.0  # voltage for Ar/CO2/H2
+# vidyut.voltage_amp_1 = 625.0  # voltage for pure argon
+# vidyut.voltage_amp_1 = 1475.0  # voltage for pure CO2 
+# vidyut.voltage_amp_1 = 1500.0 # voltage for CO2/H2 gas
+vidyut.voltage_amp_2 = 0.0
+vidyut.voltage_freq = 1.0e6
+vidyut.voltage_dur = 3.0e-8
+vidyut.voltage_center = 1.5e-8
+
+# Tagging
+vidyut.tagged_vars = ReducedEF
+vidyut.ReducedEF_refine = 250.0
+vidyut.ReducedEF_refinegrad = 10000.0
+
+#0 - periodic
+#1 - Dirichlet
+#2 - Homogenous Neumann
+#3 - Inhomogenous Neumann
+#4 - Robin
+
+vidyut.pot_bc_lo = 1 0 0
+vidyut.pot_bc_hi = 1 0 0
+
+vidyut.eden_bc_lo = 2 0 0
+vidyut.eden_bc_hi = 2 0 0 
+
+vidyut.eenrg_bc_lo = 2 0 0
+vidyut.eenrg_bc_hi = 2 0 0
+
+vidyut.ion_bc_lo = 2 0 0
+vidyut.ion_bc_hi = 2 0 0
+
+vidyut.neutral_bc_lo = 2 0 0
+vidyut.neutral_bc_hi = 2 0 0
+
+# PLOTFILES
+amr.plot_file  = plt    # root name of plot file
+amr.plot_int   = 1000     # number of timesteps between plot files
+
+# CHECKPOINT
+amr.chk_file = chk      # root name of checkpoint file
+amr.chk_int  = 10000000       # number of timesteps between checkpoint files
+
+# MONITORFILE
+vidyut.monitor_file_int = 100
+
+vidyut.bound_specden=1
+#vidyut.min_species_density=1e13
+vidyut.linsolve_maxiter=200
+vidyut.min_species_density=0.0
+vidyut.min_electron_density=1e9
+vidyut.min_electron_temp=300.0
+vidyut.elecenergy_solve=1
+vidyut.do_reactions=1
+vidyut.do_transport=0
+vidyut.do_spacechrg=0
+vidyut.do_bg_reactions=1
+vidyut.bg_species_ids = 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43
+
+prob.nscale=1.0
+prob.potscale=1.0
+
+vidyut.gas_pressure=101325.0
+vidyut.gas_temperature=300.0
+vidyut.gas_num_dens=2.446e25

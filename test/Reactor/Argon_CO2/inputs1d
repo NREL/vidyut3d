@@ -1,0 +1,92 @@
+max_step  = 100000
+stop_time = 2e-3
+
+# PROBLEM SIZE & GEOMETRY
+geometry.is_periodic =  0  1  1
+geometry.coord_sys   =  0       # 0 => cart
+geometry.prob_lo     =  0.0   0.0     0.0 
+geometry.prob_hi     =   0.00015625 0.00015625 0.00015625
+amr.n_cell           =   2  2  2
+
+# VERBOSITY
+amr.v              = 0       # verbosity in Amr
+
+# REFINEMENT
+amr.max_level       = 0       # maximum level number allowed
+amr.blocking_factor = 2       # block factor in grid generation
+amr.max_grid_size   = 2
+
+amr.regrid_int      = 5       # how often to regrid
+
+# TIME STEP CONTROL
+vidyut.dt             = 1e-12
+
+# Voltage
+vidyut.voltage_profile = 2
+vidyut.voltage_amp_1 = 0.0
+vidyut.voltage_amp_2 = 625.0
+vidyut.voltage_freq = 1.0e6
+vidyut.voltage_dur = 3.0e-8
+vidyut.voltage_center = 1.5e-8
+
+# Tagging
+vidyut.tagged_vars = Potential 
+vidyut.Potential_refine = 1e20
+vidyut.Potential_refinegrad = 400.0
+
+#0 - periodic
+#1 - Dirichlet
+#2 - Homogenous Neumann
+#3 - Inhomogenous Neumann
+#4 - Robin
+
+vidyut.pot_bc_lo = 1 0 0
+vidyut.pot_bc_hi = 1 0 0
+
+vidyut.eden_bc_lo = 2 0 0
+vidyut.eden_bc_hi = 2 0 0 
+
+vidyut.eenrg_bc_lo = 2 0 0
+vidyut.eenrg_bc_hi = 2 0 0
+
+#vidyut.ion_bc_lo = 2 0 0
+#vidyut.ion_bc_hi = 2 0 0
+
+vidyut.ion_bc_lo = 2 0 0
+vidyut.ion_bc_hi = 2 0 0
+
+vidyut.neutral_bc_lo = 2 0 0
+vidyut.neutral_bc_hi = 2 0 0
+
+# PLOTFILES
+amr.plot_file  = plt    # root name of plot file
+amr.plot_int   = 1000     # number of timesteps between plot files
+
+# CHECKPOINT
+amr.chk_file = chk      # root name of checkpoint file
+amr.chk_int  = -1       # number of timesteps between checkpoint files
+
+# MONITORFILE
+vidyut.monitor_file_int = 50
+
+vidyut.bound_specden=1
+#vidyut.min_species_density=1e13
+vidyut.linsolve_maxiter=200
+vidyut.elecenergy_solve=1
+vidyut.do_reactions=1
+vidyut.do_transport=0
+vidyut.do_spacechrg=0
+
+# Transport
+vidyut.const_ele_trans=1
+vidyut.ele_mob=1.0e24
+vidyut.ele_diff=1.0e24
+
+#prob.V1=764.38
+#prob.V2=0.0
+prob.nscale=1.0
+prob.potscale=1.0
+
+vidyut.gas_pressure=101325.0
+vidyut.gas_temperature=300.0
+vidyut.gas_num_dens=2.446e25

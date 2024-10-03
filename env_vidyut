@@ -1,0 +1,9 @@
+module use /project/me-raptor/opt/Modules
+module load Compilers/GCC/9.3.0
+module load MPI/OpenMPI/4.1.4/GCC/9.3.0
+
+export AMREX_HOME=/project/me-crfel/tanej013/vidyut/amrex
+export PATH=$PATH:/home/tanej013/.local/bin
+export VIDYUT_HOME=/project/me-crfel/tanej013/vidyut/vidyut3d
+source /project/me-raptor/CRFEL/anaconda3/bin/activate
+conda activate cantera
