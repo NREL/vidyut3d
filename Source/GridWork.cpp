@@ -19,6 +19,15 @@ void Vidyut::MakeNewLevelFromCoarse(int lev, Real time, const BoxArray& ba, cons
     const int ncomp = phi_new[lev - 1].nComp();
     const int nghost = phi_new[lev - 1].nGrow();
 
+  // New level factory
+#ifdef AMREX_USE_EB
+  std::unique_ptr<FabFactory<FArrayBox>> new_fact =
+    makeEBFabFactory(geom[lev], ba, dm, {6, 6, 6}, EBSupport::full);
+#else
+  std::unique_ptr<FabFactory<FArrayBox>> new_fact(new FArrayBoxFactory());
+#endif
+    ebfactory[lev] = std::move(new_fact);
+
     phi_new[lev].define(ba, dm, ncomp, nghost, MFInfo(), *ebfactory[lev]);
     phi_old[lev].define(ba, dm, ncomp, nghost, MFInfo(), *ebfactory[lev]);
 
@@ -35,6 +44,15 @@ void Vidyut::RemakeLevel(int lev, Real time, const BoxArray& ba, const Distribut
 {
     const int ncomp = phi_new[lev].nComp();
     const int nghost = phi_new[lev].nGrow();
+
+  // New level factory
+#ifdef AMREX_USE_EB
+  std::unique_ptr<FabFactory<FArrayBox>> new_fact =
+    makeEBFabFactory(geom[lev], ba, dm, {6, 6, 6}, EBSupport::full);
+#else
+  std::unique_ptr<FabFactory<FArrayBox>> new_fact(new FArrayBoxFactory());
+#endif
+    ebfactory[lev] = std::move(new_fact);
 
     MultiFab new_state(ba, dm, ncomp, nghost, MFInfo(), *ebfactory[lev]);
     MultiFab old_state(ba, dm, ncomp, nghost, MFInfo(), *ebfactory[lev]);
@@ -54,6 +72,7 @@ void Vidyut::ClearLevel(int lev)
 {
     phi_new[lev].clear();
     phi_old[lev].clear();
+    ebfactory[lev].reset();
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.

@@ -497,7 +497,37 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
             });
         }
 
-
+#ifdef AMREX_USE_EB
+        // Set beta coefficients at cut and covered cells
+        const auto& ebfact = EBFactory(ilev);
+        const auto& vfrac = ebfact.getVolFrac();
+        for (MFIter mfi(bcoeff[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            const auto dx = geom[ilev].CellSizeArray();
+            auto prob_lo = geom[ilev].ProbLoArray();
+            auto prob_hi = geom[ilev].ProbHiArray();
+            Array4<Real> acoeff_arr = acoeff[ilev].array(mfi);
+            Array4<Real> bcoeff_arr = bcoeff[ilev].array(mfi);
+            Array4<Real> rhs_arr = rhs[ilev].array(mfi);
+            auto vf_arr = vfrac.const_array(mfi);
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                if(vf_arr(i,j,k) > 0.0 && vf_arr(i,j,k) < 1.0){
+                    acoeff_arr(i,j,k) =  0.0;
+                    // bcoeff_arr(i,j,k) =  1.0 / vp_perm / dxmin2[ilev];
+                    bcoeff_arr(i,j,k) = vp_perm;
+                    rhs_arr(i,j,k) =  0.0;
+                }
+                if(vf_arr(i,j,k) == 0.0){
+                    acoeff_arr(i,j,k) =  1.0 / vp_perm / dxmin2[ilev];
+                    bcoeff_arr(i,j,k) =  0.0;
+                    // bcoeff_arr(i,j,k) =  1.0 / vp_perm / dxmin2[ilev];
+                    bcoeff_arr(i,j,k) = vp_perm;
+                    rhs_arr(i,j,k) =  0.0;
+                }
+            });
+        }
+#endif
 
         // average cell coefficients to faces, this includes boundary faces
         Array<MultiFab, AMREX_SPACEDIM> face_bcoeff;
