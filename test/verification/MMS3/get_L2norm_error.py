@@ -7,10 +7,16 @@ import numpy as np
 
 n0=1e6
 alpha=1.60217662e-19/8.854187817e-12
+ME = 9.10938188e-31
+M_AMU = 1.66054e-27
+nu=10000.0
 
 plt.rcParams['font.size'] = 16
 ds=yt.load(argv[1])
 axialdir=int(argv[2])
+finaltime=float(argv[3])
+dt=float(argv[4])
+
 prob_lo=ds.domain_left_edge.d
 prob_hi=ds.domain_right_edge.d
 maxlev=ds.index.max_level
@@ -34,15 +40,17 @@ s2_1d=lb["HEp"].value
 s3_1d=lb["Electron_energy"].value
 x=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
         prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
-exactsoln_s1=x**3/alpha+n0
-exactsoln_s2=x**3/(2.0*alpha)+n0
-exactsoln_s3=x**3/(alpha)+n0
-exactsoln_pot=(x**5-x)/40.0
+exactsoln_s1=n0*(1.0+np.sin(np.pi*x/lengths[axialdir]))*np.exp(-5.0*finaltime)
+exactsoln_s2=n0*(1.0+np.sin(np.pi*x/lengths[axialdir]))*np.exp(-5.0*finaltime)
+#lamda_ee=nu*(2.0*ME)/(4.0*M_AMU)
+lamda_ee=10.0
+exactsoln_s3=n0*(1.0+np.sin(np.pi*x/lengths[axialdir]))*np.exp(-lamda_ee*finaltime)
+exactsoln_pot=np.zeros(res[axialdir])
 err_s1=np.sqrt(np.mean((s1_1d-exactsoln_s1)**2))
 err_s2=np.sqrt(np.mean((s2_1d-exactsoln_s2)**2))
 err_s3=np.sqrt(np.mean((s3_1d-exactsoln_s3)**2))
 err_pot=np.sqrt(np.mean((pot_1d-exactsoln_pot)**2))
-print(dx_frb[axialdir],err_s1,err_s2,err_s3,err_pot)
+print(dt,err_s1,err_s2,err_s3,err_pot)
 #=======================================
 
 #=======================================

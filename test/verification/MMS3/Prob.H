@@ -18,7 +18,6 @@ void amrex_probinit (ProbParm & h_prob_parm, ProbParm & d_prob_parm)
     // read problem specific parmparse parameters here
     amrex::ParmParse pp("prob");
     pp.query("axial_dir", h_prob_parm.axdir );
-    pp.query("solnfrac", h_prob_parm.solnfrac );
 
 #ifdef AMREX_USE_GPU
     amrex::Gpu::htod_memcpy(&d_prob_parm, &h_prob_parm, sizeof(ProbParm));
@@ -53,22 +52,22 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
             {
                 Real alpha=ECHARGE/EPS0;
                 IntVect iv(AMREX_D_DECL(i,j,k));
-                Real frac=prob_parm->solnfrac;
                 Real lenx=prob_hi[prob_parm->axdir]-prob_lo[prob_parm->axdir];
+                
                 Real x = prob_lo[prob_parm->axdir] 
                 + (0.5+iv[prob_parm->axdir]) * dx[prob_parm->axdir];
 
                 //little twiddle so the electron density is not 0
-                phi(i,j,k,E_ID)    = frac*(x*x*x/alpha+prob_parm->n0)+1e-5*prob_parm->n0;
+                phi(i,j,k,E_ID)    = prob_parm->n0*(1+sin(PI*x/lenx));
                 phi(i,j,k,HE_ID)   = 1.0; 
-                phi(i,j,k,HEp_ID)  = frac*(x*x*x/(2.0*alpha)+prob_parm->n0);
+                phi(i,j,k,HEp_ID)  = prob_parm->n0*(1+sin(PI*x/lenx));
                 
-                phi(i,j,k,POT_ID) = frac*(1.0/24.0)*(x*x*x*x*x-x);
+                phi(i,j,k,POT_ID) = 0.0;
                 phi(i,j,k,EFX_ID) = 0.0;
                 phi(i,j,k,EFY_ID) = 0.0;
                 phi(i,j,k,EFZ_ID) = 0.0;
-                phi(i,j,k,EEN_ID) = frac*(x*x*x/alpha+prob_parm->n0);
-                phi(i,j,k,ETEMP_ID) = 1.0;
+                phi(i,j,k,EEN_ID) = prob_parm->n0*(1+sin(PI*x/lenx));
+                phi(i,j,k,ETEMP_ID) = 0.666;
             }
         }
     }
