@@ -293,19 +293,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
 CKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot[], 
      const amrex::Real Te, const amrex::Real EN, amrex::Real * ener_exch) {
 
-  // convert to SI
-  for (int id = 0; id < 3; ++id) {
-    C[id] *= 1.0e6;
-  }
-
-  // convert to chemkin units
   productionRate(wdot, C, T, Te, ener_exch);
-
-  // convert to chemkin units
-  for (int id = 0; id < 3; ++id) {
-    C[id] *= 1.0e-6;
-    wdot[id] *= 1.0e-6;
-  }
 }
 
 //  species unit charge number
