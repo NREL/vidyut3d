@@ -1,0 +1,33 @@
+name: CIvidyut                                                                                                                                        
+on: 
+   push:
+     branches: [ github_actions ]
+   pull_request:
+     branches: [ github_actions ]
+
+jobs:
+  cputest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: System Dependencies
+      run: | 
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+        build-essential g++ gfortran libopenmpi-dev openmpi-bin
+        git clone https://github.com/AMReX-Codes/amrex
+    - name: Build Regression
+      working-directory: ./test/verification/
+      run: |
+        cd MMS2
+        make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../amrex
+        cd l2err
+        make -j AMREX_HOME=../../../amrex
+    - name: Run Regression
+      working-directory: ./tests/verification/
+      run: |
+          cd MMS2
+          mpirun -n 2 ./*.ex inputs_x
+          ./l2err/*.ex -dir 0 plt00001
