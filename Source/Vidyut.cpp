@@ -343,6 +343,8 @@ void Vidyut::ReadParameters()
             catalysis_scale = pellet_area/void_total_V;
         }
 
+        pp.query("weno_scheme",weno_scheme);
+
         if(hyp_order==1) //first order upwind
         {
             ngrow_for_fillpatch=1;
@@ -403,6 +405,7 @@ void Vidyut::ReadParameters()
             pp.getarr("cs_pin_locz",cs_pin_locz);
             pp.getarr("cs_voltages",cs_voltages);
         }
+        pp.query("floor_jh",floor_jh);
 
 #ifdef AMREX_USE_HYPRE
         pp.query("use_hypre",use_hypre);

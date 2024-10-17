@@ -348,10 +348,6 @@ class Converter:
                 self.syms.compute_dwdot_dsc(species_info=self.species_info)
 
                 cck.ckwc(hdr, self.mechanism, self.species_info)
-                cck.ckwyp(hdr, self.mechanism, self.species_info)
-                cck.ckwxp(hdr, self.mechanism, self.species_info)
-                cck.ckwyr(hdr, self.mechanism, self.species_info)
-                cck.ckwxr(hdr, self.mechanism, self.species_info)
                 cck.ckchrg(hdr, self)
                 cck.ckchrgmass(hdr, self.species_info)
 
@@ -368,10 +364,6 @@ class Converter:
                     self.syms,
                 )
                 cck.ckwc(hdr, self.mechanism, self.species_info)
-                cck.ckwyp(hdr, self.mechanism, self.species_info)
-                cck.ckwxp(hdr, self.mechanism, self.species_info)
-                cck.ckwyr(hdr, self.mechanism, self.species_info)
-                cck.ckwxr(hdr, self.mechanism, self.species_info)
                 cck.ckchrg(hdr, self)
                 cck.ckchrgmass(hdr, self.species_info)
             cw.writer(hdr)

@@ -85,15 +85,20 @@ void Vidyut::Evolve()
 
         Vector< Array<MultiFab,AMREX_SPACEDIM> > flux(finest_level+1);
 
-        //face centered efield and electron density gradient
+        //face centered solution gradients
         Vector< Array<MultiFab,AMREX_SPACEDIM> > gradne_fc(finest_level+1);
         Vector< Array<MultiFab,AMREX_SPACEDIM> > grad_fc(finest_level+1);
+
+        // Solution and sources MFs
         Vector<MultiFab> expl_src(finest_level+1);
         Vector<MultiFab> rxn_src(finest_level+1);
         Vector<MultiFab> surface_rxn_src(finest_level+1);
         Vector<MultiFab> Sborder(finest_level+1);
         Vector<MultiFab> Sborder_old(finest_level+1);
         Vector<MultiFab> phi_tmp(finest_level+1);
+
+        // edge centered efield
+        Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_ec(finest_level+1);
 
         //copy new to old and update time
         for(int lev=0;lev<=finest_level;lev++)
@@ -126,6 +131,9 @@ void Vidyut::Evolve()
 
                 flux[lev][idim].define(ba, dmap[lev], 1, 0);
                 flux[lev][idim].setVal(0.0);
+
+                efield_ec[lev][idim].define(ba, dmap[lev], 1, 0);
+                efield_ec[lev][idim].setVal(0.0);
 
                 gradne_fc[lev][idim].define(ba, dmap[lev], 1, 0);
                 gradne_fc[lev][idim].setVal(0.0);
@@ -161,13 +169,14 @@ void Vidyut::Evolve()
                     flux[lev][idim].setVal(0.0);
                     gradne_fc[lev][idim].setVal(0.0);
                     grad_fc[lev][idim].setVal(0.0);
+                    efield_ec[lev][idim].setVal(0.0);
                 }
                 expl_src[lev].setVal(0.0);
                 rxn_src[lev].setVal(0.0);
                 surface_rxn_src[lev].setVal(0.0);
             }
 
-            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi);
+            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_ec);
 
             if(cs_technique)
             {
@@ -182,15 +191,17 @@ void Vidyut::Evolve()
                 FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
             }
 
-            //update cell-centered electric fields
-            update_cc_efields(Sborder);
-            //fillpatching here to get the latest efields 
-            //in sborder so that it can be used in drift vel calcs
-            //may be there is a clever way to improve performance 
-            for(int lev=0;lev<=finest_level;lev++)
-            {
-                Sborder[lev].setVal(0.0);
-                FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+            //update cell-centered electric fields using alternative method if cs_technique is used
+            if(cs_technique){
+                update_cc_efields(Sborder);
+                //fillpatching here to get the latest efields 
+                //in sborder so that it can be used in drift vel calcs
+                //may be there is a clever way to improve performance 
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
             }
 
             // Calculate the reactive source terms for all species/levels
@@ -217,8 +228,9 @@ void Vidyut::Evolve()
                 {
                     compute_elecenergy_source(lev, Sborder[lev],
                                               rxn_src[lev], 
+                                              efield_ec[lev],
                                               gradne_fc[lev],
-                                              expl_src[lev], cur_time, dt_common);
+                                              expl_src[lev], cur_time, dt_common,floor_jh);
                 }
 
                 implicit_solve_scalar(cur_time,dt_common,EEN_ID, Sborder,Sborder_old, 

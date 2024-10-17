@@ -17,7 +17,8 @@
 #include <HelperFuncs.H>
 
 void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
-                             amrex::Vector<int>& bc_lo,amrex::Vector<int>& bc_hi)
+                             amrex::Vector<int>& bc_lo,amrex::Vector<int>& bc_hi,
+                             amrex::Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec)
 {
     BL_PROFILE("Vidyut::solve_potential()");
 
@@ -339,6 +340,44 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, POT_ID, 1, 0);
+    }
+
+    // Use standard AMReX routines to get cell and edge-centered efields if not using charge technique
+    if(!cs_technique){
+        mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_ec));
+    
+        for (int ilev = 0; ilev <= finest_level; ilev++)
+        {
+            efield_ec[ilev][0].mult(-1.0,0,1);
+#if AMREX_SPACEDIM > 1
+            efield_ec[ilev][1].mult(-1.0,0,1);
+#if AMREX_SPACEDIM == 3
+            efield_ec[ilev][2].mult(-1.0,0,1);
+#endif
+#endif   
+
+            const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(&efield_ec[ilev][0], 
+                &efield_ec[ilev][1], &efield_ec[ilev][2])};
+            average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
+
+            // Calculate the reduced electric field
+            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                const Box& bx = mfi.tilebox();
+                const Box& gbx = amrex::grow(bx, 1);
+
+                Array4<Real> s_arr = phi_new[ilev].array(mfi);
+
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                    RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
+                    Real Esum = 0.0;
+                    amrex::Real ndens = 0.0;
+                    for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+                    for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
+                    s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
+                });
+            }
+        }
     }
     
 

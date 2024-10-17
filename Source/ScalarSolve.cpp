@@ -131,7 +131,7 @@ void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
 
     // Additional source terms for axisymmetric geometry
     if(geom[0].IsRZ()){
-        for (int lev = finest_level; lev > 0; lev--)
+        for (int lev = 0; lev <= finest_level; lev++)
         {
             compute_axisym_correction(lev, Sborder[lev], expl_src[lev], cur_time, specid);   
         }
@@ -169,19 +169,19 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
 
             // update residual
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                // Create array with species concentrations (1/m3 -> mol/cm3)
+                // Create array with species concentrations
                 amrex::Real spec_C[NUM_SPECIES];
                 amrex::Real spec_wdot[NUM_SPECIES];
                 amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
                 amrex::Real EN = sborder_arr(i,j,k,REF_ID);
                 amrex::Real ener_exch = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) * 1.0e-6 / N_A;
+                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
 
                 // Get molar production rates
                 CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
 
                 // Convert from mol/cm3-s to 1/m3-s and add to scalar react source MF
-                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A * 1.0e6;
+                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
                 rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
 
                 // Add on user-defined reactive sources
@@ -243,10 +243,10 @@ void Vidyut::update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                             spec_C[sp] /= catalysis_scale; 
                         }
                         // Convert from 1/m2 to mol/cm2
-                        spec_C[sp] *= 1.0e-4 / N_A;
+                        spec_C[sp] /=  N_A;
                     } else {
                         // Convert from 1/m3 to mol/cm3
-                        spec_C[sp] = sborder_arr(i,j,k,sp) * 1.0e-6 / N_A;
+                        spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
                     }
                 }
 
@@ -257,7 +257,7 @@ void Vidyut::update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                     SKWC(captured_gastemp, spec_C, spec_wdot_surface);
 
                     // Convert from mol/cm2-s to 1/m2-s
-                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A * 1.0e4;
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
                 }
                 // Check for catalyst BCs in y-dir
                 if((j==domlo_arr[1] && bc_lo[1]==CATBC) || (j==domhi_arr[1] && bc_hi[1]==CATBC))
@@ -266,7 +266,7 @@ void Vidyut::update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                     SKWC(captured_gastemp, spec_C, spec_wdot_surface);
 
                     // Convert from mol/cm2-s to 1/m2-s
-                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A * 1.0e4;
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
                 }
                 // Check for catalyst BCs in z-dir
                 if((k==domlo_arr[2] && bc_lo[2]==CATBC) || (k==domhi_arr[2] && bc_hi[2]==CATBC))
@@ -275,7 +275,7 @@ void Vidyut::update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                     SKWC(captured_gastemp, spec_C, spec_wdot_surface);
 
                     // Convert from mol/cm2-s to 1/m2-s
-                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A * 1.0e4;
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
                 }
             });
         }
@@ -295,6 +295,8 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
     int captured_specid = specid;
     //class member variable
     int captured_hyporder = hyp_order; 
+    int captured_wenoscheme = weno_scheme;
+    int userdefvel = user_defined_vel;
 
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
@@ -310,7 +312,6 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
     GpuArray<int,AMREX_SPACEDIM> bclo={AMREX_D_DECL(bc_lo[0], bc_lo[1], bc_lo[2])};
     GpuArray<int,AMREX_SPACEDIM> bchi={AMREX_D_DECL(bc_hi[0], bc_hi[1], bc_hi[2])};
 
-    int userdefvel = user_defined_vel;
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -342,7 +343,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[0], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel); 
+                             userdefvel,captured_wenoscheme); 
             });
 
 #if AMREX_SPACEDIM > 1
@@ -351,7 +352,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[1], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel); 
+                             userdefvel,captured_wenoscheme); 
             });
 
 #if AMREX_SPACEDIM == 3
@@ -360,7 +361,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[2], 
                              captured_gastemp, captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel);
+                             userdefvel,weno_scheme);
             });
 #endif
 #endif
@@ -395,7 +396,7 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
           for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(s_arr(i,j,k,EFX_ID+dim),2.0);
           amrex::Real efield_mag=std::sqrt(Esum);
           amrex::Real mu = specMob(specid, etemp, ndens, efield_mag,captured_gastemp);  
-          dsdt_arr(i,j,k,specid) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
+          dsdt_arr(i,j,k) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
         });
     }
 }
