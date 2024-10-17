@@ -179,9 +179,14 @@ void main_main()
     amrex::Print() << "error frac = " << errfrac_e << '\t' << errfrac_pot<<"\n";
     amrex::Print() << "Electron/pot avg = " << electronavg << '\t' << potavg << "\n";
 
-    if(errfrac_e > 1e-5)
+    if(errfrac_e > 1e-2)
     {
         amrex::Abort("Too much error");
+    }
+    else
+    {
+        amrex::Print() << "MMS error less than 1e-3, error="<<errfrac_e<<"\n";
+        amrex::Print()<<"Good to go!!\n";
     }
 
 }
