@@ -1,9 +1,9 @@
 name: CIvidyut                                                                                                                                        
 on: 
    push:
-     branches: [ github_actions ]
+     branches: [ main ]
    pull_request:
-     branches: [ github_actions ]
+     branches: [ main ]
 
 jobs:
   cputest:
