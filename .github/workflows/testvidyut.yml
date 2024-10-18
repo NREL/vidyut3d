@@ -25,7 +25,7 @@ jobs:
         make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
         cd l2err
         make -j AMREX_HOME=../../../../amrex
-        cd ..
+        cd ../../
         cd MMS3
         make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
         cd l2err
