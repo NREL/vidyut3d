@@ -274,7 +274,6 @@ def production_rate(
                 cw.comment(f"reaction {orig_idx}:  {reaction.equation}"),
             )
             cw.writer(fstream, f"const amrex::Real k_f = {pef.m:.15g}")
-
             k_f_smp = pef.m
 
             if (beta == 0) and (ae == 0):
@@ -834,6 +833,7 @@ def production_rate_light(fstream, mechanism, species_info, reaction_info):
                 fstream,
                 cw.comment(f"reaction {orig_idx}:  {reaction.equation}"),
             )
+
             cw.writer(fstream, f"const amrex::Real k_f = {pef.m:.15g}")
 
             if (beta == 0) and (ae == 0):
