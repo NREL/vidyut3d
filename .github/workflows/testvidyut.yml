@@ -22,12 +22,12 @@ jobs:
       working-directory: ./test/verification/
       run: |
         cd MMS2
-        make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
+        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
         make -j AMREX_HOME=../../../../amrex
         cd ../../
         cd MMS3
-        make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
+        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
         make -j AMREX_HOME=../../../../amrex
     - name: Run Regression
