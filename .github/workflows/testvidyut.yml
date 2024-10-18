@@ -25,9 +25,38 @@ jobs:
         make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
         cd l2err
         make -j AMREX_HOME=../../../../amrex
+        cd ..
+        cd MMS3
+        make -j 2 COMP=gnu DEBUG=TRUE AMREX_HOME=../../../amrex
+        cd l2err
+        make -j AMREX_HOME=../../../../amrex
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
           cd MMS2
-          mpirun -n 2 ./*.ex inputs_x
-          ./l2err/*.ex -dir 0 plt00001
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=1
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=1
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=1
+          ./l2err/*.ex -dir 2 plt00001
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=2
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=2
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=2
+          ./l2err/*.ex -dir 2 plt00001
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=5
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=5
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=5
+          ./l2err/*.ex -dir 2 plt00001
+          cd ..
+          cd MMS3
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=1
+          ./l2err/*.ex plt00001
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=2
+          ./l2err/*.ex plt00001
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=4
+          ./l2err/*.ex plt00001

@@ -1,4 +1,4 @@
-max_step  = 100
+max_step  = 10000
 stop_time = 0.1
 
 # PROBLEM SIZE & GEOMETRY
@@ -21,7 +21,7 @@ amr.max_grid_size   = 8
 amr.regrid_int      = 2       # how often to regrid
 
 # TIME STEP CONTROL
-vidyut.dt             = 0.001
+vidyut.dt             = 0.0005
 
 vidyut.user_defined_potential = 1
 vidyut.user_defined_species = 1
