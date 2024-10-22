@@ -18,7 +18,7 @@ except:
         infile.close()
 
 first_res=1.0
-resarr=np.zeros((len(fn_list)-1,3))
+resarr=np.zeros((len(fn_list)-1,4))
 for i in range(1,len(fn_list)):
 
     dsm1=yt.load(fn_list[i-1])
@@ -50,6 +50,7 @@ for i in range(1,len(fn_list)):
     resarr[i-1,0]=i
     resarr[i-1,1]=residual
     resarr[i-1,2]=residual/first_res
+    resarr[i-1,3]=np.mean(field)
 
 
 np.savetxt("resnorms",resarr,delimiter="  ")

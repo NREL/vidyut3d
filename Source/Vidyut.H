@@ -112,7 +112,7 @@ public:
                             Array<MultiFab,AMREX_SPACEDIM>& efield,
                             Array<MultiFab,AMREX_SPACEDIM>& gradne, 
                             MultiFab& dsdt,
-                            Real time, Real dt);
+                            Real time, Real dt,int floor_jh);
 
     // compute dt from CFL considerations
     void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
@@ -205,7 +205,7 @@ public:
     int bound_specden=0;
     int hyp_order=1;
     int ngrow_for_fillpatch=2;
-    int weno_scheme=1;
+    int weno_scheme=3; //WENO-Z by default
 
     // Include physics
     int elecenergy_solve=0;
@@ -233,6 +233,7 @@ public:
     int cs_technique=0;
     int cs_ncharges=0;
     int cs_2d=0;
+    int floor_jh=0;
     amrex::Vector<amrex::Real> cs_locx;
     amrex::Vector<amrex::Real> cs_locy;
     amrex::Vector<amrex::Real> cs_locz;

@@ -141,19 +141,19 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
 
             // update residual
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                // Create array with species concentrations (1/m3 -> mol/cm3)
+                // Create array with species concentrations
                 amrex::Real spec_C[NUM_SPECIES];
                 amrex::Real spec_wdot[NUM_SPECIES];
                 amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
                 amrex::Real EN = sborder_arr(i,j,k,REF_ID);
                 amrex::Real ener_exch = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) * 1.0e-6 / N_A;
+                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
 
                 // Get molar production rates
                 CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
 
                 // Convert from mol/cm3-s to 1/m3-s and add to scalar react source MF
-                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A * 1.0e6;
+                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
                 rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
 
                 // Add on user-defined reactive sources
@@ -228,7 +228,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[0], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,weno_scheme); 
+                             userdefvel,captured_wenoscheme); 
             });
 
 #if AMREX_SPACEDIM > 1
@@ -237,7 +237,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[1], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,weno_scheme); 
+                             userdefvel,captured_wenoscheme); 
             });
 
 #if AMREX_SPACEDIM == 3

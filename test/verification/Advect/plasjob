@@ -1,0 +1,14 @@
+srun -n 1 ./*.ex inputs1d amr.n_cell=10 4 vidyut.dt=1e-7 stop_time=1e-1  max_step=10000000 amr.plot_int=200000000
+mv plt00001 case10
+. ../../clean.sh
+srun -n 1 ./*.ex inputs1d amr.n_cell=20 4 vidyut.dt=1e-7 stop_time=1e-1  max_step=10000000 amr.plot_int=200000000
+mv plt00001 case20
+. ../../clean.sh
+srun -n 4 ./*.ex inputs1d amr.n_cell=40 4 vidyut.dt=1e-7 stop_time=1e-1  max_step=10000000 amr.plot_int=200000000
+mv plt00001 case40
+. ../../clean.sh
+srun -n 8 ./*.ex inputs1d amr.n_cell=80 4 vidyut.dt=1e-7 stop_time=1e-1  max_step=10000000 amr.plot_int=200000000
+mv plt00001 case80
+. ../../clean.sh
+srun -n 16 ./*.ex inputs1d amr.n_cell=160 4 vidyut.dt=1e-7 stop_time=1e-1  max_step=10000000 amr.plot_int=200000000
+mv plt00001 case160

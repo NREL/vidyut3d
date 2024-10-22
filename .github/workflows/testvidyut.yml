@@ -1,0 +1,62 @@
+name: CIvidyut                                                                                                                                        
+on: 
+   push:
+     branches: [ main ]
+   pull_request:
+     branches: [ main ]
+
+jobs:
+  cputest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: System Dependencies
+      run: | 
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+        build-essential g++ gfortran libopenmpi-dev openmpi-bin
+        git clone https://github.com/AMReX-Codes/amrex
+    - name: Build Regression
+      working-directory: ./test/verification/
+      run: |
+        cd MMS2
+        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        cd l2err
+        make -j AMREX_HOME=../../../../amrex
+        cd ../../
+        cd MMS3
+        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        cd l2err
+        make -j AMREX_HOME=../../../../amrex
+    - name: Run Regression
+      working-directory: ./test/verification/
+      run: |
+          cd MMS2
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=1
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=1
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=1
+          ./l2err/*.ex -dir 2 plt00001
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=2
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=2
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=2
+          ./l2err/*.ex -dir 2 plt00001
+          mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=5
+          ./l2err/*.ex -dir 0 plt00001 
+          mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=5
+          ./l2err/*.ex -dir 1 plt00001
+          mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=5
+          ./l2err/*.ex -dir 2 plt00001
+          cd ..
+          cd MMS3
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=1
+          ./l2err/*.ex plt00001
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=2
+          ./l2err/*.ex plt00001
+          mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=4
+          ./l2err/*.ex plt00001

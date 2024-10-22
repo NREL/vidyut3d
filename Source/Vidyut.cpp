@@ -382,6 +382,7 @@ void Vidyut::ReadParameters()
             pp.getarr("cs_pin_locz",cs_pin_locz);
             pp.getarr("cs_voltages",cs_voltages);
         }
+        pp.query("floor_jh",floor_jh);
 
 #ifdef AMREX_USE_HYPRE
         pp.query("use_hypre",use_hypre);

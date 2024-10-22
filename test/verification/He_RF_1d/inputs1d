@@ -1,5 +1,5 @@
 max_step  = 120000000
-stop_time = 2e-3
+stop_time = 7.37e-5 #1000 rf cycles
 
 # PROBLEM SIZE & GEOMETRY
 geometry.is_periodic =  0  1  1
@@ -62,11 +62,11 @@ amr.plot_int   = 100000     # number of timesteps between plot files
 
 # CHECKPOINT
 amr.chk_file = chk      # root name of checkpoint file
-amr.chk_int  = -1       # number of timesteps between checkpoint files
+amr.chk_int  = 100000       # number of timesteps between checkpoint files
 
 vidyut.bound_specden=1
-vidyut.min_species_density=1e10
-vidyut.min_electron_density=1e10
+vidyut.min_species_density=1e11
+vidyut.min_electron_density=1e11
 vidyut.min_electron_temp=1160.4518
 vidyut.linsolve_maxiter=200
 vidyut.elecenergy_solve=1
@@ -74,3 +74,7 @@ vidyut.elecenergy_solve=1
 vidyut.gas_pressure=133.0
 vidyut.gas_temperature=300.0
 vidyut.bg_species_ids=1
+
+vidyut.hyp_order=5
+vidyut.weno_scheme=3
+vidyut.floor_jh=1

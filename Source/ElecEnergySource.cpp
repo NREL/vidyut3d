@@ -19,7 +19,7 @@ void Vidyut::compute_elecenergy_source(int lev,
                             Array<MultiFab,AMREX_SPACEDIM>& efield, 
                             Array<MultiFab,AMREX_SPACEDIM>& gradne, 
                             MultiFab& dsdt,
-                            Real time, Real dt)
+                            Real time, Real dt, int floor_jh)
 {
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
@@ -30,6 +30,7 @@ void Vidyut::compute_elecenergy_source(int lev,
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
     int consteletrans = const_ele_trans;
+    int captured_cs_technique=cs_technique;
     amrex::Real elemob = ele_mob;
     amrex::Real elediff = ele_diff;
     int eidx = E_IDX;
@@ -122,7 +123,7 @@ void Vidyut::compute_elecenergy_source(int lev,
                               + sborder_arr(rcell,eidx));
 
                     //efield_face=ef_arr[idim](face);
-                    efield_face = (cs_technique) ? efieldvec_face[idim] : ef_arr[idim](face);
+                    efield_face = (captured_cs_technique) ? efieldvec_face[idim] : ef_arr[idim](face);
                     gradne_face=gradne_arr[idim](face);
 
                     amrex::Real ndens = 0.0;
@@ -150,6 +151,16 @@ void Vidyut::compute_elecenergy_source(int lev,
             //Journal of computational physics 228.12 (2009): 4435-4443.
 
             elec_jheat*=0.5;
+
+            //a switch to make sure joule heating is 
+            //heating the electrons and not cooling them
+            if(floor_jh)
+            {
+               if(elec_jheat < 0.0)
+               {
+                  elec_jheat=0.0;
+               }
+            }
             
             //inelastic term already added through reaction source
             dsdt_arr(i, j, k) += (elec_jheat);

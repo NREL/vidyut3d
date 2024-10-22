@@ -56,7 +56,7 @@ for i, fn in enumerate(fn_list):
     minlev=0
     maxlev=ds.index.max_level
     lengths=prob_hi-prob_lo
-    axialdir=np.argmax(lengths)
+    axialdir=0
     axialdir_char=chr(ord('x')+axialdir)
 
     
@@ -67,6 +67,7 @@ for i, fn in enumerate(fn_list):
     ad = ds.covering_grid(level=covgrid_lev, left_edge=prob_lo, dims=res, fields=fields_load)
 
     pot=np.array(ad["Potential"])
+    efieldx=np.array(ad["Efieldx"])
     elecden=np.array(ad["E"])
     etemp=np.array(ad["Electron_Temp"])
     eenrg=np.array(ad["Electron_energy"])
@@ -78,6 +79,7 @@ for i, fn in enumerate(fn_list):
             prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
 
     potl=get_oned_data(pot,axialdir)
+    efieldl=get_oned_data(efieldx,axialdir)
     edenl=get_oned_data(elecden,axialdir)
     etempl=get_oned_data(etemp,axialdir)
     eenrgl=get_oned_data(eenrg,axialdir)
@@ -87,4 +89,4 @@ for i, fn in enumerate(fn_list):
     inelhl=get_oned_data(inelheat,axialdir)
 
     np.savetxt("linedata_"+axialdir_char+"%4.4d.dat"%(i),\
-            np.transpose(np.vstack((xarr,potl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")
+            np.transpose(np.vstack((xarr,potl,efieldl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")

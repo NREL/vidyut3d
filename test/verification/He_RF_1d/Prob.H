@@ -61,11 +61,11 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
 
                 phi(i,j,k,HE_ID)   = prob_parm->bg_gasden; 
-                phi(i,j,k,HEp_ID)  = 2.36e14; 
-                phi(i,j,k,HE2p_ID)  = 0.2e14; 
+                phi(i,j,k,HEp_ID)  = 3.799e14; 
+                phi(i,j,k,HE2p_ID)  = 1e11; 
                 phi(i,j,k,HEm_ID)  = 1e12; 
                 phi(i,j,k,HE2m_ID)  = 1e12; 
-                phi(i,j,k,E_ID)  = 2.56e14;
+                phi(i,j,k,E_ID)  = 3.8e14;
                 phi(i,j,k,ETEMP_ID) = 3e4;
                 phi(i,j,k,EEN_ID) = 1.5*phi(i,j,k,E_ID)*K_B*phi(i,j,k,ETEMP_ID);
                 phi(i,j,k,EFX_ID) = 0.0;

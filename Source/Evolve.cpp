@@ -222,7 +222,7 @@ void Vidyut::Evolve()
                                               rxn_src[lev], 
                                               efield_ec[lev],
                                               gradne_fc[lev],
-                                              expl_src[lev], cur_time, dt_common);
+                                              expl_src[lev], cur_time, dt_common,floor_jh);
                 }
 
                 implicit_solve_scalar(cur_time,dt_common,EEN_ID, Sborder,Sborder_old, 
