@@ -444,7 +444,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         amrex::Copy(specdata[ilev], Sborder_old[ilev], captured_spec_id, 
                     0, 1, num_grow);
 
-        acoeff[ilev].setVal(1.0/dt);
+        acoeff[ilev].setVal(1.0/dt); // TST - update this
         bcoeff[ilev].setVal(1.0);
 
         //default to homogenous Neumann
