@@ -21,9 +21,7 @@
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 5
 #define NUM_IONS 1
-#define NUM_REACTIONS 4
-
-#define NUM_FIT 4
+#define NUM_REACTIONS 3
 
 void atomicWeight(amrex::Real *awt);
 void CKAWT(amrex::Real *awt);
@@ -246,7 +244,7 @@ specDiff(const int specid, const amrex::Real Te, const amrex::Real ndens, const 
     if(specid==NUM_SPECIES)
     {
         mob=specMob(specid, Te, ndens, emag, T);
-        dcoeff=fivebythree*amrex::Math::abs(mob)*Te_in_eV;
+        dcoeff=amrex::Math::abs(mob)*Te_in_eV;
     }
     return(dcoeff);
 }
