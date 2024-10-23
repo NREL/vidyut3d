@@ -268,9 +268,13 @@ void Vidyut::ReadParameters()
         pp.query("regrid_int", regrid_int);
         pp.query("plot_file", plot_file);
         pp.query("plot_int", plot_int);
+        plot_int_old=plot_int;
+        pp.query("plot_int_old", plot_int_old);
         pp.query("plot_time", plot_time);
         pp.query("chk_file", chk_file);
         pp.query("chk_int", chk_int);
+        chk_int_old=chk_int;
+        pp.query("chk_int_old", chk_int_old);
         pp.query("chk_time", chk_time);
         pp.query("restart", restart_chkfile);
     }
