@@ -40,7 +40,8 @@ Vidyut::Vidyut()
     plasma_param_names[7]="Electron_inelasticHeat";
     plasma_param_names[8]="Electron_elasticHeat";
     plasma_param_names[9]="ReducedEF";
-    
+    plasma_param_names[10]="PhotoIon_Src";
+
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
     {
@@ -87,6 +88,9 @@ Vidyut::Vidyut()
     
     pp.queryarr("neutral_bc_lo", neutral_bc_lo, 0, AMREX_SPACEDIM);
     pp.queryarr("neutral_bc_hi", neutral_bc_hi, 0, AMREX_SPACEDIM);
+
+    pp.queryarr("photoion_bc_lo", photoion_bc_lo, 0, AMREX_SPACEDIM);
+    pp.queryarr("photoion_bc_hi", photoion_bc_hi, 0, AMREX_SPACEDIM);    
 
     //foextrap all states as bcs imposed
     //through linear solver

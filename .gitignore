@@ -5,7 +5,7 @@ Backtrace*
 stdout
 stderr
 slurm*
-env_
+env_*
 *.o
 *build*
 *.ex
