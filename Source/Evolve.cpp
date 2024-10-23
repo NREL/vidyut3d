@@ -237,7 +237,7 @@ void Vidyut::Evolve()
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
 
-            //all species except electrons solve
+            //all species except electrons and surface species solve
             for(unsigned int ind=0;ind<NUM_SPECIES;ind++)
             {
                 bool solveflag=true;
@@ -251,7 +251,39 @@ void Vidyut::Evolve()
                    solveflag=false;
                 }
 
-                if(solveflag)
+                bool surfflag=false;
+                auto it_surf=std::find(surface_specid_list.begin(),surface_specid_list.end(),ind);
+                if(it_surf != surface_specid_list.end())
+                {
+                  surfflag=true;
+                }
+
+                if (surfflag && do_surface_reactions)
+                {
+                    for (int ilev = 0; ilev <= finest_level; ilev++)
+                    {
+                        amrex::Real minspecden=min_surface_species_density; 
+                        int boundspecden = bound_specden;
+                        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                        {
+                            const Box& bx = mfi.tilebox();
+                            Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+                            Array4<Real> surface_rxn_arr = surface_rxn_src[ilev].array(mfi);
+                            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                                if(reactor_scaling){
+                                    phi_arr(i,j,k,ind) += surface_rxn_arr(i,j,k,ind)*catalysis_scale*dt_common;
+                                } else {
+                                    phi_arr(i,j,k,ind) += surface_rxn_arr(i,j,k,ind)*dt_common;
+                                }
+                                if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                {
+                                    phi_arr(i,j,k,ind) = minspecden;
+                                }
+                            });
+                        }
+                    }
+                }
+                else if(solveflag)
                 {
                     //ions
                     if(plasmachem::get_charge(ind)!=0)

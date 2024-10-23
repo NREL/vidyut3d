@@ -53,15 +53,8 @@ void Vidyut::compute_dsdt(int lev, int specid,
               surfflag=true;
             }
 
-            if(surfflag){
-                // Add on surface production rate, either 1/m2-s, or 1/m3-s if using 0D reactor scaling
-                if(reactor_scaling){
-                    dsdt_arr(i,j,k) = surface_rxn_arr(i,j,k,captured_specid)*catalysis_scale;
-                } else {
-                    dsdt_arr(i,j,k) = surface_rxn_arr(i,j,k,captured_specid);
-                }
-            
-            } else {
+            // Only need to fill in dsdt for gas-phase species, surface species are updated in Evolve.cpp
+            if(!surfflag){
                 dsdt_arr(i, j, k) = (flux_arr[0](i, j, k) - flux_arr[0](i + 1, j, k)) / dx[0] 
                 + rxn_arr(i,j,k,captured_specid);
 #if AMREX_SPACEDIM > 1
