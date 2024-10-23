@@ -40,6 +40,7 @@ Vidyut::Vidyut()
     plasma_param_names[7]="Electron_inelasticHeat";
     plasma_param_names[8]="Electron_elasticHeat";
     plasma_param_names[9]="ReducedEF";
+    plasma_param_names[10]="SurfaceCharge";
     
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
