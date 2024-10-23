@@ -23,8 +23,11 @@ void Vidyut::Evolve()
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
-    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int));
-    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int));
+    //note: if the user changes the chk_int and plot_int, they have
+    //manually set the old values for chk_int and plot_int,chk_int_old 
+    //and plt_int_old, in the inputs, so that the offsets are correct 
+    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int_old));
+    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int_old));
     if(plot_time > 0.0) plotfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(plot_time));
     if(chk_time > 0.0) chkfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(chk_time));
     amrex::Real dt_edrift,dt_ediff,dt_diel_relax;

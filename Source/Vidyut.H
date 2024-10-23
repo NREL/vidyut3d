@@ -258,11 +258,13 @@ public:
     // plotfile prefix and frequency
     std::string plot_file{"plt"};
     int plot_int = -1;
+    int plot_int_old = -1;
     amrex::Real plot_time = -1.0;
 
     // checkpoint prefix and frequency
     std::string chk_file{"chk"};
     int chk_int = -1;
+    int chk_int_old = -1;
     amrex::Real chk_time = -1.0;
 
     // Electron species index
