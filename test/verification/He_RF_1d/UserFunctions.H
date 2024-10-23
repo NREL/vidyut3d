@@ -123,7 +123,7 @@ namespace user_transport
             bc_arr(ghost_cell)=(-flx/D);
         }
 
-        if(spec_id==HEp_ID || spec_id==HE2p_ID)
+        if(spec_id==HEp_ID)
         {
             amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
                                             std::pow(phi(cell_int,EFY_ID),2.0)+
