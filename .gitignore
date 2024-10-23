@@ -1,0 +1,13 @@
+plt*
+*.dat
+chk*
+Backtrace*
+stdout
+stderr
+slurm*
+env_
+*.o
+*build*
+*.ex
+clean
+notes
