@@ -90,4 +90,41 @@ amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, 
 
     return voltage;
 }
+AMREX_GPU_HOST_DEVICE
+    AMREX_FORCE_INLINE
+amrex::Real minmod_limiter(ntr,dtr)
+{
+    amrex::Real phi=1.0;
+    if(dtr!=0)
+    {
+        amrex::Real r = ntr/dtr;
+        phi = std::max(0.0,std::min(1.0,r));
+    }
+    else
+    {
+        phi = 1.0;
+    }
+    return(phi);
+}
+
+AMREX_GPU_HOST_DEVICE
+    AMREX_FORCE_INLINE
+amrex::Real efield_limiter(int i,int j,int k, int sweepdir, Array4<Real> sb_arr,
+        Array4<Real> phi_arr)
+{
+    IntVect iv(i,j,k);
+    IntVect ivl(i,j,k);
+    IntVect ivr(i,j,k);
+
+    ivl[sweepdir]-=1;
+    ivr[sweepdir]+=1;
+
+    amrex::Real ntr=sb_arr(iv,POT_ID)-sb_arr(ivl,POT_ID);
+    amrex::Real dtr=sb_arr(ivr,POT_ID)-sb_arr(iv,POT_ID);
+
+    amrex::Real lim=minmod_limiter(ntr,dtr);
+
+    return(lim);
+}
+
 #endif

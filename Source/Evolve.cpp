@@ -202,6 +202,20 @@ void Vidyut::Evolve()
                 }
             }
 
+            if(efield_limiter)
+            {
+                potential_gradlimiter(Sborder); 
+                
+                //fillpatching here to get the latest efields 
+                //in sborder so that it can be used in drift vel calcs
+                //may be there is a clever way to improve performance 
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
+            }
+
             // Calculate the reactive source terms for all species/levels
             if(do_reactions)
             {

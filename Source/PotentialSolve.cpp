@@ -570,3 +570,59 @@ void Vidyut::update_cs_technique_potential()
         }
     }
 }
+
+void Vidyut::potential_gradlimiter(Vector<MulitFab>& Sborder)
+{
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        auto prob_lo = geom[ilev].ProbLoArray();
+        auto prob_hi = geom[ilev].ProbHiArray();
+        const auto dx = geom[ilev].CellSizeArray();
+        const int* domlo_arr = geom[ilev].Domain().loVect();
+        const int* domhi_arr = geom[ilev].Domain().hiVect();
+
+        GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
+        GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
+
+        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            Box bx_x = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+#if AMREX_SPACEDIM > 1
+            Box bx_y = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+#if AMREX_SPACEDIM == 3
+            Box bx_z = convert(bx, {0, 0, 1});
+#endif
+#endif
+            Array4<Real> phi_arr   = phi_new[ilev].array(mfi);
+            Array4<Real> sb_arr   = Sborder[ilev].array(mfi);
+
+            //x sweep
+            amrex::ParallelFor(bx_x, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+
+                amrex::Real lim=efield_limiter(i,j,k,0,sb_arr,phi_arr);
+                phi_arr(i,j,k,EFX_ID)*=lim;
+            });
+            
+#if AMREX_SPACEDIM > 1
+            //y sweep
+            amrex::ParallelFor(bx_y, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                
+                amrex::Real lim=efield_limiter(i,j,k,1,sb_arr,phi_arr);
+                phi_arr(i,j,k,EFY_ID)*=lim;
+
+            });
+            
+#if AMREX_SPACEDIM == 3
+            //z sweep
+            amrex::ParallelFor(bx_z, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                
+                amrex::Real lim=efield_limiter(i,j,k,2,sb_arr,phi_arr);
+                phi_arr(i,j,k,EFZ_ID)*=lim;
+
+            });
+#endif
+#endif
+        }
+    }
+}
