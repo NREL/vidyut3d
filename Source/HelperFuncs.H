@@ -9,16 +9,6 @@
 
 using namespace amrex;
 
-AMREX_GPU_HOST_DEVICE
-AMREX_FORCE_INLINE
-int is_dielectric(int i, int j, int k, int dir, int sign, 
-                  const GpuArray<Real,AMREX_SPACEDIM> prob_lo, 
-                  const GpuArray<Real,AMREX_SPACEDIM> prob_hi, 
-                  const GpuArray<Real,AMREX_SPACEDIM> dx,
-                  Real time)
-{
-   return(0);
-} 
 
 AMREX_GPU_HOST_DEVICE 
 AMREX_FORCE_INLINE 

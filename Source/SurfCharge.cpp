@@ -97,7 +97,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), 
                                        [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
 
-                                           int dielectricflag=is_dielectric(i, j, k, idim, sign, 
+                                           int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
                                                                                         prob_lo, prob_hi, dx, 
                                                                                         time); 
                                            if(dielectricflag)
@@ -117,7 +117,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                     amrex::ParallelFor(amrex::bdryHi(bx, idim), 
                                        [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
 
-                                           int dielectricflag=is_dielectric(i, j, k, idim, sign, 
+                                           int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
                                                                                         prob_lo, prob_hi, dx, 
                                                                                         time); 
                                            if(dielectricflag)
