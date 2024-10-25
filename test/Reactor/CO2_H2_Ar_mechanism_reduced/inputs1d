@@ -27,11 +27,11 @@ vidyut.user_defined_vel = 1
 
 # Voltage
 vidyut.voltage_profile = 2
-vidyut.voltage_amp_1 = 650.0  # voltage for Ar/CO2/H2
+vidyut.voltage_amp_lo = 650.0 0.0 0.0  # voltage for Ar/CO2/H2
 # vidyut.voltage_amp_1 = 625.0  # voltage for pure argon
 # vidyut.voltage_amp_1 = 1475.0  # voltage for pure CO2 
 # vidyut.voltage_amp_1 = 1500.0 # voltage for CO2/H2 gas
-vidyut.voltage_amp_2 = 0.0
+vidyut.voltage_amp_hi = 0.0 0.0 0.0
 vidyut.voltage_freq = 1.0e6
 vidyut.voltage_dur = 3.0e-8
 vidyut.voltage_center = 1.5e-8

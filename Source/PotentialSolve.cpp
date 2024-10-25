@@ -52,8 +52,6 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real captured_gaspres=gas_pressure;
     int userdefpot = user_defined_potential;
     int vprof = voltage_profile;
-    amrex::Real v1 = voltage_amp_1;
-    amrex::Real v2 = voltage_amp_2;
     amrex::Real vfreq = voltage_freq;
     amrex::Real vdur = voltage_dur;
     amrex::Real vcen = voltage_center;
@@ -183,6 +181,8 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
         GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
+        GpuArray<Real,AMREX_SPACEDIM> amplo={AMREX_D_DECL(voltage_amp_lo[0], voltage_amp_lo[1], voltage_amp_lo[2])};
+        GpuArray<Real,AMREX_SPACEDIM> amphi={AMREX_D_DECL(voltage_amp_hi[0], voltage_amp_hi[1], voltage_amp_hi[2])};
 
         // fill cell centered diffusion coefficients and rhs
         if(do_spacechrg){
@@ -260,7 +260,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = -1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, v1, v2, vfreq, vdur, vcen);
+                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, -1, 
                                                          phi_arr, bc_arr, robin_a_arr, 
@@ -282,7 +282,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryHi(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = 1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, v1, v2, vfreq, vdur, vcen);
+                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, +1, 
                                                          phi_arr, bc_arr, robin_a_arr, 

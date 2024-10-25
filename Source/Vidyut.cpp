@@ -344,17 +344,10 @@ void Vidyut::ReadParameters()
             amrex::Abort("Specified hyp_order not implemented yet");
         }
 
-        // Transport options
-        pp.query("const_ele_trans", const_ele_trans);
-        if(const_ele_trans){
-            pp.get("ele_mob", ele_mob);
-            pp.get("ele_diff", ele_diff);
-        }
-
         // Voltage options
         pp.query("voltage_profile", voltage_profile);
-        pp.query("voltage_amp_1", voltage_amp_1);
-        pp.query("voltage_amp_2", voltage_amp_2);
+        pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
+        pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
         if(voltage_profile == 1){
             pp.get("voltage_freq", voltage_freq);
         } else if (voltage_profile == 2) {

@@ -75,8 +75,8 @@ vidyut.linsolve_reltol=1e-9
 vidyut.elecenergy_solve=1
 
 vidyut.voltage_profile = 0
-vidyut.voltage_amp_1 = -300.0
-vidyut.voltage_amp_2 = 0.0
+vidyut.voltage_amp_lo = -300.0 0.0 0.0
+vidyut.voltage_amp_hi = 0.0 0.0 0.0
 
 vidyut.gas_pressure=133.0
 vidyut.gas_temperature=300.0

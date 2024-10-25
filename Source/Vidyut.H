@@ -217,15 +217,10 @@ public:
     int user_defined_vel = 0;
     int do_bg_reactions=0;
 
-    // Transport vars
-    int const_ele_trans=0;
-    amrex::Real ele_mob=-1.0e24;  // Normalized (1/m/V/s)
-    amrex::Real ele_diff=1.0e24; // Normalized (1/m/s)
-
     // Voltage options
     int voltage_profile=0;
-    amrex::Real voltage_amp_1=0.0;
-    amrex::Real voltage_amp_2=0.0;
+    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};
+    amrex::Vector<amrex::Real> voltage_amp_hi{0.0, 0.0, 0.0};
     amrex::Real voltage_freq=1.0; 
     amrex::Real voltage_dur=0.0; 
     amrex::Real voltage_center=0.0; 
