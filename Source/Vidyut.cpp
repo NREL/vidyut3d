@@ -269,9 +269,13 @@ void Vidyut::ReadParameters()
         pp.query("regrid_int", regrid_int);
         pp.query("plot_file", plot_file);
         pp.query("plot_int", plot_int);
+        plot_int_old=plot_int;
+        pp.query("plot_int_old", plot_int_old);
         pp.query("plot_time", plot_time);
         pp.query("chk_file", chk_file);
         pp.query("chk_int", chk_int);
+        chk_int_old=chk_int;
+        pp.query("chk_int_old", chk_int_old);
         pp.query("chk_time", chk_time);
         pp.query("restart", restart_chkfile);
     }
@@ -342,17 +346,10 @@ void Vidyut::ReadParameters()
             amrex::Abort("Specified hyp_order not implemented yet");
         }
 
-        // Transport options
-        pp.query("const_ele_trans", const_ele_trans);
-        if(const_ele_trans){
-            pp.get("ele_mob", ele_mob);
-            pp.get("ele_diff", ele_diff);
-        }
-
         // Voltage options
         pp.query("voltage_profile", voltage_profile);
-        pp.query("voltage_amp_1", voltage_amp_1);
-        pp.query("voltage_amp_2", voltage_amp_2);
+        pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
+        pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
         if(voltage_profile == 1){
             pp.get("voltage_freq", voltage_freq);
         } else if (voltage_profile == 2) {
@@ -362,6 +359,7 @@ void Vidyut::ReadParameters()
 
         pp.query("monitor_file_int", monitor_file_int);
         pp.query("num_timestep_correctors",num_timestep_correctors);
+        pp.query("efield_limiter",efield_limiter);
 
         pp.query("cs_technique",cs_technique);
         if(cs_technique)

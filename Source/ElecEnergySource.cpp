@@ -29,10 +29,7 @@ void Vidyut::compute_elecenergy_source(int lev,
     int ncomp = Sborder.nComp();
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
-    int consteletrans = const_ele_trans;
     int captured_cs_technique=cs_technique;
-    amrex::Real elemob = ele_mob;
-    amrex::Real elediff = ele_diff;
     int eidx = E_IDX;
     
     const int* domlo_arr = geom[lev].Domain().loVect();
@@ -128,11 +125,9 @@ void Vidyut::compute_elecenergy_source(int lev,
                     amrex::Real ndens = 0.0;
                     for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
 
-                    mu = (consteletrans) ? elemob/ndens:specMob(eidx, etemp, ndens,
-                                               efield_mag,captured_gastemp);
+                    mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
 
-                    dcoeff = (consteletrans) ? elediff/ndens:specDiff(eidx, etemp, ndens,
-                                               efield_mag,captured_gastemp);
+                    dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
 
                     current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
                     elec_jheat += current_density*efield_face;

@@ -23,8 +23,11 @@ void Vidyut::Evolve()
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
-    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int));
-    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int));
+    //note: if the user changes the chk_int and plot_int, they have
+    //manually set the old values for chk_int and plot_int,chk_int_old 
+    //and plt_int_old, in the inputs, so that the offsets are correct 
+    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int_old));
+    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int_old));
     if(plot_time > 0.0) plotfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(plot_time));
     if(chk_time > 0.0) chkfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(chk_time));
     amrex::Real dt_edrift,dt_ediff,dt_diel_relax;
@@ -189,6 +192,20 @@ void Vidyut::Evolve()
             //update cell-centered electric fields using alternative method if cs_technique is used
             if(cs_technique){
                 update_cc_efields(Sborder);
+                //fillpatching here to get the latest efields 
+                //in sborder so that it can be used in drift vel calcs
+                //may be there is a clever way to improve performance 
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
+            }
+
+            if(efield_limiter)
+            {
+                potential_gradlimiter(Sborder); 
+                
                 //fillpatching here to get the latest efields 
                 //in sborder so that it can be used in drift vel calcs
                 //may be there is a clever way to improve performance 
