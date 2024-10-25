@@ -244,6 +244,7 @@ public:
 
     void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
     void update_cs_technique_potential(); 
+    void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
 
 
     // how often each level regrids the higher levels of refinement
@@ -269,8 +270,9 @@ public:
 
     // Electron species index
     int E_IDX = 0;
+    int efield_limiter=0;
 
-    // Moitor file options
+    // Monitor file options
     int monitor_file_int = -1;
 
 private:

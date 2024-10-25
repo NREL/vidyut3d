@@ -152,7 +152,7 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                 // Get molar production rates
                 CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
 
-                // Convert from mol/cm3-s to 1/m3-s and add to scalar react source MF
+                // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
                 for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
                 rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
 
