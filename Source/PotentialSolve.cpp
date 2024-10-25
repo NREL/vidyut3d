@@ -571,7 +571,7 @@ void Vidyut::update_cs_technique_potential()
     }
 }
 
-void Vidyut::potential_gradlimiter(Vector<MulitFab>& Sborder)
+void Vidyut::potential_gradlimiter(Vector<MultiFab>& Sborder)
 {
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
@@ -600,7 +600,7 @@ void Vidyut::potential_gradlimiter(Vector<MulitFab>& Sborder)
             //x sweep
             amrex::ParallelFor(bx_x, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
 
-                amrex::Real lim=efield_limiter(i,j,k,0,sb_arr,phi_arr);
+                amrex::Real lim=efieldlimiter(i, j, k, 0, sb_arr);
                 phi_arr(i,j,k,EFX_ID)*=lim;
             });
             
@@ -608,7 +608,7 @@ void Vidyut::potential_gradlimiter(Vector<MulitFab>& Sborder)
             //y sweep
             amrex::ParallelFor(bx_y, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
                 
-                amrex::Real lim=efield_limiter(i,j,k,1,sb_arr,phi_arr);
+                amrex::Real lim=efieldlimiter(i, j, k, 1, sb_arr);
                 phi_arr(i,j,k,EFY_ID)*=lim;
 
             });
@@ -617,7 +617,7 @@ void Vidyut::potential_gradlimiter(Vector<MulitFab>& Sborder)
             //z sweep
             amrex::ParallelFor(bx_z, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
                 
-                amrex::Real lim=efield_limiter(i,j,k,2,sb_arr,phi_arr);
+                amrex::Real lim=efieldlimiter(i, j, k, 2, sb_arr);
                 phi_arr(i,j,k,EFZ_ID)*=lim;
 
             });

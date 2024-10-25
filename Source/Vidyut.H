@@ -244,7 +244,7 @@ public:
 
     void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
     void update_cs_technique_potential(); 
-    void potential_gradlimiter(Vector<MulitFab>& Sborder);
+    void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
 
 
     // how often each level regrids the higher levels of refinement
