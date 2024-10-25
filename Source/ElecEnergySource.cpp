@@ -61,7 +61,6 @@ void Vidyut::compute_elecenergy_source(int lev,
                             efield[1].array(mfi),
                             efield[2].array(mfi))};
 
-        // update residual
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
     
             //Joule heating

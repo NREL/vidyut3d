@@ -322,6 +322,7 @@ void Vidyut::ReadParameters()
         pp.queryarr("bg_species_ids",bg_specid_list);
         
         pp.query("weno_scheme",weno_scheme);
+        pp.query("track_surf_charge",track_surf_charge);
 
         if(hyp_order==1) //first order upwind
         {
