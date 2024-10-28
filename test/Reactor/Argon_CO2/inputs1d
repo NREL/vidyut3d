@@ -23,8 +23,8 @@ vidyut.dt             = 1e-12
 
 # Voltage
 vidyut.voltage_profile = 2
-vidyut.voltage_amp_1 = 0.0
-vidyut.voltage_amp_2 = 625.0
+vidyut.voltage_amp_lo = 0.0 0.0 0.0
+vidyut.voltage_amp_hi = 625.0 0.0 0.0
 vidyut.voltage_freq = 1.0e6
 vidyut.voltage_dur = 3.0e-8
 vidyut.voltage_center = 1.5e-8

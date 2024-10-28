@@ -226,15 +226,10 @@ public:
     int do_bg_reactions=0;
     int do_photoionization=0;
 
-    // Transport vars
-    int const_ele_trans=0;
-    amrex::Real ele_mob=-1.0e24;  // Normalized (1/m/V/s)
-    amrex::Real ele_diff=1.0e24; // Normalized (1/m/s)
-
     // Voltage options
     int voltage_profile=0;
-    amrex::Real voltage_amp_1=0.0;
-    amrex::Real voltage_amp_2=0.0;
+    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};
+    amrex::Vector<amrex::Real> voltage_amp_hi{0.0, 0.0, 0.0};
     amrex::Real voltage_freq=1.0; 
     amrex::Real voltage_dur=0.0; 
     amrex::Real voltage_center=0.0; 
@@ -253,6 +248,7 @@ public:
 
     void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
     void update_cs_technique_potential(); 
+    void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
 
 
     // how often each level regrids the higher levels of refinement
@@ -267,17 +263,20 @@ public:
     // plotfile prefix and frequency
     std::string plot_file{"plt"};
     int plot_int = -1;
+    int plot_int_old = -1;
     amrex::Real plot_time = -1.0;
 
     // checkpoint prefix and frequency
     std::string chk_file{"chk"};
     int chk_int = -1;
+    int chk_int_old = -1;
     amrex::Real chk_time = -1.0;
 
     // Electron species index
     int E_IDX = 0;
+    int efield_limiter=0;
 
-    // Moitor file options
+    // Monitor file options
     int monitor_file_int = -1;
 
 private:

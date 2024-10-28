@@ -22,8 +22,8 @@ amr.regrid_int      = 5       # how often to regrid
 vidyut.dt             = 5e-13
 
 # Voltage settings
-vidyut.voltage_amp_1=0.0
-vidyut.voltage_amp_2=18.75e3
+vidyut.voltage_amp_lo=0.0 0.0 0.0 
+vidyut.voltage_amp_hi=0.0 18.75e3 0.0
 
 vidyut.user_defined_potential = 1
 vidyut.user_defined_species = 1
