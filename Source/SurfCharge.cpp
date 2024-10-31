@@ -47,12 +47,12 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
 
         if(amrex::Math::abs(chrg) > 0)
         {
-            amrex::Real numdens=sb_arr(icell,sp);
+            amrex::Real specdens=sb_arr(icell,sp);
             amrex::Real gradn_n=(sb_arr(icell,sp)-sb_arr(icell_prvs,sp))/dx[dir];
             amrex::Real mu = specMob(sp, etemp, numdens, efield_mag, gastemp);
             amrex::Real dcoeff = specDiff(sp, etemp, numdens, efield_mag, gastemp);
 
-            amrex::Real flx=mu*numdens*efield_n-dcoeff*gradn_n;
+            amrex::Real flx=mu*specdens*efield_n-dcoeff*gradn_n;
 
             //add only when flux is directed towards the surface
             if(flx > 0.0)
@@ -71,6 +71,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
 {
     amrex::Real gastemp=gas_temperature;
     amrex::Real tstep=dt;
+    ProbParm const* localprobparm = d_prob_parm;
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         // set boundary conditions
@@ -99,7 +100,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
 
                                            int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
                                                                                         prob_lo, prob_hi, dx, 
-                                                                                        time); 
+                                                                                        time,*localprobparm); 
                                            if(dielectricflag)
                                            {
                                                IntVect icell{AMREX_D_DECL(i,j,k)};
@@ -119,7 +120,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
 
                                            int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
                                                                                         prob_lo, prob_hi, dx, 
-                                                                                        time); 
+                                                                                        time,*localprobparm); 
                                            if(dielectricflag)
                                            {
                                                IntVect icell{AMREX_D_DECL(i,j,k)};

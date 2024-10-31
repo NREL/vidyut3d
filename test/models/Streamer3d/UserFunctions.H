@@ -15,7 +15,8 @@ namespace user_transport
                       const GpuArray<Real,AMREX_SPACEDIM> prob_lo, 
                       const GpuArray<Real,AMREX_SPACEDIM> prob_hi, 
                       const GpuArray<Real,AMREX_SPACEDIM> dx,
-                      Real time)
+                      Real time,
+                      ProbParm const& prob_parm)
     {
         return(0);
     } 
