@@ -40,6 +40,7 @@ Vidyut::Vidyut()
     plasma_param_names[7]="Electron_inelasticHeat";
     plasma_param_names[8]="Electron_elasticHeat";
     plasma_param_names[9]="ReducedEF";
+    plasma_param_names[10]="SurfaceCharge";
     
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
@@ -325,6 +326,7 @@ void Vidyut::ReadParameters()
         pp.queryarr("bg_species_ids",bg_specid_list);
         
         pp.query("weno_scheme",weno_scheme);
+        pp.query("track_surf_charge",track_surf_charge);
 
         if(hyp_order==1) //first order upwind
         {
