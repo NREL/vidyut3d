@@ -154,25 +154,9 @@ def ckwc(fstream, mechanism, species_info):
     )
     cw.writer(fstream, "{")
 
-    # convert C to SI units
-    cw.writer(fstream)
-    cw.writer(fstream, cw.comment("convert to SI"))
-    cw.writer(fstream, f"for (int id = 0; id < {n_species}; ++id) {{")
-    cw.writer(fstream, "C[id] *= 1.0e6;")
-    cw.writer(fstream, "}")
-
     # call productionRate
     cw.writer(fstream)
-    cw.writer(fstream, cw.comment("convert to chemkin units"))
     cw.writer(fstream, "productionRate(wdot, C, T, Te, EN, ener_exch);")
-
-    # convert C and wdot to chemkin units
-    cw.writer(fstream)
-    cw.writer(fstream, cw.comment("convert to chemkin units"))
-    cw.writer(fstream, f"for (int id = 0; id < {n_species}; ++id) {{")
-    cw.writer(fstream, "C[id] *= 1.0e-6;")
-    cw.writer(fstream, "wdot[id] *= 1.0e-6;")
-    cw.writer(fstream, "}")
 
     cw.writer(fstream, "}")
 
