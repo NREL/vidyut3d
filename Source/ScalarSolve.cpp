@@ -246,7 +246,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[2], 
                              captured_gastemp, captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,weno_scheme);
+                             userdefvel,captured_wenoscheme);
             });
 #endif
 #endif
