@@ -35,6 +35,7 @@ void Vidyut::Evolve()
 
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
+        amrex::Real strt_time = amrex::second();
         amrex::Print() << "\nCoarse STEP " << step + 1 << " starts ..." << std::endl;
 
         dt_edrift = std::numeric_limits<Real>::max();
@@ -340,9 +341,11 @@ void Vidyut::Evolve()
         cur_time += dt_common;
         plottime += dt_common;
         chktime += dt_common;
+        Real run_time = amrex::second() - strt_time;
 
         amrex::Print() << "Coarse STEP " << step + 1 << " ends."
         << " TIME = " << cur_time << " DT = " << dt_common << std::endl;
+        amrex::Print()<<"Time step wall clock time:"<<run_time<<"\n";
 
         if (plot_time > 0){
             if(plottime > plot_time){
