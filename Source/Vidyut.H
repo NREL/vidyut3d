@@ -108,7 +108,7 @@ public:
 
     void solve_photoionization(Real current_time, Vector<MultiFab>& Sborder, 
                          Vector<int>& bc_lo, Vector<int>& bc_hi,
-                         Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec);
+                         Vector<MultiFab>& photoion_src, int sph_id);
 
     void compute_elecenergy_source(int lev, 
                             MultiFab& Sborder, 

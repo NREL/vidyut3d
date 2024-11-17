@@ -1,0 +1,20 @@
+ELEMENTS 
+
+E H N O
+
+END
+
+SPECIES
+
+E 
+O^+ O2^+ O4^+ O^- O2^- N4^+ N2^+ NH3^+ H2O^+
+O(1D) O N N2(A1) N2(B3) N2(C3)
+NH2 NH H H2 OH H2NO NOH 
+H2O NH3 O2 N2
+
+END
+
+
+REACTIONS
+
+END

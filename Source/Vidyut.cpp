@@ -123,7 +123,7 @@ Vidyut::Vidyut()
     if(geom[0].IsRZ()){
         if(AMREX_SPACEDIM != 2) amrex::Abort("AMREX_SPACEDIM should be 2 for axisymmetric coordinates");
         // Axisymmetric implementation assumes x-low boundary is the axis of symmatry
-        if(pot_bc_lo[0] != 2 || eden_bc_lo[0] != 2 || ion_bc_lo[0] != 2 || neutral_bc_lo[0] != 2 || eenrg_bc_lo[0] != 2){
+        if(pot_bc_lo[0] != 2 || eden_bc_lo[0] != 2 || ion_bc_lo[0] != 2 || neutral_bc_lo[0] != 2 || eenrg_bc_lo[0] != 2 || photoion_bc_lo[0] != 2){
             amrex::Abort("All x_lo boundaries must be 0 Neumann (equal to 2)");
         }
     }
@@ -323,6 +323,7 @@ void Vidyut::ReadParameters()
         pp.query("user_defined_species", user_defined_species);
         pp.query("user_defined_vel", user_defined_vel);
         pp.query("do_bg_reactions",do_bg_reactions);
+        pp.query("do_photoionization",do_photoionization);
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);

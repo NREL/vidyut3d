@@ -46,8 +46,6 @@ namespace plasmachem_transport
         ghost_cell[dir]+=gcell_adjust;
         cell_int[dir]+=cell_adjust;
 
-
-
         if(sgn == -1)
         { // lo sides
             robin_a(ghost_cell) = 1.0;
@@ -196,8 +194,7 @@ namespace plasmachem_transport
                       GpuArray<Real, AMREX_SPACEDIM> dx,
                       const Real time,
                       ProbParm const& prob_parm,
-                      amrex::Real Tg,amrex::Real Pg,
-                      amrex::Real app_voltage)
+                      amrex::Real Tg,amrex::Real Pg)
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
@@ -214,31 +211,28 @@ namespace plasmachem_transport
         ghost_cell[dir]+=gcell_adjust;
         cell_int[dir]+=cell_adjust;
 
-
-
         if(sgn == -1)
         { // lo sides
             robin_a(ghost_cell) = 1.0;
             robin_b(ghost_cell) = 0.0;
-            robin_f(ghost_cell) = app_voltage;
-            bc_arr(ghost_cell) = app_voltage;
+            robin_f(ghost_cell) = 0.0;
+            bc_arr(ghost_cell) = 0.0;
         }
         else if(sgn == 1)
         {
             robin_a(ghost_cell) = 1.0;
             robin_b(ghost_cell) = 0.0;
-            robin_f(ghost_cell) = app_voltage;
-            bc_arr(ghost_cell) = app_voltage;
+            robin_f(ghost_cell) = 0.0;
+            bc_arr(ghost_cell) = 0.0;
         }
         else
         {
-            robin_a(ghost_cell) = 0.0;
-            robin_b(ghost_cell) = 1.0;
+            robin_a(ghost_cell) = 1.0;
+            robin_b(ghost_cell) = 0.0;
             robin_f(ghost_cell) = 0.0;
             bc_arr(ghost_cell) = 0.0;
         }
     }
-
 
     AMREX_GPU_DEVICE AMREX_INLINE
     amrex::Real compute_vel(IntVect cellid, int dir,

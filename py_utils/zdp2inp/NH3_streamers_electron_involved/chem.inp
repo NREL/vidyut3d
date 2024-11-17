@@ -1,0 +1,134 @@
+ELEMENTS 
+
+E H N O
+
+END
+
+SPECIES
+
+E 
+O+ O2+ O4+ O- O2- N4+ N2+ NH3+ H2O+
+O(1D) O N N2(A1) N2(B3) N2(C3)
+NH2 NH H H2 OH H2NO NOH 
+H2O NH3 O2 N2
+
+END
+
+
+REACTIONS
+
+
+
+! Plasma Reaction 1
+O2 + E => O2+ + E + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 2
+O2 + E => O + O + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 3
+O2 + E => O + O-		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 4
+O- + E => O + E + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 5
+E + O4+ => O + O + O2		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 6
+E + O2 + O2 => O2- + O2		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 7
+E + O2+ => O + O		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 8
+E + O2 => E + O + O(1D)		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 9
+O- + O => O2 + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 10
+O2- + O => O2 + O + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 11
+E + N2 => N2+ + E + E		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 12
+E + N4+ => N2 + N2(C3)		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 13
+E + N2+ => N + N		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 14
+E + N2 => E + N2(C3)		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 15
+E + N2 => E + N2(A1)		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 16
+E + N2 => E + N2(B3)		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 17
+E + NH3 => E + NH2 + H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 18
+E + NH3 => E + NH + H + H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 19
+E + NH3 => E + E + NH3+		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 20
+NH3+ + E => NH + 2H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 21
+NH3+ + E => NH2 + H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 22
+E + H2O => E + H + OH		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 23
+E + H2O => E + O + H2		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 24
+E + H2O => E + E + H2O+		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 25
+E + H2O => H2 + O-		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 26
+E + H2O+ => O + H2		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 27
+E + H2O+ => O + H + H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+! Plasma Reaction 28
+E + H2O+ => OH + H		0.0 0.0 0.0
+! Dummy reaction with 0 rate coeffs.
+
+END

@@ -1,0 +1,63 @@
+ELEMENTS
+E O N H
+END
+
+SPECIES
+E 
+O^+ O2^+ O4^+ O^- O2^- N4^+ N2^+ NH3^+ H2O^+
+O(1D) O N N2(A1) N2(B3) N2(C3)
+NH2 NH H H2 OH H2NO NOH 
+H2O NH3 O2 N2
+END
+
+REACTIONS
+
+# O2 subset
+O2 + E => O2^+ + E + E ! (1.0d+6)*exp(-3.81089916e+01 + (6.55328174e-01)*log(Te) + (-2.28204343e+05)/Te + (1.72569010e+08)/Te**2 + (1.82072297e+00)/Te**3)
+O2 + E => O + O + E ! (1.0d+6)*exp(-2.32649743e+01 + (-8.53413663e-01)*log(Te) + (-8.66160060e+04)/Te + (6.09596867e+07)/Te**2 + (6.25514389e+00)/Te**3)
+O2 + E => O + O^- ! (8.8d-11)*exp(-51059.8/Te)
+O^- + E => O + E + E ! 2.0d-07*exp(-63824.75/Te)
+E + O4^+ => O + O + O2 ! 1.4d-6*(300.d0/Te)**0.5
+E + O2 + O2 => O2^- + O2 ! 2.0d-29*(300.d0/Te)
+E + O2^+ => O + O ! 2.0d-7*(300.d0/Te)
+E + O2 => E + O + O(1D) ! (1.0d+6)*exp(-2.50767376e+01 + (-4.59801638e-01)*log(Te) + (-1.68996936e+05)/Te + (1.67919627e+09)/Te**2 + (-7.58597561e+12)/Te**3)
+O^- + O => O2 + E ! 5.d-10
+O2^- + O => O2 + O + E ! 1.5d-10
+ 
+# N2 subset
+E + N2 => N2^+ + E + E ! (1.0d+6)*exp(-3.32079762e+01 + (2.65942596e-01)*log(Te) + (-2.63638556e+05)/Te + (-1.07235413e+09)/Te**2 + (9.81595921e+11)/Te**3)
+E + N4^+ => N2 + N2(C3) ! 2.d-6*(300.d0/Te)**0.5
+E + N2^+ => N + N ! 2.8d-7*(300.d0/Te)**0.5
+E + N2 => E + N2(C3) ! (1.0d+6)*exp(-1.16413995e+01 + (-1.66771820e+00)*log(Te) + (-2.70327743e+05)/Te + (1.64399908e+09)/Te**2 + (-3.19064748e+12)/Te**3)
+E + N2 => E + N2(A1) ! (1.0d+6)*exp((-1.75763409e+01) + (-1.43343753e+00)*log(Te) + (-2.57780053e+05)/Te + (2.85742316e+09)/Te**2 + (-1.36013257e+13)/Te**3)
+E + N2 => E + N2(B3) ! (1.0d+6)*exp(-1.67067355e+01 + (-1.32208241e+00)*log(Te) + (-2.17286625e+05)/Te + (2.14505360e+09)/Te**2 + (-9.57567162e+12)/Te**3)
+
+# O2 - N2 interaction subset
+
+# NH3 subset                                       
+E + NH3 => E + NH2 + H                             ! (1.0d+6)*exp(-2.73349619e+01 + (-2.71647193e-01)*log(Te) + (-7.81463651e+04)/Te + (-5.30850417e+08)/Te**2 + (1.00000000e+00)/Te**3)
+E + NH3 => E + NH + H + H                          ! (1.0d+6)*exp(-2.78603532e+01 + (-3.60698526e-02)*log(Te) + (-1.96732080e+05)/Te + (-1.28507578e+08)/Te**2 + (1.00000000e+00)/Te**3)
+E + NH3 => E + E + NH3^+                           ! (1.0d+6)*exp(-3.39902168e+01 + (3.29753098e-01)*log(Te) + (-2.06638805e+05)/Te + (-5.98397173e+08)/Te**2 + (1.00000000e+00)/Te**3)
+NH3^+ + E => NH + 2H 							   ! 1.55d-7 * (0.026/Te)**0.5
+NH3^+ + E => NH2 + H 							   ! 1.55d-7 * (0.026/Te)**0.5
+
+# NH3 - O2 subset
+
+# Following 3 Reactions from Zong H. et. al - Understanding non-equilibrium N2O / NOx chemistry in plasma-assisted low-temperature NH3 oxidation
+
+# NH3 - N2 subset
+
+# Following 3 Reactions from Zong H. et. al - Understanding non-equilibrium N2O / NOx chemistry in plasma-assisted low-temperature NH3 oxidation
+
+
+
+# H2O reactions from Zong H. et. al - Understanding non-equilibrium N2O / NOx chemistry in plasma-assisted low-temperature NH3 oxidation
+E + H2O => E + H + OH           ! (1.0d+6)*exp(-3.10013255e+01 + (-3.87482328e-02)*log(Te) + (-1.48745015e+05)/Te + (2.16565734e+08)/Te**2 + (1.0d0)/Te**3)
+E + H2O => E + O + H2           ! (1.0d+6)*exp(-3.52569958e+01 + (2.89318843e-01)*log(Te) + (-2.00647811e+05)/Te + (-1.47217769e+09)/Te**2 + (1.0d0)/Te**3)
+E + H2O => E + E + H2O^+        ! (1.0d+6)*exp(-3.43664398e+01 + (3.33931971e-01)*log(Te) + (-2.30244103e+05)/Te + (-2.02477843e+09)/Te**2 + (1.0d0)/Te**3)
+E + H2O => H2 + O^-             ! (1.0d+6)*exp(-2.16440764e+01 + (-1.36692302e+00)*log(Te) + (-1.07819832e+05)/Te + (1.41875983e+08)/Te**2 + (1.0d0)/Te**3)
+
+E + H2O^+ => O + H2             ! 3.9d-8*(300.0d0/Te)**0.5
+E + H2O^+ => O + H + H          ! 3.05d-7*(300.0d0/Te)**0.5
+E + H2O^+ => OH + H             ! 8.6d-8*(300.0d0/Te)**0.5
+END

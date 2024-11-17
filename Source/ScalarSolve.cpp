@@ -99,6 +99,8 @@ void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
         compute_dsdt(lev, specid, 
                      flux[lev], rxn_src[lev], expl_src[lev], 
                      cur_time, dt[lev]);
+        // TST - SAXPY to add multifabs
+        // TST - if(photoionization)
     }
 
     // Additional source terms for axisymmetric geometry

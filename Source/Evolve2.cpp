@@ -37,7 +37,7 @@ void Vidyut::Evolve()
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         amrex::Print() << "\nCoarse STEP " << step + 1 << " starts ..." << std::endl;
-
+        //amrex::Print() << "Gas Temperature is " << gas_temperature << " and Pressure is " << gas_pressure << std::endl;
         dt_edrift = std::numeric_limits<Real>::max();
         dt_diel_relax = std::numeric_limits<Real>::max();
         dt_ediff = std::numeric_limits<Real>::max();
@@ -152,7 +152,7 @@ void Vidyut::Evolve()
             rxn_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+1, 0);
             rxn_src[lev].setVal(0.0);
             
-            photoion_src[lev].define(grids[lev], dmap[lev], 1, 0);
+            photoion_src[lev].define(grids[lev], dmap[lev], 1, num_grow);
             photoion_src[lev].setVal(0.0);                  
         }
                
@@ -231,25 +231,26 @@ void Vidyut::Evolve()
             if(do_photoionization)
             {
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 0);
-                for (int ilev=0; ilev <= finest_level; ilev++)
+            /*    for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, N2p_ID, 1, 0);
                 }
-
+            
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 1);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, N2p_ID, 1, 0);
                 }    
-
+            
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 2);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
-                }                
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, N2p_ID, 1, 0);
+                }
+            */         
             }
             
 

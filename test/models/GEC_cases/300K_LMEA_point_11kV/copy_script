@@ -18,6 +18,7 @@ read dest_dir
   cp "$source_dir"/inputs* "$dest_dir/"
   cp "$source_dir"/clean* "$dest_dir/"
   cp "$source_dir"/slurm* "$dest_dir/"
+  cp "$source_dir"/copy* "$dest_dir/"
    
   echo "File copied successfully to $dest_dir."
 
