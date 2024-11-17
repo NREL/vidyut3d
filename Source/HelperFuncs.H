@@ -9,6 +9,7 @@
 
 using namespace amrex;
 
+
 AMREX_GPU_HOST_DEVICE 
 AMREX_FORCE_INLINE 
 amrex::Real get_efield_alongdir(int i,int j,int k,int dir,

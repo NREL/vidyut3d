@@ -10,6 +10,7 @@
 #include <UnivConstants.H>
 #include <VarDefines.H>
 
+
 using namespace amrex;
 
 AMREX_INLINE
@@ -17,16 +18,13 @@ void amrex_probinit (ProbParm & h_prob_parm, ProbParm & d_prob_parm)
 {
     // read problem specific parmparse parameters here
     amrex::ParmParse pp("prob");
-    pp.query("V1", h_prob_parm.V1 );
-    pp.query("V2", h_prob_parm.V2 );
-    pp.query("f", h_prob_parm.f );
-    
-    amrex::ParmParse pp_solver("vidyut");
-    amrex::Real Pg,Tg;
-    pp_solver.query("gas_pressure",Pg); 
-    pp_solver.query("gas_temperature",Tg); 
-    h_prob_parm.bg_gasden=Pg/K_B/Tg;
-
+    pp.query("pres", h_prob_parm.pres );
+    pp.query("temp", h_prob_parm.temp );
+    pp.query("len1", h_prob_parm.len1 );
+    pp.query("len2", h_prob_parm.len2 );
+    pp.query("rfvoltage", h_prob_parm.rfvoltage );
+    pp.query("dielectric_thickness", h_prob_parm.dielthick );
+    pp.query("dielectric_constant", h_prob_parm.Kdiel );
 
 #ifdef AMREX_USE_GPU
     amrex::Gpu::htod_memcpy(&d_prob_parm, &h_prob_parm, sizeof(ProbParm));
@@ -60,17 +58,21 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real y = prob_lo[1] + (0.5+j) * dx[1];
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
 
-                phi(i,j,k,HE_ID)   = prob_parm->bg_gasden; 
-                phi(i,j,k,HEp_ID)  = 3.8e14; 
-                phi(i,j,k,HEm_ID)  = 1e12; 
-                phi(i,j,k,HE2m_ID)  = 1e12; 
-                phi(i,j,k,E_ID)  = 3.8e14;
-                phi(i,j,k,ETEMP_ID) = 3e4;
+                for(int sp=0;sp<NUM_SPECIES;sp++)
+                {
+                    phi(i,j,k,sp)=1e12;
+                }
+               
+                phi(i,j,k,HE_ID)   = prob_parm->pres/K_B/prob_parm->temp;  
+                phi(i,j,k,HEp_ID)  = 1e14;
+                phi(i,j,k,E_ID)    = 1e14;
+                phi(i,j,k,ETEMP_ID) = 0.5*eV;
                 phi(i,j,k,EEN_ID) = 1.5*phi(i,j,k,E_ID)*K_B*phi(i,j,k,ETEMP_ID);
                 phi(i,j,k,EFX_ID) = 0.0;
                 phi(i,j,k,EFY_ID) = 0.0;
                 phi(i,j,k,EFZ_ID) = 0.0;
                 phi(i,j,k,POT_ID) = 0.0;
+                phi(i,j,k,SRFCH_ID) = 0.0;
             }
         }
     }

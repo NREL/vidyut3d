@@ -213,6 +213,7 @@ public:
     int hyp_order=1;
     int ngrow_for_fillpatch=2;
     int weno_scheme=3; //WENO-Z by default
+    int track_surf_charge=0;
 
     // Include physics
     int elecenergy_solve=0;
@@ -249,6 +250,9 @@ public:
     void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
     void update_cs_technique_potential(); 
     void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
+
+    void update_surf_charge(Vector<MultiFab>& Sborder,
+                                Real current_time, Real dt);
 
 
     // how often each level regrids the higher levels of refinement

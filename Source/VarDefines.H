@@ -12,7 +12,8 @@
 #define EIH_ID (NUM_SPECIES+7) //electron inelastic heating
 #define EEH_ID (NUM_SPECIES+8) //electron elastic heating
 #define REF_ID (NUM_SPECIES+9)
-#define PHOTO_ION_SRC_ID (NUM_SPECIES+10)
+#define SRFCH_ID (NUM_SPECIES+10)
+#define PHOTO_ION_SRC_ID (NUM_SPECIES+11)
 #define NUM_PLASMAVARS (PHOTO_ION_SRC_ID-NUM_SPECIES+1)
 #define NVAR (NUM_SPECIES+NUM_PLASMAVARS)
 

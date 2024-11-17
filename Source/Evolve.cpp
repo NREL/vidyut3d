@@ -36,6 +36,7 @@ void Vidyut::Evolve()
 
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
+        amrex::Real strt_time = amrex::second();
         amrex::Print() << "\nCoarse STEP " << step + 1 << " starts ..." << std::endl;
 
         dt_edrift = std::numeric_limits<Real>::max();
@@ -102,7 +103,7 @@ void Vidyut::Evolve()
         Vector<MultiFab> photoion_src(finest_level+1);
 
         // edge centered efield
-        Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_ec(finest_level+1);
+        Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
 
         //copy new to old and update time
         for(int lev=0;lev<=finest_level;lev++)
@@ -136,8 +137,8 @@ void Vidyut::Evolve()
                 flux[lev][idim].define(ba, dmap[lev], 1, 0);
                 flux[lev][idim].setVal(0.0);
 
-                efield_ec[lev][idim].define(ba, dmap[lev], 1, 0);
-                efield_ec[lev][idim].setVal(0.0);
+                efield_fc[lev][idim].define(ba, dmap[lev], 1, 0);
+                efield_fc[lev][idim].setVal(0.0);
 
                 gradne_fc[lev][idim].define(ba, dmap[lev], 1, 0);
                 gradne_fc[lev][idim].setVal(0.0);
@@ -172,14 +173,14 @@ void Vidyut::Evolve()
                     flux[lev][idim].setVal(0.0);
                     gradne_fc[lev][idim].setVal(0.0);
                     grad_fc[lev][idim].setVal(0.0);
-                    efield_ec[lev][idim].setVal(0.0);
+                    efield_fc[lev][idim].setVal(0.0);
                 }
                 expl_src[lev].setVal(0.0);
                 rxn_src[lev].setVal(0.0);
                 photoion_src[lev].setVal(0.0);
             }
 
-            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_ec);
+            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
 
             if(cs_technique)
             {
@@ -268,7 +269,7 @@ void Vidyut::Evolve()
                 {
                     compute_elecenergy_source(lev, Sborder[lev],
                                               rxn_src[lev], 
-                                              efield_ec[lev],
+                                              efield_fc[lev],
                                               gradne_fc[lev],
                                               expl_src[lev], cur_time, dt_common,floor_jh);
                 }
@@ -333,6 +334,11 @@ void Vidyut::Evolve()
                         }
                     }
                 }
+
+                if(track_surf_charge)
+                {
+                   update_surf_charge(Sborder,cur_time,dt_common);
+                }
             }
 
 
@@ -367,9 +373,11 @@ void Vidyut::Evolve()
         cur_time += dt_common;
         plottime += dt_common;
         chktime += dt_common;
+        Real run_time = amrex::second() - strt_time;
 
         amrex::Print() << "Coarse STEP " << step + 1 << " ends."
         << " TIME = " << cur_time << " DT = " << dt_common << std::endl;
+        amrex::Print()<<"Time step wall clock time:"<<run_time<<"\n";
 
         if (plot_time > 0){
             if(plottime > plot_time){
