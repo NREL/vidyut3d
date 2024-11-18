@@ -217,7 +217,11 @@ void compute_flux(
     const GpuArray<Real, AMREX_SPACEDIM>& dx,
     amrex::Real dt,
     ProbParm const& prob_parm,int hyp_order,
-    int user_defined_vel,int weno_scheme)
+    int user_defined_vel,int weno_scheme
+#ifdef AMREX_USE_EB
+    , Array4<const typename FabArray<FArrayBox>::value_type> const& vf
+#endif
+    )
 {
 
     //|--left1--|--left--|--right--|--right1--|
@@ -227,12 +231,41 @@ void compute_flux(
     IntVect face{AMREX_D_DECL(i,j,k)};
     IntVect left{AMREX_D_DECL(i, j, k)};
     IntVect right{AMREX_D_DECL(i, j, k)};
+    IntVect left1{AMREX_D_DECL(i, j, k)};
+    IntVect right1{AMREX_D_DECL(i, j, k)};
+    IntVect left2{AMREX_D_DECL(i, j, k)};
+    IntVect right2{AMREX_D_DECL(i, j, k)};
     left[sweepdir] -= 1;
+    left1[sweepdir] -= 2;
+    right1[sweepdir] += 1;
+    left2[sweepdir] -= 3;
+    right2[sweepdir] += 2;
 
     Real phi_L = phi(left, specid);
     Real phi_R = phi(right, specid);
     Real vel_L;
     Real vel_R;
+    bool containsCut = false;
+
+
+#ifdef AMREX_USE_EB
+    // Check all cells in stencil to see if any are covered or cut
+    
+    // If the left or right cell is fully covered, set flux to zero
+    if(vf(left) < 1.0e-10 || vf(right) < 1.0e-10){ 
+        fx(face) = 0.0;
+        return;
+    }
+
+    // Check stencil for any cut/covered cells and switch to first-order
+    if(hyp_order >= 2){
+        if(vf(left) < 1.0 || vf(right) < 1.0 || vf(left1) < 1.0 || vf(right1) < 1.0) containsCut = true;
+    }
+    if(hyp_order == 5){
+        if(vf(left2) < 1.0 || vf(right2) < 1.0) containsCut = true;
+    }
+#endif
+
 
     if(user_defined_vel == 1){
         vel_L = user_transport::compute_vel(left,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
@@ -242,16 +275,12 @@ void compute_flux(
         vel_R = plasmachem_transport::compute_vel(right,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
     }
 
-    if(hyp_order==1)
+    if(hyp_order==1 || containsCut)
     {
         fx(face)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
     }
     else if(hyp_order==2)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
-        left1[sweepdir] -= 2;
-        right1[sweepdir] += 1;
         amrex::Real phi_Lm1 = phi(left1, specid);
         amrex::Real phi_Rp1 = phi(right1, specid);
         amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
@@ -261,15 +290,6 @@ void compute_flux(
     }
     else if(hyp_order==5)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
-        IntVect left2{AMREX_D_DECL(i, j, k)};
-        IntVect right2{AMREX_D_DECL(i, j, k)};
-        left1[sweepdir] -= 2;
-        right1[sweepdir] += 1;
-        left2[sweepdir] -= 3;
-        right2[sweepdir] += 2;
-
         amrex::Real vel_Lm1, vel_Lm2, vel_Rp1, vel_Rp2;
 
         if(user_defined_vel == 1){

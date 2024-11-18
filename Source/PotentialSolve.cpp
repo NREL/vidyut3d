@@ -321,13 +321,14 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
             Real time = current_time; // for GPU capture
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                // FIXME: hard-coded for pin-pin case oriented in the y-dir
                 // Get y location
                 Real yloc = prob_lo[1] + (j+0.5)*dx[1];
 
                 // Overwrite cut and covered cell data
                 if(vf_arr(i,j,k) > 0.0 && vf_arr(i,j,k) < 1.0){
                     int domend = (yloc < prob_hi[1] / 2.0) ? -1:1;
-                    amrex::Real app_voltage = get_applied_potential(time, domend, vprof, v1, v2, vfreq, vdur, vcen);
+                    amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[1], amphi[1], vfreq, vdur, vcen);
                     a_arr(i,j,k) = 1.0 / vp_perm / dxmin2[ilev];
                     rhs_arr(i,j,k) = app_voltage / vp_perm / dxmin2[ilev];
                 }

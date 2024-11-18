@@ -197,7 +197,6 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
     GpuArray<int,AMREX_SPACEDIM> bclo={AMREX_D_DECL(bc_lo[0], bc_lo[1], bc_lo[2])};
     GpuArray<int,AMREX_SPACEDIM> bchi={AMREX_D_DECL(bc_hi[0], bc_hi[1], bc_hi[2])};
 
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -211,6 +210,12 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
 #if AMREX_SPACEDIM == 3
             Box bx_z = convert(bx, {0, 0, 1});
 #endif
+#endif
+
+#ifdef AMREX_USE_EB
+            const auto& ebfact = EBFactory(lev);
+            const auto& vfrac = ebfact.getVolFrac();
+            auto vf_arr = vfrac.const_array(mfi);
 #endif
             
             Real time = current_time; // for GPU capture
@@ -228,7 +233,11 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[0], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,captured_wenoscheme); 
+                             userdefvel,captured_wenoscheme
+#ifdef AMREX_USE_EB
+                             , vf_arr
+#endif
+                             ); 
             });
 
 #if AMREX_SPACEDIM > 1
@@ -237,7 +246,11 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[1], 
                              captured_gastemp,captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,captured_wenoscheme); 
+                             userdefvel,captured_wenoscheme 
+#ifdef AMREX_USE_EB
+                             , vf_arr
+#endif
+                             );
             });
 
 #if AMREX_SPACEDIM == 3
@@ -246,7 +259,11 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                              bclo, bchi, domlo, domhi, flux_arr[2], 
                              captured_gastemp, captured_gaspres,
                              time, dx, lev_dt, *localprobparm, captured_hyporder,
-                             userdefvel,weno_scheme);
+                             userdefvel,weno_scheme
+#ifdef AMREX_USE_EB
+                             , vf_arr
+#endif
+                             );
             });
 #endif
 #endif
