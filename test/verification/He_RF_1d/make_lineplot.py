@@ -4,23 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
-def get_oned_data(arr3d,axialdir):
-    res=np.array(arr3d.shape)
-    mid=res/2
-    mid=mid.astype(int)
-    linedata=np.zeros(res[axialdir])
-    trans1dir=(axialdir+1)%3
-    trans2dir=(axialdir+2)%3
-    
-    if(axialdir==0):
-        linedata=arr3d[:,mid[trans1dir],mid[trans2dir]]
-    if(axialdir==1):
-        linedata=arr3d[mid[trans2dir],:,mid[trans1dir]]
-    if(axialdir==2):
-        linedata=arr3d[mid[trans1dir],mid[trans2dir],:]
-
-    return(linedata)
-
 
 fn_pattern= argv[1]
 fn_list=[]
@@ -52,39 +35,35 @@ for i, fn in enumerate(fn_list):
     prob_hi=ds.domain_right_edge.d
     probsize=prob_hi-prob_lo
     ncells=ds.domain_dimensions
+    mids=0.5*(prob_lo+prob_hi)
     
     minlev=0
     maxlev=ds.index.max_level
     lengths=prob_hi-prob_lo
-    axialdir=np.argmax(lengths)
+    axialdir=0
     axialdir_char=chr(ord('x')+axialdir)
 
-    
-    covgrid_lev=maxlev
-    res=np.array([ncells[0]* (2**covgrid_lev),ncells[1]* (2**covgrid_lev),ncells[2]* (2**covgrid_lev)])
-    dx_frb=probsize/res
-    fields_load=["Potential","E","Electron_energy","Electron_Temp","HEp"]
-    ad = ds.covering_grid(level=covgrid_lev, left_edge=prob_lo, dims=res, fields=fields_load)
+    res=np.array([ncells[0]* (2**maxlev),ncells[1]* (2**maxlev),ncells[2]* (2**maxlev)])
+    dx_frb=lengths/res
+    low_end=[mids[0],mids[1],mids[2]]
+    high_end=[mids[0],mids[1],mids[2]]
+    low_end[axialdir]=prob_lo[axialdir]+0.5*dx_frb[axialdir]
+    high_end[axialdir]=prob_hi[axialdir]-0.5*dx_frb[axialdir]
 
-    pot=np.array(ad["Potential"])
-    elecden=np.array(ad["E"])
-    etemp=np.array(ad["Electron_Temp"])
-    eenrg=np.array(ad["Electron_energy"])
-    ionden=np.array(ad["HEp"])
-    ejheat=np.array(ad["Electron_Jheat"])
-    inelheat=np.array(ad["Electron_inelasticHeat"])
-    elheat=np.array(ad["Electron_elasticHeat"])
+    lb = yt.LineBuffer(ds, tuple(low_end), \
+        tuple(high_end), res[axialdir])
+
+    potl=lb["Potential"].value
+    efieldl=lb["Efieldx"].value
+    edenl=lb["E"].value
+    etempl=lb["Electron_Temp"].value
+    eenrgl=lb["Electron_energy"].value
+    iondenl=lb["HEp"].value
+    ejl=lb["Electron_Jheat"].value
+    inelhl=lb["Electron_inelasticHeat"].value
+    elhl=lb["Electron_elasticHeat"].value
     xarr=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
             prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
 
-    potl=get_oned_data(pot,axialdir)
-    edenl=get_oned_data(elecden,axialdir)
-    etempl=get_oned_data(etemp,axialdir)
-    eenrgl=get_oned_data(eenrg,axialdir)
-    iondenl=get_oned_data(ionden,axialdir)
-    ejl=get_oned_data(ejheat,axialdir)
-    elhl=get_oned_data(elheat,axialdir)
-    inelhl=get_oned_data(inelheat,axialdir)
-
     np.savetxt("linedata_"+axialdir_char+"%4.4d.dat"%(i),\
-            np.transpose(np.vstack((xarr,potl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")
+            np.transpose(np.vstack((xarr,potl,efieldl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")

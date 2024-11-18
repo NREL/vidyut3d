@@ -23,8 +23,11 @@ void Vidyut::Evolve()
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
-    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int));
-    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int));
+    //note: if the user changes the chk_int and plot_int, they have
+    //manually set the old values for chk_int and plot_int,chk_int_old 
+    //and plt_int_old, in the inputs, so that the offsets are correct 
+    int plotfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(plot_int_old));
+    int chkfilenum=amrex::Math::floor(amrex::Real(istep[0])/amrex::Real(chk_int_old));
     if(plot_time > 0.0) plotfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(plot_time));
     if(chk_time > 0.0) chkfilenum=amrex::Math::floor(amrex::Real(cur_time)/amrex::Real(chk_time));
     amrex::Real dt_edrift,dt_ediff,dt_diel_relax;
@@ -97,7 +100,7 @@ void Vidyut::Evolve()
         Vector<MultiFab> phi_tmp(finest_level+1);
 
         // edge centered efield
-        Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_ec(finest_level+1);
+        Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
 
         //copy new to old and update time
         for(int lev=0;lev<=finest_level;lev++)
@@ -131,8 +134,8 @@ void Vidyut::Evolve()
                 flux[lev][idim].define(ba, dmap[lev], 1, 0);
                 flux[lev][idim].setVal(0.0);
 
-                efield_ec[lev][idim].define(ba, dmap[lev], 1, 0);
-                efield_ec[lev][idim].setVal(0.0);
+                efield_fc[lev][idim].define(ba, dmap[lev], 1, 0);
+                efield_fc[lev][idim].setVal(0.0);
 
                 gradne_fc[lev][idim].define(ba, dmap[lev], 1, 0);
                 gradne_fc[lev][idim].setVal(0.0);
@@ -164,13 +167,13 @@ void Vidyut::Evolve()
                     flux[lev][idim].setVal(0.0);
                     gradne_fc[lev][idim].setVal(0.0);
                     grad_fc[lev][idim].setVal(0.0);
-                    efield_ec[lev][idim].setVal(0.0);
+                    efield_fc[lev][idim].setVal(0.0);
                 }
                 expl_src[lev].setVal(0.0);
                 rxn_src[lev].setVal(0.0);
             }
 
-            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_ec);
+            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
 
             if(cs_technique)
             {
@@ -189,6 +192,20 @@ void Vidyut::Evolve()
             if(cs_technique || eb_in_domain){
                 update_cc_efields(Sborder);
 
+                //fillpatching here to get the latest efields 
+                //in sborder so that it can be used in drift vel calcs
+                //may be there is a clever way to improve performance 
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
+            }
+
+            if(efield_limiter)
+            {
+                potential_gradlimiter(Sborder); 
+                
                 //fillpatching here to get the latest efields 
                 //in sborder so that it can be used in drift vel calcs
                 //may be there is a clever way to improve performance 
@@ -220,9 +237,9 @@ void Vidyut::Evolve()
                 {
                     compute_elecenergy_source(lev, Sborder[lev],
                                               rxn_src[lev], 
-                                              efield_ec[lev],
+                                              efield_fc[lev],
                                               gradne_fc[lev],
-                                              expl_src[lev], cur_time, dt_common);
+                                              expl_src[lev], cur_time, dt_common,floor_jh);
                 }
 
                 implicit_solve_scalar(cur_time,dt_common,EEN_ID, Sborder,Sborder_old, 
@@ -284,6 +301,11 @@ void Vidyut::Evolve()
                             });
                         }
                     }
+                }
+
+                if(track_surf_charge)
+                {
+                   update_surf_charge(Sborder,cur_time,dt_common);
                 }
             }
 

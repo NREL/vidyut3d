@@ -32,44 +32,6 @@ void CKINU(const int i, int &nspec, int ki[], int nu[]) {
   }
 }
 
-// Returns the progress rates of each reactions
-// Given P, T, and mole fractions
-void CKKFKR(const amrex::Real P, const amrex::Real T, const amrex::Real x[],
-            amrex::Real q_f[], amrex::Real q_r[]) {
-  amrex::Real c[4]; // temporary storage
-  amrex::Real PORT =
-      1e6 * P / (8.31446261815324e+07 * T); // 1e6 * P/RT so c goes to SI units
-
-  // Compute conversion, see Eq 10
-  for (int id = 0; id < 4; ++id) {
-    c[id] = x[id] * PORT;
-  }
-
-  // convert to chemkin units
-  progressRateFR(q_f, q_r, c, T);
-
-  // convert to chemkin units
-  for (int id = 0; id < 6; ++id) {
-    q_f[id] *= 1.0e-6;
-    q_r[id] *= 1.0e-6;
-  }
-}
-
-// compute the progress rate for each reaction
-// USES progressRate : todo switch to GPU
-void progressRateFR(amrex::Real *q_f, amrex::Real *q_r, amrex::Real *sc,
-                    amrex::Real T) {
-  const amrex::Real tc[5] = {log(T), T, T * T, T * T * T,
-                             T * T * T * T}; // temperature cache
-  amrex::Real invT = 1.0 / tc[1];
-  // compute the Gibbs free energy
-  amrex::Real g_RT[4];
-  gibbs(g_RT, tc);
-
-  amrex::Real sc_qss[1];
-  comp_qfqr(q_f, q_r, sc, sc_qss, tc, invT);
-}
-
 // save atomic weights into array
 void atomicWeight(amrex::Real *awt) {
   awt[0] = 0.000549;  // E

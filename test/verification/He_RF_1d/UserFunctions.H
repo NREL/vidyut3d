@@ -9,6 +9,18 @@
 using namespace amrex;
 namespace user_transport
 {
+    AMREX_GPU_HOST_DEVICE
+    AMREX_FORCE_INLINE
+    int is_dielectric(int i, int j, int k, int dir, int sign, 
+                      const GpuArray<Real,AMREX_SPACEDIM> prob_lo, 
+                      const GpuArray<Real,AMREX_SPACEDIM> prob_hi, 
+                      const GpuArray<Real,AMREX_SPACEDIM> dx,
+                      Real time,
+                      ProbParm const& prob_parm)
+    {
+        return(0);
+    } 
+    
     AMREX_GPU_DEVICE AMREX_INLINE
     void potential_bc(int i, int j, int k,
                       int dir, int sgn,
@@ -123,7 +135,7 @@ namespace user_transport
             bc_arr(ghost_cell)=(-flx/D);
         }
 
-        if(spec_id==HEp_ID || spec_id==HE2p_ID)
+        if(spec_id==HEp_ID)
         {
             amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
                                             std::pow(phi(cell_int,EFY_ID),2.0)+
