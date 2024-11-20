@@ -120,8 +120,12 @@ Vidyut::Vidyut()
     if(geom[0].IsRZ()){
         if(AMREX_SPACEDIM != 2) amrex::Abort("AMREX_SPACEDIM should be 2 for axisymmetric coordinates");
         // Axisymmetric implementation assumes x-low boundary is the axis of symmatry
-        if(pot_bc_lo[0] != 2 || eden_bc_lo[0] != 2 || ion_bc_lo[0] != 2 || neutral_bc_lo[0] != 2 || eenrg_bc_lo[0] != 2){
-            amrex::Abort("All x_lo boundaries must be 0 Neumann (equal to 2)");
+        if(pot_bc_lo[0] != 2 || eden_bc_lo[0] != 2 || ion_bc_lo[0] != 2 || neutral_bc_lo[0] != 2 || eenrg_bc_lo[0] != 2)
+        {
+            if(pot_bc_lo[0] != 5 || eden_bc_lo[0] != 5 || ion_bc_lo[0] != 5 || neutral_bc_lo[0] != 5 || eenrg_bc_lo[0] != 5)
+            {
+                amrex::Abort("All x_lo boundaries must be 0 Neumann (equal to 2)");
+            }
         }
     }
 
