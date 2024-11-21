@@ -324,7 +324,7 @@ void compute_flux(
     }
     if(face[sweepdir]==domhi[sweepdir]+1) 
     {
-        if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) )
+        if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) )
         {
             fx(face)=0.0;
         }
