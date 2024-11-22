@@ -367,6 +367,10 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
             bc_linsolve_lo[idim] = LinOpBCType::Robin;
             mixedbc=1;
         }
+        if (bc_lo[idim] == AXISBC)
+        {
+            bc_linsolve_lo[idim] = LinOpBCType::Neumann;
+        }
 
         //higher side bcs
         if (bc_hi[idim] == PERBC)
@@ -389,6 +393,10 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         {
             bc_linsolve_hi[idim] = LinOpBCType::Robin;
             mixedbc=1;
+        }
+        if (bc_hi[idim] == AXISBC)
+        {
+            bc_linsolve_hi[idim] = LinOpBCType::Neumann;
         }
     }
 
