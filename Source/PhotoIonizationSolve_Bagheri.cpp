@@ -58,7 +58,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real pq = 30.0*Torr_to_Pa; // From Bourdon et al., 2007 Plasma Sources Sci. Technol. 16 656 
     amrex::Real pO2 = 150.0*Torr_to_Pa; // assuming air - update this as per need
     amrex::Real quenching_fact = pq / (pq + captured_gaspres);
-    amrex::Real photoion_eff = 0.075; // From Bagheri's work to ensure eps*nu_u / nu_i = 0.06
+    amrex::Real photoion_eff = 0.075;
 
     A_j[0] = 1.986e-4 / ((cm_to_m*cm_to_m)*(Torr_to_Pa*Torr_to_Pa));
     lambda_j[0] = 0.0553 / ((cm_to_m)*(Torr_to_Pa));
@@ -178,8 +178,6 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         amrex::Copy(photoionization_src[ilev], Sborder[ilev], PHOTO_ION_SRC_ID, 0, 1, 0);
 
         solution[ilev].setVal(0.0);
-        // FIXME: for some reason copying in current soln breaks the solver...
-        // amrex::MultiFab::Copy(solution[ilev], potential[ilev], 0, 0, 1, 0);
         
         rhs[ilev].setVal(0.0);
         // TST - Ideally want to access this at each grid point.
@@ -227,7 +225,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 rhs_arr(i,j,k)=0.0;
                 //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
                 // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
-                rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*0.8*rate_N2_ion);
+                rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*1.0*rate_N2_ion);
             });
         }
 
