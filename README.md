@@ -30,6 +30,17 @@ Vidyut is a massively-parallel plasma-fluid solver for low-temperature plasmas (
 * These plot files can be open using AMReX grid reader in ParaView (see https://amrex-codes.github.io/amrex/docs_html/Visualization.html#paraview)
 * Alternatively visit can be used. see https://amrex-codes.github.io/amrex/docs_html/Visualization_Chapter.html
 
+# Citation
+
+To cite Vidyut3d, use our software record:
+
+    @techreport{
+        sitaraman2024vidyut3d,
+        title={Vidyut3d: A Non-Equilibrium Plasma Modeling Tool [SWR-24-101]},
+        author={Sitaraman, Hariswaran and Deak, Nick},
+        year={2024},
+        institution={National Renewable Energy Laboratory (NREL), Golden, CO (United States)}
+    }
 
 # Acknowledgments
 

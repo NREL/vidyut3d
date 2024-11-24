@@ -109,6 +109,10 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
             bc_photoionizationsolve_lo[idim] = LinOpBCType::Robin;
             mixedbc=1;
         }
+        if (bc_lo[idim] == AXISBC)
+        {
+            bc_photoionizationsolve_lo[idim] = LinOpBCType::Neumann;
+        }
 
         //higher side bcs
         if (bc_hi[idim] == PERBC)
@@ -131,6 +135,10 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         {
             bc_photoionizationsolve_hi[idim] = LinOpBCType::Robin;
             mixedbc=1;
+        }
+        if (bc_hi[idim] == AXISBC)
+        {
+            bc_photoionizationsolve_hi[idim] = LinOpBCType::Neumann;
         }
     }
 

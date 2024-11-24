@@ -315,13 +315,19 @@ void compute_flux(
         amrex::Abort("hyp_order not implemented yet\n");
     }
 
-    if( (face[sweepdir]==domlo[sweepdir]) && (bclo[sweepdir]==IHNEUBC) )
+    if(face[sweepdir]==domlo[sweepdir])
     {
-        fx(face)=0.0;
+        if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) )
+        {
+            fx(face)=0.0;
+        }
     }
-    if( (face[sweepdir]==(domhi[sweepdir]+1)) && (bchi[sweepdir]==IHNEUBC) )
+    if(face[sweepdir]==domhi[sweepdir]+1) 
     {
-        fx(face)=0.0;
+        if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) )
+        {
+            fx(face)=0.0;
+        }
     }
 }
 //====================================================================
