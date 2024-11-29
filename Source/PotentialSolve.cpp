@@ -381,6 +381,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                     Real Esum = 0.0;
                     amrex::Real ndens = 0.0;
                     for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+                    ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
                     for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
                     s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
                 });

@@ -1,5 +1,5 @@
-CEXE_sources += main.cpp Vidyut.cpp Evolve_Bagheri.cpp Plot.cpp
-CEXE_sources += GridWork.cpp TimeStep.cpp PotentialSolve.cpp PhotoIonizationSolve_Bagheri.cpp ScalarSolve.cpp
+CEXE_sources += main.cpp Vidyut.cpp Evolve.cpp Plot.cpp
+CEXE_sources += GridWork.cpp TimeStep.cpp PotentialSolve.cpp PhotoIonizationSolve.cpp ScalarSolve.cpp
 CEXE_sources += ElecEnergySource.cpp PlasmaChem.cpp SurfCharge.cpp
 CEXE_headers += Vidyut.H Tagging.H BCfill.H Constants.H UnivConstants.H VarDefines.H 
 CEXE_headers += compute_explicit_flux.H PlasmaChem.H HelperFuncs.H

@@ -101,6 +101,7 @@ void Vidyut::Evolve()
         Vector<MultiFab> Sborder_old(finest_level+1);
         Vector<MultiFab> phi_tmp(finest_level+1);
         Vector<MultiFab> photoion_src(finest_level+1);
+        Vector<MultiFab> photoion_src_total(finest_level+1); // this is declared only to copy to phi, so that it can be used to post-process as a variable
 
         // edge centered efield
         Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
@@ -153,8 +154,11 @@ void Vidyut::Evolve()
             rxn_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+1, 0);
             rxn_src[lev].setVal(0.0);
             
-            photoion_src[lev].define(grids[lev], dmap[lev], 1, 0);
-            photoion_src[lev].setVal(0.0);                  
+            photoion_src[lev].define(grids[lev], dmap[lev], 1, num_grow);
+            photoion_src[lev].setVal(0.0); 
+
+            photoion_src_total[lev].define(grids[lev], dmap[lev], 1, num_grow);
+            photoion_src_total[lev].setVal(0.0);
         }
                
         for(int niter=0;niter<num_timestep_correctors;niter++)
@@ -178,6 +182,7 @@ void Vidyut::Evolve()
                 expl_src[lev].setVal(0.0);
                 rxn_src[lev].setVal(0.0);
                 photoion_src[lev].setVal(0.0);
+                photoion_src_total[lev].setVal(0.0);
             }
 
             solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
@@ -231,29 +236,36 @@ void Vidyut::Evolve()
   
             if(do_photoionization)
             {
+                //First add the photoionization source jth component to the total photoionization source multifab
+                //In the same loop over levels, add the inidividual components to rxn_src
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 0);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
+                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
                 }
 
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 1);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
+                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
                 }    
 
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 2);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, num_grow);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, num_grow);
-                }                
+                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
+
+                    // Copy the photion_src_total multifab to the state vector
+                    amrex::Copy(Sborder[ilev], photoion_src_total[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
+                }    
             }
             
-
             //electron density solve
             update_explsrc_at_all_levels(E_IDX, Sborder, flux, rxn_src, expl_src, eden_bc_lo, eden_bc_hi, cur_time);
             implicit_solve_scalar(cur_time,dt_common,E_IDX,Sborder,Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, gradne_fc);
