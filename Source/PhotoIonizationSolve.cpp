@@ -366,10 +366,11 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
 
     amrex::Print()<<"Solved Photoionization\n";
 
-    for (int ilev = 0; ilev <= finest_level; ilev++)
+    // This copy is not needed here.
+    /*for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
-    }
+    }*/
 
     //clean-up
     // photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
