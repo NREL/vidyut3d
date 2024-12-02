@@ -529,8 +529,8 @@ void Vidyut::update_cs_technique_potential()
 
         amrex::ParallelDescriptor::ReduceRealSum(cs_charge);
 
-        amrex::AllPrint()<<"cs_charge, proc:"<<cs_charge<<"\t"
-        <<amrex::ParallelDescriptor::MyProc()<<"\n";
+        /*amrex::AllPrint()<<"cs_charge, proc:"<<cs_charge<<"\t"
+        <<amrex::ParallelDescriptor::MyProc()<<"\n";*/
 
         all_cs_charges[nch]=cs_charge;
     }
