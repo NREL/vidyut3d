@@ -99,8 +99,6 @@ void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
         compute_dsdt(lev, specid, 
                      flux[lev], rxn_src[lev], expl_src[lev], 
                      cur_time, dt[lev]);
-        // TST - SAXPY to add multifabs
-        // TST - if(photoionization)
     }
 
     // Additional source terms for axisymmetric geometry
@@ -454,7 +452,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         amrex::Copy(specdata[ilev], Sborder_old[ilev], captured_spec_id, 
                     0, 1, num_grow);
 
-        acoeff[ilev].setVal(1.0/dt); // TST - update this
+        acoeff[ilev].setVal(1.0/dt);
         bcoeff[ilev].setVal(1.0);
 
         //default to homogenous Neumann

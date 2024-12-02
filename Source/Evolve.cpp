@@ -20,7 +20,7 @@ void Vidyut::Evolve()
     int last_plot_file_step = 0;
     Real plottime = 0.0;
     Real chktime = 0.0;
-    int sph_id = 0; // TST - For photoionization
+    int sph_id = 0;
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
