@@ -221,33 +221,37 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
             Array4<Real> rhs_arr = rhs[ilev].array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                
-                amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
-                amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
-                amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
-                amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
 
-                std::vector<amrex::Real> Fit1(7, 0.0);
-                Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
-                amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/std::pow(Te,2) + Fit1[4]/std::pow(Te,3) + Fit1[5]/std::pow(Te,4) + Fit1[6]/std::pow(Te,5));
-                amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
-
-                /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
-                */
-                
                 rhs_arr(i,j,k)=0.0;
-                //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
-                //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. - A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
-                // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
-                // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
+                
+                #if defined(O2_ID) && defined(N2_ID)
+                    amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
+                    amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
+                    amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
+                    amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
 
-                rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);
+                    std::vector<amrex::Real> Fit1(7, 0.0);
+                    Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
+                    amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/std::pow(Te,2) + Fit1[4]/std::pow(Te,3) + Fit1[5]/std::pow(Te,4) + Fit1[6]/std::pow(Te,5));
+                    amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
+
+                    /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                            (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                            (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                            (-9.57567162e+12)/std::pow(Te,3)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
+                    */
+                    
+                    
+                    //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
+                    //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. - A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
+                    // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
+                    // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
+
+                    rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);
+                #endif
             });
         }
 

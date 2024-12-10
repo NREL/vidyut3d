@@ -243,7 +243,7 @@ void Vidyut::Evolve()
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
                     amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
                 }
 
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 1);
@@ -251,7 +251,7 @@ void Vidyut::Evolve()
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
                     amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
                 }    
 
                 solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 2);
@@ -259,7 +259,7 @@ void Vidyut::Evolve()
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
                     amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, O2p_ID, 1, 0);
+                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
 
                     // Copy the photion_src_total multifab to the state vector
                     amrex::Copy(Sborder[ilev], photoion_src_total[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
