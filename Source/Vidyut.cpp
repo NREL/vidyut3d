@@ -41,7 +41,9 @@ Vidyut::Vidyut()
     plasma_param_names[8]="Electron_elasticHeat";
     plasma_param_names[9]="ReducedEF";
     plasma_param_names[10]="SurfaceCharge";
+    plasma_param_names[11]="PhotoIon_Src";
     
+
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
     {
@@ -89,6 +91,9 @@ Vidyut::Vidyut()
     pp.queryarr("neutral_bc_lo", neutral_bc_lo, 0, AMREX_SPACEDIM);
     pp.queryarr("neutral_bc_hi", neutral_bc_hi, 0, AMREX_SPACEDIM);
 
+    pp.queryarr("photoion_bc_lo", photoion_bc_lo, 0, AMREX_SPACEDIM);
+    pp.queryarr("photoion_bc_hi", photoion_bc_hi, 0, AMREX_SPACEDIM);    
+
     //foextrap all states as bcs imposed
     //through linear solver
     bcspec.resize(NVAR);
@@ -121,10 +126,10 @@ Vidyut::Vidyut()
         if(AMREX_SPACEDIM != 2) amrex::Abort("AMREX_SPACEDIM should be 2 for axisymmetric coordinates");
         // Axisymmetric implementation assumes x-low boundary is the axis of symmatry
         if(pot_bc_lo[0] != HNEUBC || eden_bc_lo[0] != HNEUBC || ion_bc_lo[0] != HNEUBC || neutral_bc_lo[0] != HNEUBC 
-           || eenrg_bc_lo[0] != HNEUBC)
+           || eenrg_bc_lo[0] != HNEUBC || photoion_bc_lo[0] != HNEUBC)
         {
             if(pot_bc_lo[0] != AXISBC || eden_bc_lo[0] != AXISBC || ion_bc_lo[0] != AXISBC 
-               || neutral_bc_lo[0] != AXISBC || eenrg_bc_lo[0] != AXISBC)
+               || neutral_bc_lo[0] != AXISBC || eenrg_bc_lo[0] != AXISBC || photoion_bc_lo[0] != AXISBC)
             {
                 amrex::Abort("All x_lo boundaries must be Homogenous Neumann (equal to 2) or axis (equal to 5)");
             }
@@ -326,6 +331,8 @@ void Vidyut::ReadParameters()
         pp.query("user_defined_species", user_defined_species);
         pp.query("user_defined_vel", user_defined_vel);
         pp.query("do_bg_reactions",do_bg_reactions);
+        pp.query("do_photoionization",do_photoionization);
+        pp.query("photoion_ID",photoion_ID);
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);
