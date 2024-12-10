@@ -226,7 +226,7 @@ public:
     int user_defined_photoionization = 0;
     int do_bg_reactions=0;
     int do_photoionization=0;
-    int photoion_ID=0;
+    int photoion_ID=-1;
 
     // Voltage options
     int voltage_profile=0;
