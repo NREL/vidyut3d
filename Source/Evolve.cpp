@@ -323,7 +323,7 @@ void Vidyut::Evolve()
                                           0, 0, phi_new[lev].nComp(), 0);
                 }
             }
-            amrex::Print()<<"\n================== timestep iter:"<<niter<<" ================\n";
+            amrex::Print()<<"\n================== Finished timestep iter:"<<niter+1<<" ================\n";
         }
 
 

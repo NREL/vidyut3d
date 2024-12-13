@@ -8,9 +8,10 @@ using namespace amrex::literals;
 
 struct ProbParm
 {
-    amrex::Real loc_x=0.5;
-    amrex::Real loc_y=0.5;
-    amrex::Real loc_z=0.5;
+    int nseeds=1;
+    amrex::Real* loc_x=nullptr;
+    amrex::Real* loc_y=nullptr;
+    amrex::Real* loc_z=nullptr;
 
     amrex::Real rad=0.1;
     amrex::Real ampl=0.1;
@@ -18,9 +19,6 @@ struct ProbParm
 
     amrex::Real V1=1.0;
     amrex::Real V2=0.0;
-
-    amrex::Real ns=1.0;
-    amrex::Real phis=1.0;
 
     int twod=1;
 };

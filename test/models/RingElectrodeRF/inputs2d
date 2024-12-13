@@ -1,4 +1,4 @@
-max_step  = 20000
+max_step  = 20000000
 stop_time = 1e-4
 
 # PROBLEM SIZE & GEOMETRY
@@ -6,7 +6,7 @@ geometry.is_periodic =  0  0  1
 geometry.coord_sys   =  1       # 0 => cart
 geometry.prob_lo     =  0.0   0.0     0.0 
 geometry.prob_hi     =  0.00625 0.0625 3.90625e-4
-amr.n_cell           =   32 320  4
+amr.n_cell           =   64 640  4
 
 #use 4 cells minimum for hyp_order 5
 #other wise we wont have enough ghost cells 
@@ -25,7 +25,7 @@ amr.max_grid_size   = 32
 amr.regrid_int      = 5       # how often to regrid
 
 # TIME STEP CONTROL
-vidyut.dt             = 1e-11
+vidyut.dt             = 5e-12
 vidyut.num_timestep_correctors = 1
 vidyut.hyp_order = 5
 
@@ -48,25 +48,26 @@ vidyut.E_refinegrad = 5e17
 #2 - Homogenous Neumann
 #3 - Inhomogenous Neumann
 #4 - Robin
+#5 - axis
 
-vidyut.pot_bc_lo = 2 2 0
+vidyut.pot_bc_lo = 5 2 0
 vidyut.pot_bc_hi = 4 2 0
 
-vidyut.eden_bc_lo = 2 2 0
+vidyut.eden_bc_lo = 5 2 0
 vidyut.eden_bc_hi = 3 2 0 
 
-vidyut.eenrg_bc_lo = 2 2 0
+vidyut.eenrg_bc_lo = 5 2 0
 vidyut.eenrg_bc_hi = 3 2 0
 
-vidyut.ion_bc_lo = 2 2 0
+vidyut.ion_bc_lo = 5 2 0
 vidyut.ion_bc_hi = 3 2 0
 
-vidyut.neutral_bc_lo = 2 2 0
+vidyut.neutral_bc_lo = 5 2 0
 vidyut.neutral_bc_hi = 3 2 0
 
 # PLOTFILES
 amr.plot_file  = plt    # root name of plot file
-amr.plot_int   = 1000     # number of timesteps between plot files
+amr.plot_int   = 3000   # number of timesteps between plot files
 
 # CHECKPOINT
 amr.chk_file = chk      # root name of checkpoint file
@@ -88,3 +89,4 @@ prob.y1=0.01
 prob.l1=0.005
 prob.y2=0.025
 prob.l2=0.005
+prob.rfv1=360.0
