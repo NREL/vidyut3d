@@ -313,6 +313,7 @@ def ckinu(fstream, mechanism, species_info, reaction_info, write_sk=False):
 
 
 # Taaresh added start
+
 def ckcvbl(fstream, mechanism, species_info):
     """Write ckcvbl."""
     n_species = species_info.n_species
@@ -465,7 +466,6 @@ def ckubml(fstream, mechanism, species_info):
     cw.writer(fstream, "ubml = result * RT;")
     cw.writer(fstream, "}")
 
-
 def ckuml(fstream, mechanism, species_info):
     """Write ckuml."""
     n_species = species_info.n_species
@@ -480,24 +480,15 @@ def ckuml(fstream, mechanism, species_info):
     )
     cw.writer(fstream, "{")
 
-    # get temperature cache
-    cw.writer(
-        fstream, "amrex::Real tT = T; " + cw.comment("temporary temperature")
-    )
-    cw.writer(
-        fstream,
-        "const amrex::Real tc[5] = { 0, tT, tT*tT, tT*tT*tT, tT*tT*tT*tT }; "
-        + cw.comment("temperature cache"),
-    )
     cw.writer(
         fstream,
         "amrex::Real RT ="
-        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*tT; "
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*T; "
         + cw.comment("R*T"),
     )
 
     # call routine
-    cw.writer(fstream, "speciesInternalEnergy(uml, tc);")
+    cw.writer(fstream, "speciesInternalEnergy(uml, T);")
 
     # convert e/RT to e with molar units
     cw.writer(fstream)
