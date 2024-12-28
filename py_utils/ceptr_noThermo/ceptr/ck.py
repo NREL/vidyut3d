@@ -310,3 +310,232 @@ def ckinu(fstream, mechanism, species_info, reaction_info, write_sk=False):
         cw.writer(fstream, "}")
     cw.writer(fstream, "}")
     cw.writer(fstream, "}")
+
+
+# Taaresh added start
+def ckcvbl(fstream, mechanism, species_info):
+    """Write ckcvbl."""
+    n_species = species_info.n_species
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("Returns the mean specific heat at CV (Eq. 35)"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCVBL"
+        + cc.sym
+        + "(const amrex::Real T, const amrex::Real x[], amrex::Real& cvbl)",
+    )
+    cw.writer(fstream, "{")
+
+    cw.writer(fstream, "amrex::Real result = 0; ")
+
+    cw.writer(
+        fstream,
+        f"amrex::Real cvor[{n_species}]; " + cw.comment(" temporary storage"),
+    )
+
+    # call routine
+    cw.writer(fstream, "cv_R(cvor, T);")
+
+    # dot product
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("perform dot product"))
+    cw.writer(fstream, f"for (int id = 0; id < {n_species}; ++id) {{")
+
+    cw.writer(fstream, "result += x[id]*cvor[id];")
+
+    cw.writer(fstream, "}")
+
+    cw.writer(fstream)
+    cw.writer(
+        fstream,
+        "cvbl = result *"
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e};",
+    )
+    cw.writer(fstream, "}")
+
+
+def ckcvbs(fstream, mechanism, species_info):
+    """Write ckcvbs."""
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("Returns the mean specific heat at CV (Eq. 36)"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCVBS"
+        + cc.sym
+        + "(const amrex::Real T, const amrex::Real y[],  amrex::Real& cvbs)",
+    )
+    cw.writer(fstream, "{")
+
+    cw.writer(fstream, "amrex::Real result = 0.0; ")
+
+    models = cth.analyze_thermodynamics(mechanism, species_info.nonqssa_species_list)
+    cw.writer(fstream, cw.comment("compute Cv/R at the given temperature"))
+    cth.generate_thermo_routine(
+        fstream,
+        species_info,
+        "cv_R",
+        models,
+        0,
+        None,
+        True,
+    )
+
+    cw.writer(fstream)
+    cw.writer(
+        fstream,
+        "cvbs = result *"
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e};",
+    )
+    cw.writer(fstream, "}")
+
+
+def ckubms(fstream, mechanism, species_info):
+    """Write ckubms."""
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("get mean internal energy in mass units"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKUBMS"
+        + cc.sym
+        + "(const amrex::Real T, const amrex::Real y[], amrex::Real& ubms)",
+    )
+    cw.writer(fstream, "{")
+
+    cw.writer(fstream, "amrex::Real result = 0.0;")
+
+    models = cth.analyze_thermodynamics(mechanism, species_info.nonqssa_species_list)
+    cth.generate_thermo_routine(
+        fstream,
+        species_info,
+        "speciesInternalEnergy",
+        models,
+        0,
+        None,
+        True,
+    )
+    cw.writer(fstream)
+
+    cw.writer(
+        fstream,
+        "const amrex::Real RT ="
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*T; "
+        + cw.comment("R*T"),
+    )
+
+    cw.writer(fstream)
+    cw.writer(fstream, "ubms = result * RT;")
+    cw.writer(fstream, "}")
+
+def ckubml(fstream, mechanism, species_info):
+    """Write ckubml."""
+    n_species = species_info.n_species
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("get mean internal energy in molar units"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKUBML"
+        + cc.sym
+        + "(const amrex::Real T, const amrex::Real x[], amrex::Real& ubml)",
+    )
+    cw.writer(fstream, "{")
+
+    cw.writer(fstream, "amrex::Real result = 0; ")
+
+    cw.writer(
+        fstream,
+        f"amrex::Real uml[{n_species}]; " + cw.comment(" temporary energy array"),
+    )
+    cw.writer(
+        fstream,
+        "amrex::Real RT ="
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*T; "
+        + cw.comment("R*T"),
+    )
+
+    # call routine
+    cw.writer(fstream, "speciesInternalEnergy(uml, T);")
+
+    # dot product
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("perform dot product"))
+    cw.writer(fstream, f"for (int id = 0; id < {n_species}; ++id) {{")
+    cw.writer(fstream, "result += x[id]*uml[id];")
+    cw.writer(fstream, "}")
+    cw.writer(fstream)
+    cw.writer(fstream, "ubml = result * RT;")
+    cw.writer(fstream, "}")
+
+
+def ckuml(fstream, mechanism, species_info):
+    """Write ckuml."""
+    n_species = species_info.n_species
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("get internal energy as a function "))
+    cw.writer(fstream, cw.comment("of T for all species (molar units)"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKUML"
+        + cc.sym
+        + "(const amrex::Real T, amrex::Real uml[])",
+    )
+    cw.writer(fstream, "{")
+
+    # get temperature cache
+    cw.writer(
+        fstream, "amrex::Real tT = T; " + cw.comment("temporary temperature")
+    )
+    cw.writer(
+        fstream,
+        "const amrex::Real tc[5] = { 0, tT, tT*tT, tT*tT*tT, tT*tT*tT*tT }; "
+        + cw.comment("temperature cache"),
+    )
+    cw.writer(
+        fstream,
+        "amrex::Real RT ="
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*tT; "
+        + cw.comment("R*T"),
+    )
+
+    # call routine
+    cw.writer(fstream, "speciesInternalEnergy(uml, tc);")
+
+    # convert e/RT to e with molar units
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("convert to chemkin units"))
+    cw.writer(fstream, f"for (int id = 0; id < {n_species}; ++id) {{")
+    cw.writer(fstream, "uml[id] *= RT;")
+    cw.writer(fstream, "}")
+    cw.writer(fstream, "}")
+
+
+def ckums(fstream, mechanism, species_info):
+    """Write ckums."""
+    n_species = species_info.n_species
+    cw.writer(fstream)
+    cw.writer(fstream, cw.comment("Returns internal energy in mass units (Eq 30.)"))
+    cw.writer(
+        fstream,
+        "AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKUMS"
+        + cc.sym
+        + "(const amrex::Real T, amrex::Real ums[])",
+    )
+    cw.writer(fstream, "{")
+
+    cw.writer(
+        fstream,
+        "amrex::Real RT ="
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*T; "
+        + cw.comment("R*T"),
+    )
+
+    # call routine
+    cw.writer(fstream)
+    cw.writer(fstream, "speciesInternalEnergy(ums, T);")
+    cw.writer(fstream)
+
+    cw.writer(fstream, f"for (int i = 0; i < {n_species}; i++)")
+    cw.writer(fstream, "{")
+    cw.writer(fstream, "ums[i] *= RT*imw(i);")
+    cw.writer(fstream, "}")
+    cw.writer(fstream, "}")
+# Taaresh added end

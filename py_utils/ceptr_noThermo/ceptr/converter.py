@@ -257,6 +257,10 @@ class Converter:
             cth.thermo(hdr, self.mechanism, self.species_info, self.syms)
             # mean quantities -- do not take QSS into account, sumX and Y = 1 without them
             cck.ckwt(hdr, self.mechanism, self.species_info)
+            # Taaresh added start
+            cck.ckcvbl(hdr, self.mechanism, self.species_info)
+            cck.ckuml(hdr, self.mechanism, self.species_info)
+            # Taaresh added end
 
             self.species_info.create_dicts()
             if self.species_info.n_qssa_species > 0:

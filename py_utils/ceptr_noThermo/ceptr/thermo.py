@@ -14,9 +14,16 @@ def thermo(fstream, mechanism, species_info, syms=None):
     models = analyze_thermodynamics(mechanism, species_info.nonqssa_species_list)
     if species_info.n_qssa_species > 0:
         qss_models = analyze_thermodynamics(mechanism, species_info.qssa_species_list)
+    # Taaresh added start
+    cv(fstream, species_info, models)
+    cp(fstream, species_info, models)
+    # Taaresh added end
     gibbs(fstream, species_info, models, 0, syms)
     if species_info.n_qssa_species > 0:
         gibbs(fstream, species_info, qss_models, 1, syms)
+    # Taaresh added start
+    species_internal_energy(fstream, species_info, models)
+    # Taaresh added end
 
 def model_type(model):
     """Return string for the model type."""
