@@ -235,6 +235,9 @@ public:
     amrex::Real voltage_freq=1.0; 
     amrex::Real voltage_dur=0.0; 
     amrex::Real voltage_center=0.0; 
+    amrex::Real voltage_center1=0.0;
+    amrex::Real voltage_center2=0.0;
+    amrex::Real initial_voltage=0.0;
 
     int cs_technique=0;
     int cs_ncharges=0;

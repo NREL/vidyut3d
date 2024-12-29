@@ -369,6 +369,12 @@ void Vidyut::ReadParameters()
             pp.get("voltage_dur", voltage_dur);
             pp.get("voltage_center", voltage_center);
         } 
+        else if (voltage_profile == 3) {
+            pp.get("voltage_dur", voltage_dur);
+            pp.get("voltage_center1", voltage_center1);
+            pp.get("voltage_center2", voltage_center2);
+            pp.get("initial_voltage", initial_voltage);
+        }
 
         pp.query("monitor_file_int", monitor_file_int);
         pp.query("num_timestep_correctors",num_timestep_correctors);

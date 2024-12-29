@@ -55,6 +55,9 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real vfreq = voltage_freq;
     amrex::Real vdur = voltage_dur;
     amrex::Real vcen = voltage_center;
+    amrex::Real vcen1 = voltage_center1;
+    amrex::Real vcen2 = voltage_center2;
+    amrex::Real init_v = initial_voltage;
 
 #ifdef AMREX_USE_HYPRE
     if(use_hypre)
@@ -268,7 +271,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = -1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
+                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen, vcen1, vcen2, init_v);
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, -1, 
                                                          phi_arr, bc_arr, robin_a_arr, 
@@ -290,7 +293,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryHi(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = 1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
+                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen, vcen1, vcen2, init_v);
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, +1, 
                                                          phi_arr, bc_arr, robin_a_arr, 

@@ -73,19 +73,35 @@ amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
 
 AMREX_GPU_HOST_DEVICE 
 AMREX_FORCE_INLINE
-amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, Real v1, Real v2, Real vfreq, Real vdur, Real vcen)
+amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, Real v1, Real v2, Real vfreq, Real vdur, Real vcen, Real vcen1, Real vcen2, Real init_v)
 {
     Real voltage;
     Real voltage_amp = (domain_end == -1) ? v1:v2;
     if(vprof == 1) {  // Sinusoidal pulse shape
         voltage = sin(2.0*PI*vfreq*current_time)*voltage_amp;
-    } else if (vprof == 2) {    // Single triangular pulse
+    } 
+    else if (vprof == 2) {    // Single triangular pulse
         if(current_time <= vcen) {
             voltage = (vcen - current_time < vdur/2.0) ? (1.0 - (vcen - current_time)/(vdur/2.0))*voltage_amp:0.0;
         } else {
             voltage = (current_time - vcen < vdur/2.0) ? (1.0 - (current_time - vcen)/(vdur/2.0))*voltage_amp:0.0;
         }
-    } else {
+    }
+    else if (vprof == 3) {     // Trapezoidal pulse (with optional inital bias)
+        if(current_time < vcen1) {
+            voltage = ((voltage_amp - init_v)/vcen1)*current_time + init_v;
+        }
+        else if(current_time >= vcen1 && current_time <= vcen2){
+            voltage = voltage_amp;
+        }
+        else if(current_time > vcen2 && current_time <= vdur){
+            voltage = voltage_amp*(1 - (current_time - vcen2)/(vdur - vcen2));
+        }
+        else {
+            voltage = 0.0;
+        }
+    }
+    else {
         voltage = voltage_amp;
     }
 
