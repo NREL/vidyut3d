@@ -118,6 +118,15 @@ public:
                             MultiFab& dsdt,
                             Real time, Real dt,int floor_jh);
 
+    void compute_gastemp_source(int lev, 
+                            MultiFab& Sborder, 
+                            MultiFab& rxnsrc, 
+                            Array<MultiFab,AMREX_SPACEDIM>& efield,
+                            Array<MultiFab,AMREX_SPACEDIM>& gradne, 
+                            MultiFab& dsdt,
+                            Real time, Real dt,int floor_jh);
+
+
     // compute dt from CFL considerations
     void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
             amrex::Real& dt_diel_relax);
@@ -166,7 +175,12 @@ public:
     
     amrex::Vector<int> eenrg_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> eenrg_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
+    // Taaresh added start
+    amrex::Vector<int> gastemp_bc_lo{ROBINBC, ROBINBC, ROBINBC};
+    amrex::Vector<int> gastemp_bc_hi{ROBINBC, ROBINBC, ROBINBC};
+    // Taaresh added end
+
     amrex::Vector<int> ion_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> ion_bc_hi{ROBINBC, ROBINBC, ROBINBC};
     
@@ -217,6 +231,7 @@ public:
 
     // Include physics
     int elecenergy_solve=0;
+    int gastemp_solve=0;
     int do_reactions=1;
     int do_transport=1;
     int do_spacechrg=1;

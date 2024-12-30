@@ -31,17 +31,18 @@ Vidyut::Vidyut()
 
     plasma_param_names.resize(NUM_PLASMAVARS);
     plasma_param_names[0]="Electron_energy";
-    plasma_param_names[1]="Electron_Temp";
-    plasma_param_names[2]="Potential";
-    plasma_param_names[3]="Efieldx";
-    plasma_param_names[4]="Efieldy";
-    plasma_param_names[5]="Efieldz";
-    plasma_param_names[6]="Electron_Jheat";
-    plasma_param_names[7]="Electron_inelasticHeat";
-    plasma_param_names[8]="Electron_elasticHeat";
-    plasma_param_names[9]="ReducedEF";
-    plasma_param_names[10]="SurfaceCharge";
-    plasma_param_names[11]="PhotoIon_Src";
+    plasma_param_names[1]="Gas_Temp";
+    plasma_param_names[2]="Electron_Temp";
+    plasma_param_names[3]="Potential";
+    plasma_param_names[4]="Efieldx";
+    plasma_param_names[5]="Efieldy";
+    plasma_param_names[6]="Efieldz";
+    plasma_param_names[7]="Electron_Jheat";
+    plasma_param_names[8]="Electron_inelasticHeat";
+    plasma_param_names[9]="Electron_elasticHeat";
+    plasma_param_names[10]="ReducedEF";
+    plasma_param_names[11]="SurfaceCharge";
+    plasma_param_names[12]="PhotoIon_Src";
     
 
     allvarnames.resize(NVAR);
@@ -84,7 +85,12 @@ Vidyut::Vidyut()
     
     pp.queryarr("eenrg_bc_lo", eenrg_bc_lo, 0, AMREX_SPACEDIM);
     pp.queryarr("eenrg_bc_hi", eenrg_bc_hi, 0, AMREX_SPACEDIM);
-    
+
+    // Taaresh added start
+    pp.queryarr("gastemp_bc_lo", gastemp_bc_lo, 0, AMREX_SPACEDIM);
+    pp.queryarr("gastemp_bc_hi", gastemp_bc_hi, 0, AMREX_SPACEDIM);
+    // Taaresh added end
+
     pp.queryarr("ion_bc_lo", ion_bc_lo, 0, AMREX_SPACEDIM);
     pp.queryarr("ion_bc_hi", ion_bc_hi, 0, AMREX_SPACEDIM);
     
@@ -125,15 +131,17 @@ Vidyut::Vidyut()
     if(geom[0].IsRZ()){
         if(AMREX_SPACEDIM != 2) amrex::Abort("AMREX_SPACEDIM should be 2 for axisymmetric coordinates");
         // Axisymmetric implementation assumes x-low boundary is the axis of symmatry
+        // Taaresh modified start
         if(pot_bc_lo[0] != HNEUBC || eden_bc_lo[0] != HNEUBC || ion_bc_lo[0] != HNEUBC || neutral_bc_lo[0] != HNEUBC 
-           || eenrg_bc_lo[0] != HNEUBC || photoion_bc_lo[0] != HNEUBC)
+           || eenrg_bc_lo[0] != HNEUBC || gastemp_bc_lo[0] != HNEUBC || photoion_bc_lo[0] != HNEUBC)
         {
             if(pot_bc_lo[0] != AXISBC || eden_bc_lo[0] != AXISBC || ion_bc_lo[0] != AXISBC 
-               || neutral_bc_lo[0] != AXISBC || eenrg_bc_lo[0] != AXISBC || photoion_bc_lo[0] != AXISBC)
+               || neutral_bc_lo[0] != AXISBC || eenrg_bc_lo[0] != AXISBC || gastemp_bc_lo[0] != AXISBC || photoion_bc_lo[0] != AXISBC)
             {
                 amrex::Abort("All x_lo boundaries must be Homogenous Neumann (equal to 2) or axis (equal to 5)");
             }
         }
+        // Taaresh modified end
     }
 
 }
@@ -323,6 +331,9 @@ void Vidyut::ReadParameters()
         pp.query("min_electron_density",min_electron_density);
         pp.query("min_electron_temp",min_electron_temp);
         pp.query("elecenergy_solve",elecenergy_solve);
+        // Taaresh added start
+        pp.query("gastemp_solve",gastemp_solve);
+        // Taaresh added end
         pp.query("hyp_order",hyp_order);
         pp.query("do_reactions",do_reactions);
         pp.query("do_transport",do_transport);
@@ -333,6 +344,7 @@ void Vidyut::ReadParameters()
         pp.query("do_bg_reactions",do_bg_reactions);
         pp.query("do_photoionization",do_photoionization);
         pp.query("photoion_ID",photoion_ID);
+
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);

@@ -156,12 +156,12 @@ void Vidyut::compute_gastemp_source(int lev,
                }
             }
             
-            //inelastic term already added through reaction source
-            dsdt_arr(i, j, k) += (elec_jheat);
-            // TODO: Adjust reactive source calculations to split into elastic/inelastic
-            phi_arr(i,j,k,EJH_ID)=elec_jheat;
-            phi_arr(i,j,k,EIH_ID)=rxn_arr(i,j,k,EEN_ID); //EEN_ID is same as NUM_SPECIES+1
-            // phi_arr(i,j,k,EEH_ID)=elec_elastic_coll_term;
+            // Taaresh modified start
+            dsdt_arr(i, j, k) += 0.3*(elec_jheat/(1.176*718.0)); //30% for now
+            // TO DO - Couple this with Chemistry
+            // For now - rho = 1.176 and Cv = 718.0
+            // Taaresh modified end
+
         });
     }
 }

@@ -151,7 +151,9 @@ void Vidyut::Evolve()
             expl_src[lev].define(grids[lev], dmap[lev], 1, 0);
             expl_src[lev].setVal(0.0);
 
-            rxn_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+1, 0);
+            // Taaresh modified start
+            rxn_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+2, 0);
+            // Taaresh modified end
             rxn_src[lev].setVal(0.0);
             
             photoion_src[lev].define(grids[lev], dmap[lev], 1, num_grow);
@@ -345,13 +347,33 @@ void Vidyut::Evolve()
                             });
                         }
                     }
-                }
+                }                
 
                 if(track_surf_charge)
                 {
                    update_surf_charge(Sborder,cur_time,dt_common);
                 }
             }
+
+            if(gastemp_solve)
+            {
+                update_explsrc_at_all_levels(GASTEMP_ID, Sborder, flux, rxn_src, expl_src, 
+                                             gastemp_bc_lo,gastemp_bc_hi,
+                                             cur_time);
+                
+                for (int lev = 0; lev <= finest_level; lev++)
+                {
+                    compute_gastemp_source(lev, Sborder[lev],
+                                              rxn_src[lev], 
+                                              efield_fc[lev],
+                                              gradne_fc[lev],
+                                              expl_src[lev], cur_time, dt_common,floor_jh);
+                }
+
+                
+                implicit_solve_scalar(cur_time,dt_common,GASTEMP_ID, Sborder,Sborder_old, 
+                                      expl_src,gastemp_bc_lo, gastemp_bc_hi, grad_fc);            
+                }
 
 
             if(niter<num_timestep_correctors-1)

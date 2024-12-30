@@ -155,7 +155,9 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                 // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
                 for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
                 rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
-
+                // Taaresh added start
+                rxn_arr(i,j,k,NUM_SPECIES+1) = 0.0; // Gas temp src here
+                // Taaresh added end
                 // Add on user-defined reactive sources
                 user_sources::add_user_react_sources
                 (i, j, k, sborder_arr, rxn_arr,
@@ -302,6 +304,9 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
     int captured_spec_id=spec_id;
     int electron_flag=(spec_id==E_IDX)?1:0;
     int electron_energy_flag=(spec_id==EEN_ID)?1:0;
+    // Taaresh added start
+    int gastemp_flag=(spec_id==GASTEMP_ID)?1:0;
+    // Taaresh added end
 
     //==================================================
     // amrex solves
