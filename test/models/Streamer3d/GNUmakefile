@@ -16,6 +16,9 @@ USE_MPI    = TRUE
 USE_OMP    = FALSE 
 USE_CUDA   = FALSE
 
+#USE_HYPRE  = TRUE
+#HYPRE_DIR=/home/hsitaram/codes/hypre_cpu/hypre/src/hypre
+
 Bpack   := ./Make.package 
 Blocs   := . 
 
