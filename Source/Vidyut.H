@@ -106,6 +106,10 @@ public:
                          Vector<int>& bc_lo, Vector<int>& bc_hi,
                          Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc);
 
+    void solve_photoionization(Real current_time, Vector<MultiFab>& Sborder, 
+                         Vector<int>& bc_lo, Vector<int>& bc_hi,
+                         Vector<MultiFab>& photoion_src, int sph_id);
+
     void compute_elecenergy_source(int lev, 
                             MultiFab& Sborder, 
                             MultiFab& rxnsrc, 
@@ -168,7 +172,10 @@ public:
     
     amrex::Vector<int> neutral_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> neutral_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
+    amrex::Vector<int> photoion_bc_lo{ROBINBC, ROBINBC, ROBINBC};
+    amrex::Vector<int> photoion_bc_hi{ROBINBC, ROBINBC, ROBINBC};
+
     // advective cfl number - dt = cfl*dx/umax
     amrex::Real advective_cfl = 0.7;
     amrex::Real diffusive_cfl = 1.0;
@@ -216,7 +223,10 @@ public:
     int user_defined_potential = 0;
     int user_defined_species = 0;
     int user_defined_vel = 0;
+    int user_defined_photoionization = 0;
     int do_bg_reactions=0;
+    int do_photoionization=0;
+    int photoion_ID=-1;
 
     // Voltage options
     int voltage_profile=0;
