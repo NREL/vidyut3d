@@ -216,8 +216,8 @@ void Vidyut::WriteMonitorFile(amrex::Real time){
         std::string intString = std::to_string(lev);
         std::string monitorFileName = (baseName + intString + datString);
         if (ParallelDescriptor::IOProcessor()){
-            //if (!std::filesystem::exists(monitorFileName.c_str())){
-            {
+            if (!std::filesystem::exists(monitorFileName.c_str())){
+            // {
                 std::ofstream MonitorFile;
                 MonitorFile.open(monitorFileName.c_str(), std::ios::out);
                 MonitorFile << "# (1)time\t";

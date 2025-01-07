@@ -69,69 +69,69 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
 void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                                 Real current_time, Real dt)
 {
-    amrex::Real gastemp=gas_temperature;
-    amrex::Real tstep=dt;
-    ProbParm const* localprobparm = d_prob_parm;
-    for (int ilev = 0; ilev <= finest_level; ilev++)
-    {
-        // set boundary conditions
-        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            const auto dx = geom[ilev].CellSizeArray();
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const Box& domain = geom[ilev].Domain();
-
-            Array4<Real> sb_arr = Sborder[ilev].array(mfi);
-            Array4<Real> phi_arr = phi_new[ilev].array(mfi);
-            Real time = current_time; // for GPU capture
-
-            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-            {
-                //note: bdryLo/bdryHi grabs the face indices from bx that are the boundary
-                //since they are face indices, the bdry normal index is 0/n+1, n is number of cells
-                //so the ghost cell index at left side is i-1 while it is i on the right
-                if (bx.smallEnd(idim) == domain.smallEnd(idim))
-                {
-                    int sign=-1;
-                    amrex::ParallelFor(amrex::bdryLo(bx, idim), 
-                                       [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-
-                                           int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
-                                                                                        prob_lo, prob_hi, dx, 
-                                                                                        time,*localprobparm); 
-                                           if(dielectricflag)
-                                           {
-                                               IntVect icell{AMREX_D_DECL(i,j,k)};
-                                               int cell_adjust = (sign==1)?-1:0;
-                                               icell[idim]+=cell_adjust;
-                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,
-                                                                                    dx,gastemp,sb_arr);
-                                               phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
-                                           } 
-                                       });
-                }
-                if (bx.bigEnd(idim) == domain.bigEnd(idim))
-                {
-                    int sign=1;
-                    amrex::ParallelFor(amrex::bdryHi(bx, idim), 
-                                       [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-
-                                           int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
-                                                                                        prob_lo, prob_hi, dx, 
-                                                                                        time,*localprobparm); 
-                                           if(dielectricflag)
-                                           {
-                                               IntVect icell{AMREX_D_DECL(i,j,k)};
-                                               int cell_adjust = (sign==1)?-1:0;
-                                               icell[idim]+=cell_adjust;
-                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,dx,gastemp,sb_arr);
-                                               phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
-                                           } 
-                                       });
-                }
-            }
-        }
-    }
+//     amrex::Real gastemp=gas_temperature;
+//     amrex::Real tstep=dt;
+//     ProbParm const* localprobparm = d_prob_parm;
+//     for (int ilev = 0; ilev <= finest_level; ilev++)
+//     {
+//         // set boundary conditions
+//         for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+//         {
+//             const Box& bx = mfi.tilebox();
+//             const auto dx = geom[ilev].CellSizeArray();
+//             auto prob_lo = geom[ilev].ProbLoArray();
+//             auto prob_hi = geom[ilev].ProbHiArray();
+//             const Box& domain = geom[ilev].Domain();
+// 
+//             Array4<Real> sb_arr = Sborder[ilev].array(mfi);
+//             Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+//             Real time = current_time; // for GPU capture
+// 
+//             for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+//             {
+//                 //note: bdryLo/bdryHi grabs the face indices from bx that are the boundary
+//                 //since they are face indices, the bdry normal index is 0/n+1, n is number of cells
+//                 //so the ghost cell index at left side is i-1 while it is i on the right
+//                 if (bx.smallEnd(idim) == domain.smallEnd(idim))
+//                 {
+//                     int sign=-1;
+//                     amrex::ParallelFor(amrex::bdryLo(bx, idim), 
+//                                        [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+// 
+//                                            int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
+//                                                                                         prob_lo, prob_hi, dx, 
+//                                                                                         time,*localprobparm); 
+//                                            if(dielectricflag)
+//                                            {
+//                                                IntVect icell{AMREX_D_DECL(i,j,k)};
+//                                                int cell_adjust = (sign==1)?-1:0;
+//                                                icell[idim]+=cell_adjust;
+//                                                amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,
+//                                                                                     dx,gastemp,sb_arr);
+//                                                phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
+//                                            } 
+//                                        });
+//                 }
+//                 if (bx.bigEnd(idim) == domain.bigEnd(idim))
+//                 {
+//                     int sign=1;
+//                     amrex::ParallelFor(amrex::bdryHi(bx, idim), 
+//                                        [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+// 
+//                                            int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
+//                                                                                         prob_lo, prob_hi, dx, 
+//                                                                                         time,*localprobparm); 
+//                                            if(dielectricflag)
+//                                            {
+//                                                IntVect icell{AMREX_D_DECL(i,j,k)};
+//                                                int cell_adjust = (sign==1)?-1:0;
+//                                                icell[idim]+=cell_adjust;
+//                                                amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,dx,gastemp,sb_arr);
+//                                                phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
+//                                            } 
+//                                        });
+//                 }
+//             }
+//         }
+//     }
 }
