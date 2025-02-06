@@ -163,9 +163,10 @@ void Vidyut::Evolve()
                
         for(int niter=0;niter<num_timestep_correctors;niter++)
         {
-            //reset all
+            //for second order accuracy in mid-point method
             amrex::Real time_offset=(niter>0)?0.5*dt_common:0.0;
            
+            //reset all
             for(int lev=0;lev<=finest_level;lev++)
             {
                 Sborder[lev].setVal(0.0);
