@@ -3,3 +3,7 @@ CEXE_sources += GridWork.cpp TimeStep.cpp PotentialSolve.cpp PhotoIonizationSolv
 CEXE_sources += ElecEnergySource.cpp PlasmaChem.cpp SurfCharge.cpp
 CEXE_headers += Vidyut.H Tagging.H BCfill.H Constants.H UnivConstants.H VarDefines.H 
 CEXE_headers += compute_explicit_flux.H PlasmaChem.H HelperFuncs.H
+ifeq ($(USE_CVODE),TRUE)
+  CEXE_sources += ReactorBase.cpp ReactorUtils.cpp ReactorCvode.cpp ReactorCvodeUtils.cpp
+  CEXE_headers += ReactorBase.H Factory.H ReactorUtils.H ReactorTypes.H ReactorCvode.H ReactorCvodeUtils.H
+endif

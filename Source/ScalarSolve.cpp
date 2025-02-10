@@ -13,6 +13,9 @@
 #include <UserSources.H>
 #include <compute_explicit_flux.H>
 #include <AMReX_MLABecLaplacian.H>
+#ifdef USE_CVODE
+#include <ReactorBase.H>
+#endif
 
 void Vidyut::compute_dsdt(int lev, int specid, 
                             Array<MultiFab,AMREX_SPACEDIM>& flux, 
