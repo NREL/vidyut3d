@@ -403,6 +403,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
 
 void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
 {
+    BL_PROFILE("Vidyut::update_cc_efields()");
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         const auto dx = geom[ilev].CellSizeArray();
@@ -448,6 +449,7 @@ void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
 }
 void Vidyut::update_cs_technique_potential()
 {
+    BL_PROFILE("Vidyut::cs_technique_potential()");
     int findlev_local=-1;
     int findlev_global=-1;
     int found=0; 
@@ -582,6 +584,7 @@ void Vidyut::update_cs_technique_potential()
 
 void Vidyut::potential_gradlimiter(Vector<MultiFab>& Sborder)
 {
+    BL_PROFILE("Vidyut::potential_gradlimiter()");
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         auto prob_lo = geom[ilev].ProbLoArray();

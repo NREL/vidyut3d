@@ -21,6 +21,9 @@ void Vidyut::compute_elecenergy_source(int lev,
                             MultiFab& dsdt,
                             Real time, Real dt, int floor_jh)
 {
+
+    BL_PROFILE("vidyut::compute_elecenergy_source()");
+
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
     auto prob_hi = geom[lev].ProbHiArray();
