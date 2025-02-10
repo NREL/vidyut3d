@@ -265,6 +265,7 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
     const auto dx = geom[lev].CellSizeArray();
+    auto prob_lo = geom[lev].ProbLoArray();
 
     for (MFIter mfi(dsdt, TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
@@ -275,8 +276,9 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
 
         // Evaluate cell-centered axisymmetric source terms (Gamma_k / r)
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-          // calculate r
-          amrex::Real rval = amrex::Math::abs((i+0.5) * dx[0]);
+          // calculate r which is always x
+          // ideally x will be positive for axisymmetric cases
+          amrex::Real rval = amrex::Math::abs(prob_lo[0]+(i+0.5)*dx[0]);
 
           // Calculate the advective source term component
           amrex::Real etemp = s_arr(i,j,k,ETEMP_ID);
