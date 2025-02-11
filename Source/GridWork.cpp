@@ -16,6 +16,7 @@
 // overrides the pure virtual function in AmrCore
 void Vidyut::MakeNewLevelFromCoarse(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
+    BL_PROFILE("vidyut::MakeNewLevelFromCoarse()");
     const int ncomp = phi_new[lev - 1].nComp();
     const int nghost = phi_new[lev - 1].nGrow();
 
@@ -33,6 +34,7 @@ void Vidyut::MakeNewLevelFromCoarse(int lev, Real time, const BoxArray& ba, cons
 // overrides the pure virtual function in AmrCore
 void Vidyut::RemakeLevel(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
+    BL_PROFILE("vidyut::RemakeLevel()");
     const int ncomp = phi_new[lev].nComp();
     const int nghost = phi_new[lev].nGrow();
 
@@ -52,6 +54,7 @@ void Vidyut::RemakeLevel(int lev, Real time, const BoxArray& ba, const Distribut
 // overrides the pure virtual function in AmrCore
 void Vidyut::ClearLevel(int lev)
 {
+    BL_PROFILE("vidyut::ClearLevel()");
     phi_new[lev].clear();
     phi_old[lev].clear();
 }
@@ -61,6 +64,7 @@ void Vidyut::ClearLevel(int lev)
 // overrides the pure virtual function in AmrCore
 void Vidyut::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
+    BL_PROFILE("vidyut::MakeNewLevelFromScratch()");
     const int nghost = 0;
     int ncomp = NVAR;
 
@@ -93,6 +97,7 @@ void Vidyut::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba, con
 // set covered coarse cells to be the average of overlying fine cells
 void Vidyut::AverageDown()
 {
+    BL_PROFILE("vidyut::AverageDown()");
     for (int lev = finest_level - 1; lev >= 0; --lev)
     {
         amrex::average_down(phi_new[lev + 1], phi_new[lev], geom[lev + 1], 
@@ -111,6 +116,7 @@ void Vidyut::AverageDownTo(int crse_lev)
 // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
 void Vidyut::FillPatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 {
+    BL_PROFILE("vidyut::FillPatch()");
     if (lev == 0)
     {
         Vector<MultiFab*> smf;
@@ -143,6 +149,7 @@ void Vidyut::FillPatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 // this comes into play when a new level of refinement appears
 void Vidyut::FillCoarsePatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 {
+    BL_PROFILE("vidyut::FillCoarsePatch()");
     BL_ASSERT(lev > 0);
 
     Vector<MultiFab*> cmf;

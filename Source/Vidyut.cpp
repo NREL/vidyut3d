@@ -148,6 +148,7 @@ Vidyut::~Vidyut()
 // initializes multilevel data
 void Vidyut::InitData()
 {
+    BL_PROFILE("Vidyut::InitData()");
     ProbParm* localprobparm = d_prob_parm;
 
     if (restart_chkfile == "")
@@ -184,6 +185,7 @@ void Vidyut::InitData()
 // overrides the pure virtual function in AmrCore
 void Vidyut::ErrorEst(int lev, TagBoxArray& tags, Real time, int ngrow)
 {
+    BL_PROFILE("Vidyut::ErrorEst()");
     static bool first = true;
 
     // only do this during the first call to ErrorEst
@@ -271,6 +273,7 @@ void Vidyut::ErrorEst(int lev, TagBoxArray& tags, Real time, int ngrow)
 // read in some parameters from inputs file
 void Vidyut::ReadParameters()
 {
+    BL_PROFILE("Vidyut::ReadParameters()");
     {
         ParmParse pp; // Traditionally, max_step and stop_time do not have prefix.
         pp.query("max_step", max_step);
@@ -409,6 +412,7 @@ void Vidyut::ReadParameters()
 // utility to copy in data from phi_old and/or phi_new into another multifab
 void Vidyut::GetData(int lev, Real time, Vector<MultiFab*>& data, Vector<Real>& datatime)
 {
+    BL_PROFILE("Vidyut::GetData()");
     data.clear();
     datatime.clear();
 

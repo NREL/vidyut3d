@@ -13,6 +13,7 @@
 // a wrapper for EstTimeStep
 void Vidyut::ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real dt_edrift, amrex::Real dt_ediff, amrex::Real dt_diel_relax)
 {
+    BL_PROFILE("vidyut::ComputeDt()");
     if(adaptive_dt && cur_time > dt_delay)
     {
         amrex::Real old_dt = dt[0];
@@ -40,7 +41,7 @@ void Vidyut::ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real d
 void Vidyut::find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
                               amrex::Real& dt_diel_relax)
 {
-    BL_PROFILE("Vidyut::EstTimeStep()");
+    BL_PROFILE("Vidyut::find_time_scales()");
     dt_edrift = std::numeric_limits<Real>::max();
     dt_diel_relax = std::numeric_limits<Real>::max();
     dt_ediff = std::numeric_limits<Real>::max();

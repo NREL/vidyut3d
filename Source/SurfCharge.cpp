@@ -69,6 +69,7 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
 void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                                 Real current_time, Real dt)
 {
+    BL_PROFILE("Vidyut::update_surf_charge()");
     amrex::Real gastemp=gas_temperature;
     amrex::Real tstep=dt;
     ProbParm const* localprobparm = d_prob_parm;

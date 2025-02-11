@@ -20,6 +20,7 @@ void Vidyut::compute_dsdt(int lev, int specid,
                             MultiFab& dsdt,
                             Real time, Real dt)
 {
+    BL_PROFILE("Vidyut::compute_dsdt()");
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
     auto prob_hi = geom[lev].ProbHiArray();
@@ -61,6 +62,7 @@ void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
                                             Vector<int>& bc_lo, Vector<int>& bc_hi,
                                             amrex::Real cur_time)
 {
+    BL_PROFILE("Vidyut::update_explsrc_at_all_levels()");
     for(int lev=0; lev <= finest_level; lev++)
     {
         expl_src[lev].setVal(0.0);
@@ -114,6 +116,7 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                                          Vector<MultiFab>& rxn_src, 
                                          amrex::Real cur_time)
 {
+    BL_PROFILE("Vidyut::update_rxnsrc_at_all_levels()");
     amrex::Real time = cur_time;
     ProbParm const* localprobparm = d_prob_parm;
 
@@ -172,6 +175,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
                                            Vector<int>& bc_lo, Vector<int>& bc_hi,
                                            Real current_time,int specid)
 {
+    BL_PROFILE("Vidyut::compute_scalar_transport_flux()");
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
     auto prob_hi = geom[lev].ProbHiArray();
@@ -257,6 +261,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
 void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt,
                                        Real time,int specid)
 {
+    BL_PROFILE("Vidyut::compute_axisym_correction()");
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
     const auto dx = geom[lev].CellSizeArray();
@@ -295,7 +300,8 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
                                    Vector<int>& bc_lo, Vector<int>& bc_hi,
                                    Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc)
 {
-    BL_PROFILE("Vidyut::implicit_solve_species(" + std::to_string( spec_id ) + ")");
+    // BL_PROFILE("Vidyut::implicit_solve_species(" + std::to_string( spec_id ) + ")");
+    BL_PROFILE("Vidyut::implicit_solve_scalar()");
 
 
     // FIXME: add these as inputs

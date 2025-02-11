@@ -16,6 +16,7 @@
 // advance solution to final time
 void Vidyut::Evolve()
 {
+    BL_PROFILE("Vidyut::Evolve()");
     Real cur_time = t_new[0];
     int last_plot_file_step = 0;
     Real plottime = 0.0;
