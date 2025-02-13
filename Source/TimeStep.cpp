@@ -71,6 +71,7 @@ void Vidyut::find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_edi
                
                 amrex::Real ndens = 0.0; 
                 for(int sp=0; sp<NUM_SPECIES; sp++) ndens += state_array(i,j,k,sp);
+                ndens = ndens - state_array(i,j,k,E_ID);
 
                 amrex::Real dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
                 

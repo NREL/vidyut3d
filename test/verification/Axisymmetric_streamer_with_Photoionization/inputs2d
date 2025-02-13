@@ -34,9 +34,10 @@ vidyut.user_defined_potential = 1
 vidyut.user_defined_species = 1
 vidyut.user_defined_vel = 1
 vidyut.do_photoionization = 1
-vidyut.photoion_ID = 2 # This is not needed here, coz we use local copies of Evolve.cpp and PhotoIonizationSolve.cpp for this verification case.
+vidyut.photoion_ID = 2
 vidyut.gas_pressure = 100000.0
 vidyut.gas_temperature = 300.0
+vidyut.gastemp_solve = 0
 
 # Tagging
 #vidyut.tagged_vars = Potential ReducedEF
@@ -59,6 +60,9 @@ vidyut.pot_bc_hi = 2 1 0
 
 vidyut.eden_bc_lo = 2 2 0
 vidyut.eden_bc_hi = 2 2 0 
+
+vidyut.gastemp_bc_lo = 2 2 0
+vidyut.gastemp_bc_hi = 2 2 0
 
 vidyut.eenrg_bc_lo = 2 2 0
 vidyut.eenrg_bc_hi = 2 2 0

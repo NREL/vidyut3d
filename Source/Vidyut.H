@@ -209,9 +209,11 @@ public:
     amrex::Real min_species_density=1e-20;
     amrex::Real min_electron_density=1e12;
     amrex::Real min_electron_temp=300.0;
+    amrex::Real min_gas_temp=273.15;
 
     amrex::Real gas_pressure=101325.0;
     amrex::Real gas_temperature=300.0;
+    amrex::Real gas_molar_density=40.622; // Dry air at 1 atm, 300 K in mol/m^3
 
     amrex::Vector<std::string> plasma_param_names;
     amrex::Vector<std::string> allvarnames;
@@ -232,6 +234,7 @@ public:
     // Include physics
     int elecenergy_solve=0;
     int gastemp_solve=0;
+    int gastemp_phenomenological_solve=0;
     int do_reactions=1;
     int do_transport=1;
     int do_spacechrg=1;

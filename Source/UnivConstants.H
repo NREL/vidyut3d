@@ -17,4 +17,5 @@
 #define TDUNIT 1e-21 //townsend in V m2
 #define fivebythree (5.0/3.0)
 #define twothird (2.0/3.0)
+#define Ru 8.31446261815324
 #endif

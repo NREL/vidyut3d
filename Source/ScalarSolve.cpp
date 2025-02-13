@@ -116,6 +116,7 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
 {
     amrex::Real time = cur_time;
     ProbParm const* localprobparm = d_prob_parm;
+    amrex::Real gas_molar_density = (gas_pressure) / (Ru*gas_temperature); // density assumed to remain constant (thus, use intial value of temperature)
 
     // Zero out reactive source MFs
     for(int lev=0; lev <= finest_level; lev++)
@@ -146,7 +147,17 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                 amrex::Real spec_wdot[NUM_SPECIES];
                 amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
                 amrex::Real EN = sborder_arr(i,j,k,REF_ID);
+                // Taaresh added start
+                amrex::Real captured_gastemp = sborder_arr(i,j,k,GASTEMP_ID);
+                
+                //std::cout << "TST gastemp = " << captured_gastemp << std::endl;
+                // Taaresh added end                
                 amrex::Real ener_exch = 0.0;
+                // Taaresh added start
+                amrex::Real sum_spec_int_energy_rate = 0.0;
+                amrex::Real Cv_gas = 0.0;
+                // Taaresh added end
+
                 for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
 
                 // Get molar production rates
@@ -154,9 +165,18 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
 
                 // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
                 for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
-                rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
+                rxn_arr(i,j,k,EEN_ID) = ener_exch; // This is negative of elastic and inelastic collison loss terms
                 // Taaresh added start
-                rxn_arr(i,j,k,NUM_SPECIES+1) = 0.0; // Gas temp src here
+                if(gastemp_phenomenological_solve) rxn_arr(i,j,k,GASTEMP_ID) = 0.0;
+                else
+                {
+                    calcSpeciesInternalEnergyRate(captured_gastemp, spec_wdot, &sum_spec_int_energy_rate);
+                    calcBulkGasCv(captured_gastemp, spec_C, &Cv_gas);
+                    rxn_arr(i,j,k,GASTEMP_ID) = (-1*ener_exch - sum_spec_int_energy_rate)/ (gas_molar_density*Cv_gas);
+                    //amrex::Print() << "term1 = " << -1*ener_exch << std::endl;
+                    //amrex::Print() << "term2 = " << sum_spec_int_energy_rate << std::endl;
+
+                } 
                 // Taaresh added end
                 // Add on user-defined reactive sources
                 user_sources::add_user_react_sources
@@ -218,6 +238,7 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
             Real time = current_time; // for GPU capture
 
             Array4<Real> sborder_arr = Sborder.array(mfi);
+            
 
             GpuArray<Array4<Real>, AMREX_SPACEDIM> 
             flux_arr{AMREX_D_DECL(flux[0].array(mfi), 
@@ -226,6 +247,9 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
             //amrex::Print()<<"bx:"<<bx<<"\n";
             //amrex::Print()<<"bx_x:"<<bx_x<<"\n";
             amrex::ParallelFor(bx_x, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                // Taaresh added start
+                amrex::Real captured_gastemp = sborder_arr(i,j,k,GASTEMP_ID);
+                // Taaresh added end
                 compute_flux(i, j, k, 0, captured_specid, sborder_arr, 
                              bclo, bchi, domlo, domhi, flux_arr[0], 
                              captured_gastemp,captured_gaspres,
@@ -235,6 +259,9 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
 
 #if AMREX_SPACEDIM > 1
             amrex::ParallelFor(bx_y, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                // Taaresh added start
+                amrex::Real captured_gastemp = sborder_arr(i,j,k,GASTEMP_ID);
+                // Taaresh added end                
                 compute_flux(i, j, k, 1, captured_specid, sborder_arr, 
                              bclo, bchi, domlo, domhi, flux_arr[1], 
                              captured_gastemp,captured_gaspres,
@@ -244,6 +271,9 @@ void Vidyut::compute_scalar_transport_flux(int lev, MultiFab& Sborder,
 
 #if AMREX_SPACEDIM == 3
             amrex::ParallelFor(bx_z, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                // Taaresh added start
+                amrex::Real captured_gastemp = sborder_arr(i,j,k,GASTEMP_ID);
+                // Taaresh added end
                 compute_flux(i, j, k, 2, captured_specid, sborder_arr, 
                              bclo, bchi, domlo, domhi, flux_arr[2], 
                              captured_gastemp, captured_gaspres,
@@ -277,6 +307,9 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
 
           // Calculate the advective source term component
           amrex::Real etemp = s_arr(i,j,k,ETEMP_ID);
+          // Taaresh added start
+          amrex::Real captured_gastemp = s_arr(i,j,k,GASTEMP_ID);
+          // Taaresh added end
           amrex::Real ndens = 0.0;
           amrex::Real Esum = 0.0;
           for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
@@ -499,7 +532,9 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
                     amrex::Real Esum = 0.0;
                     for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += std::pow(sb_arr(i,j,k,EFX_ID+dim),2.0);
                     amrex::Real efield_mag=std::sqrt(Esum);
-                
+                    // Taaresh added start
+                    amrex::Real captured_gastemp = sb_arr(i,j,k,GASTEMP_ID);
+                    // Taaresh added end
                     amrex::Real ndens = 0.0;
                     for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(i,j,k,sp);
                     bcoeff_arr(i,j,k)=specDiff(captured_spec_id, 
@@ -552,6 +587,10 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
                     if (bx.smallEnd(idim) == domain.smallEnd(idim))
                     {
                         amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                        // Taaresh added start
+                        amrex::Real captured_gastemp = sb_arr(i,j,k,GASTEMP_ID);
+                        // Taaresh added end
+                            
                             if(userdefspec == 1){
                                 user_transport::species_bc(i, j, k, idim, -1, 
                                                              captured_spec_id, sb_arr, bc_arr, robin_a_arr,
@@ -570,6 +609,9 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
                     if (bx.bigEnd(idim) == domain.bigEnd(idim))
                     {
                         amrex::ParallelFor(amrex::bdryHi(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                        // Taaresh added start
+                        amrex::Real captured_gastemp = sb_arr(i,j,k,GASTEMP_ID);
+                        // Taaresh added end
                             if(userdefspec == 1){
                                 user_transport::species_bc(i, j, k, idim, +1, 
                                                              captured_spec_id, sb_arr, bc_arr, robin_a_arr, 
@@ -609,7 +651,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
     mlmg.solve(GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
 
     //bound species density
-    if(bound_specden && !electron_energy_flag)
+    if(bound_specden && !electron_energy_flag && !gastemp_flag)
     { 
         for (int ilev = 0; ilev <= finest_level; ilev++)
         {
@@ -679,6 +721,29 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
             }
         }
     }
+
+// Taaresh added start
+    if(gastemp_flag)
+    {
+        for (int ilev = 0; ilev <= finest_level; ilev++)
+        {
+            amrex::Real mingastemp=min_gas_temp; 
+            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                const Box& bx = mfi.tilebox();
+                Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+                Array4<Real> sb_arr = Sborder[ilev].array(mfi);
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+
+                    if(phi_arr(i,j,k,GASTEMP_ID) < mingastemp)
+                    {
+                        phi_arr(i,j,k,GASTEMP_ID)=mingastemp;
+                    }
+                });
+            }
+        }
+    }
+    // Taaresh added end
 
     //clean-up
     specdata.clear();

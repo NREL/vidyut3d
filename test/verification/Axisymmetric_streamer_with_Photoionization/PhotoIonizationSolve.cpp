@@ -21,7 +21,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                              Vector<MultiFab>& photoionization_src, int sph_id)
 {
     BL_PROFILE("Vidyut::solve_photoionization()");
-    amrex::Print() << "Bagheri et al.'s case 3" << std::endl;
+
     // FIXME: add these as inputs
     int max_coarsening_level = linsolve_max_coarsening_level;
     int max_iter=linsolve_maxiter;
@@ -43,6 +43,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     // note also the negative sign
     //====================================================
 
+    // FIXME: had to adjust for constant coefficent,
+    // this could be due to missing terms in the 
+    // intercalation reaction or sign mistakes...
     const Real tol_rel = linsolve_reltol;
     const Real tol_abs = linsolve_abstol;
     amrex::Real captured_gastemp=gas_temperature;
@@ -58,8 +61,8 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real pq = 30.0*Torr_to_Pa; // From Bourdon et al., 2007 Plasma Sources Sci. Technol. 16 656 
     amrex::Real pO2 = 150.0*Torr_to_Pa; // assuming air - update this as per need
     amrex::Real quenching_fact = pq / (pq + captured_gaspres);
-    amrex::Real photoion_eff = 0.075;
-
+    amrex::Real photoion_eff = 0.075; 
+    
     A_j[0] = 1.986e-4 / ((cm_to_m*cm_to_m)*(Torr_to_Pa*Torr_to_Pa));
     lambda_j[0] = 0.0553 / ((cm_to_m)*(Torr_to_Pa));
 
@@ -112,7 +115,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         if (bc_lo[idim] == AXISBC)
         {
             bc_photoionizationsolve_lo[idim] = LinOpBCType::Neumann;
-        }        
+        }   
 
         //higher side bcs
         if (bc_hi[idim] == PERBC)
@@ -186,12 +189,11 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         amrex::Copy(photoionization_src[ilev], Sborder[ilev], PHOTO_ION_SRC_ID, 0, 1, 0);
 
         solution[ilev].setVal(0.0);
-        
+
         rhs[ilev].setVal(0.0);
-        // TST - Ideally want to access this at each grid point.
         acoeff[ilev].setVal(std::pow(lambda_j[sph_id]*pO2,2));
 
-        //default to homogenous Nuemann //Dirichlet
+        //default to homogenous Nuemann // Dirichlet
         robin_a[ilev].setVal(0.0);
         robin_b[ilev].setVal(1.0);
         robin_f[ilev].setVal(0.0);
@@ -219,8 +221,8 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
             Array4<Real> rhs_arr = rhs[ilev].array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                
-                amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
+
+        amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
                 // amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
                 // amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
                 amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
@@ -234,6 +236,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
                 // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
                 rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*1.0*rate_N2_ion);
+
             });
         }
 
@@ -273,8 +276,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 if (bx.smallEnd(idim) == domain.smallEnd(idim))
                 {
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                        int domend = -1;
-                        
+                        int domend = -1;                        
                         if(userdefphotoion == 1){
                             user_transport::photoionization_bc(i, j, k, idim, -1, 
                                                          phi_arr, bc_arr, robin_a_arr, 
@@ -298,6 +300,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                         int domend = 1;
 
                         if(userdefphotoion == 1){
+
                             user_transport::photoionization_bc(i, j, k, idim, +1, 
                                                          phi_arr, bc_arr, robin_a_arr, 
                                                          robin_b_arr, robin_f_arr, 
@@ -322,7 +325,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
-        // bc's are stored in the ghost cells of photoion_src
+        // bc's are stored in the ghost cells of photoionization_src
         if(mixedbc)
         {
             linsolve_ptr->setLevelBC(ilev, &photoionization_src[ilev], &(robin_a[ilev]), 
@@ -355,9 +358,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     {
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
     }
-    
+
     //clean-up
-    //photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
+    // photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
     acoeff.clear();
     solution.clear();
     rhs.clear();
@@ -366,3 +369,4 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     robin_b.clear();
     robin_f.clear();
 }
+

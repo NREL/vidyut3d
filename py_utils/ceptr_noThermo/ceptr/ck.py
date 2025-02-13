@@ -350,7 +350,7 @@ def ckcvbl(fstream, mechanism, species_info):
     cw.writer(
         fstream,
         "cvbl = result *"
-        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e};",
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole * 1e-7 / cc.ureg.erg).m:1.14e};",
     )
     cw.writer(fstream, "}")
 
@@ -483,7 +483,7 @@ def ckuml(fstream, mechanism, species_info):
     cw.writer(
         fstream,
         "amrex::Real RT ="
-        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole / cc.ureg.erg).m:1.14e}*T; "
+        f" {(cc.R * cc.ureg.kelvin * cc.ureg.mole * 1e-7 / cc.ureg.erg).m:1.14e}*T; "
         + cw.comment("R*T"),
     )
 

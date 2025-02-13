@@ -442,6 +442,7 @@ void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
                 amrex::Real ndens = 0.0;
                 amrex::Real Esum = 0.0; 
                 for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+                ndens = ndens - s_arr(i,j,k,E_ID);
                 for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
                 s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
                 phi_arr(i,j,k,REF_ID) = s_arr(i,j,k,REF_ID);

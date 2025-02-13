@@ -65,7 +65,11 @@ void Vidyut::compute_elecenergy_source(int lev,
             amrex::Real efield_x,efield_y,efield_z,efield_face,gradne_face;
             amrex::Real charge=plasmachem::get_charge(eidx)*ECHARGE;
             amrex::Real current_density;
+            
             amrex::Real elec_jheat=0.0;
+            // Taaresh added start
+            // amrex::Real captured_gastemp = sborder_arr(i,j,k,GASTEMP_ID);
+            // Taaresh added end
 
             //FIXME: This can be done more efficiently sweeping over
             //faces
@@ -124,9 +128,9 @@ void Vidyut::compute_elecenergy_source(int lev,
 
                     amrex::Real ndens = 0.0;
                     for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
+                    ndens = ndens - 0.5 * (sborder_arr(lcell,E_ID) + sborder_arr(rcell,E_ID));
 
                     mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
-
                     dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
 
                     current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
@@ -144,7 +148,7 @@ void Vidyut::compute_elecenergy_source(int lev,
             //fluid models in unstructured meshes." 
             //Journal of computational physics 228.12 (2009): 4435-4443.
 
-            elec_jheat*=0.5;
+            elec_jheat *= 0.5;
 
             //a switch to make sure joule heating is 
             //heating the electrons and not cooling them

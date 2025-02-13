@@ -43,7 +43,7 @@ Vidyut::Vidyut()
     plasma_param_names[10]="ReducedEF";
     plasma_param_names[11]="SurfaceCharge";
     plasma_param_names[12]="PhotoIon_Src";
-    
+    plasma_param_names[13]="Heavy_Num_Density";
 
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
@@ -333,6 +333,8 @@ void Vidyut::ReadParameters()
         pp.query("elecenergy_solve",elecenergy_solve);
         // Taaresh added start
         pp.query("gastemp_solve",gastemp_solve);
+        pp.query("gastemp_phenomenological_solve",gastemp_phenomenological_solve);
+        pp.query("min_gas_temp",min_gas_temp);
         // Taaresh added end
         pp.query("hyp_order",hyp_order);
         pp.query("do_reactions",do_reactions);

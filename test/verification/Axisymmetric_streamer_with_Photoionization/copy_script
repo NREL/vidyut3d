@@ -18,7 +18,7 @@ read dest_dir
   cp "$source_dir"/inputs* "$dest_dir/"
   cp "$source_dir"/clean* "$dest_dir/"
   cp "$source_dir"/slurm* "$dest_dir/"
-  cp "$source_dir"/contour_plotter.py "$dest_dir/"
+  cp "$source_dir"/*.py "$dest_dir/"
   cp "$source_dir"/copy_script* "$dest_dir/"  
    
   echo "File copied successfully to $dest_dir."

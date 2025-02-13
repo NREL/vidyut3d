@@ -102,6 +102,7 @@ void Vidyut::Evolve()
         Vector<MultiFab> phi_tmp(finest_level+1);
         Vector<MultiFab> photoion_src(finest_level+1);
         Vector<MultiFab> photoion_src_total(finest_level+1); // this is declared only to copy to phi, so that it can be used to post-process as a variable
+        Vector<MultiFab> heavy_dens(finest_level+1); 
 
         // edge centered efield
         Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
@@ -161,6 +162,9 @@ void Vidyut::Evolve()
 
             photoion_src_total[lev].define(grids[lev], dmap[lev], 1, num_grow);
             photoion_src_total[lev].setVal(0.0);
+
+            heavy_dens[lev].define(grids[lev], dmap[lev], 1, num_grow);
+            heavy_dens[lev].setVal(0.0);            
         }
                
         for(int niter=0;niter<num_timestep_correctors;niter++)
@@ -185,6 +189,7 @@ void Vidyut::Evolve()
                 rxn_src[lev].setVal(0.0);
                 photoion_src[lev].setVal(0.0);
                 photoion_src_total[lev].setVal(0.0);
+                heavy_dens[lev].setVal(0.0);
             }
 
             solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
@@ -292,6 +297,28 @@ void Vidyut::Evolve()
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
 
+            if(gastemp_solve)
+            {
+                update_explsrc_at_all_levels(GASTEMP_ID, Sborder, flux, rxn_src, expl_src, 
+                                             gastemp_bc_lo,gastemp_bc_hi,
+                                             cur_time);
+                                             
+                if (gastemp_phenomenological_solve)
+                {
+                    for (int lev = 0; lev <= finest_level; lev++)
+                    {
+                        compute_gastemp_source(lev, Sborder[lev],
+                                                rxn_src[lev], 
+                                                efield_fc[lev],
+                                                gradne_fc[lev],
+                                                expl_src[lev], cur_time, dt_common,floor_jh);
+                    }
+                }
+
+                implicit_solve_scalar(cur_time,dt_common,GASTEMP_ID, Sborder,Sborder_old, 
+                                      expl_src,gastemp_bc_lo, gastemp_bc_hi, grad_fc);            
+            }
+
             //all species except electrons solve
             for(unsigned int ind=0;ind<NUM_SPECIES;ind++)
             {
@@ -347,33 +374,35 @@ void Vidyut::Evolve()
                             });
                         }
                     }
-                }                
+                } 
+
 
                 if(track_surf_charge)
                 {
                    update_surf_charge(Sborder,cur_time,dt_common);
                 }
+
+                // if using cv_approx - Normalize all heavy species densities to ensure d(rho)/dt = 0
+                /*if (cv_approx)
+                {
+                    // rho_star = sum(ni_star*Wi)
+                    // ni_new = ni_star*(rho_init/rho_star)
+                    // P_new = sum(ni_new)*kb*gas_temp
+
+                }*/
+
             }
 
-            if(gastemp_solve)
-            {
-                update_explsrc_at_all_levels(GASTEMP_ID, Sborder, flux, rxn_src, expl_src, 
-                                             gastemp_bc_lo,gastemp_bc_hi,
-                                             cur_time);
-                
-                for (int lev = 0; lev <= finest_level; lev++)
+            // Check if the total heavy species number density also remains constant
+            for (int ilev=0; ilev <= finest_level; ilev++)
+            {   
+                phi_new[ilev].setVal(0.0, HEAVY_NUM_DENS_ID, 1);
+                for (int id = 0; id < NUM_SPECIES; id++)
                 {
-                    compute_gastemp_source(lev, Sborder[lev],
-                                              rxn_src[lev], 
-                                              efield_fc[lev],
-                                              gradne_fc[lev],
-                                              expl_src[lev], cur_time, dt_common,floor_jh);
+                    if (id == E_ID){/*pass*/} // ignore electrons
+                    else {amrex::MultiFab::Saxpy(phi_new[ilev], 1.0, phi_new[ilev], id, HEAVY_NUM_DENS_ID, 1, 0);}
                 }
-
-                
-                implicit_solve_scalar(cur_time,dt_common,GASTEMP_ID, Sborder,Sborder_old, 
-                                      expl_src,gastemp_bc_lo, gastemp_bc_hi, grad_fc);            
-                }
+            }
 
 
             if(niter<num_timestep_correctors-1)

@@ -105,6 +105,7 @@ namespace plasmachem_transport
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cell_int,sp);
+        ndens = ndens - phi(cell_int,E_ID);
 
         // Electron density and enerygy fluxes assumed to be driven by electron thermal velocity
         if(spec_id==E_ID)
@@ -249,6 +250,7 @@ namespace plasmachem_transport
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cellid,sp);
+        ndens = ndens - phi(cellid, E_ID);
 
         amrex::Real mu = specMob(specid,phi(cellid,ETEMP_ID),ndens,
                                  efieldmag,Tg);
