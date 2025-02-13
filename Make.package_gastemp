@@ -1,5 +1,0 @@
-CEXE_sources += main.cpp Vidyut.cpp Evolve_GasTemp.cpp Plot.cpp
-CEXE_sources += GridWork.cpp TimeStep_GasTemp.cpp PotentialSolve_GasTemp.cpp PhotoIonizationSolve_GasTemp.cpp ScalarSolve_GasTemp.cpp
-CEXE_sources += ElecEnergySource_GasTemp.cpp PlasmaChem.cpp SurfCharge_GasTemp.cpp GasTempSource.cpp
-CEXE_headers += Vidyut.H Tagging.H BCfill.H Constants.H UnivConstants.H VarDefines.H 
-CEXE_headers += compute_explicit_flux.H PlasmaChem.H HelperFuncs.H
