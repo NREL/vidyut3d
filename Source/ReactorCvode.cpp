@@ -124,10 +124,7 @@ ReactorCvode::initCvode(
   SUNLinearSolver& a_LS,
   void* a_cvode_mem,
   const amrex::Real& a_time,
-  const int ncells,
-  const amrex::Real Tgas_in,
-  const amrex::Real Te_in,
-  const amrex::Real EN_in)
+  const int ncells)
 {
   // Solution vector
   int neq_tot = (NUM_SPECIES + 1) * ncells;
@@ -266,13 +263,7 @@ ReactorCvode::allocUserData(
 #endif
 
   // Alloc internal udata solution/forcing containers
-  udata->Ue_init = static_cast<amrex::Real*>(
-    amrex::The_Arena()->alloc(a_ncells * sizeof(amrex::Real)));
-  udata->Tgas_init = static_cast<amrex::Real*>(
-    amrex::The_Arena()->alloc(a_ncells * sizeof(amrex::Real)));
-  udata->Te_init = static_cast<amrex::Real*>(
-    amrex::The_Arena()->alloc(a_ncells * sizeof(amrex::Real)));
-  udata->EN_init = static_cast<amrex::Real*>(
+  udata->EN_vect = static_cast<amrex::Real*>(
     amrex::The_Arena()->alloc(a_ncells * sizeof(amrex::Real)));
   udata->mask =
     static_cast<int*>(amrex::The_Arena()->alloc(a_ncells * sizeof(int)));
@@ -287,12 +278,10 @@ int
 ReactorCvode::react(
   const amrex::Box& box,
   amrex::Array4<amrex::Real> const& nspec_in,
-  amrex::Array4<amrex::Real> const& Tgas_in,
-  amrex::Array4<amrex::Real> const& Te_in,
-  amrex::Array4<amrex::Real> const& EN_in,
   amrex::Array4<amrex::Real> const& Ue_in,
-  amrex::Array4<amrex::Real> const& FC_in,
-  amrex::Array4<int> const& mask,
+  amrex::Array4<amrex::Real> const& Te_in,
+  amrex::Real Tgas_in,
+  amrex::Array4<amrex::Real> const& EN_in,
   amrex::Real& dt_react,
   amrex::Real& time,
 #ifdef AMREX_USE_GPU
@@ -346,15 +335,18 @@ ReactorCvode::react(
   amrex::Gpu::streamSynchronize();
   allocUserData(udata, ncells, A, stream);
 
+  // TODO: UPDATE LATER WHEN GAS TEMP IS ADDED IN
+  udata->Tgas_vect = Tgas_in;
+
   // Fill data
   flatten(
-    box, ncells, nspec_in, Tgas_in, Te_in, EN_in, Ue_in, yvec_d, udata->Ue_init);
+    box, ncells, nspec_in, Ue_in, EN_in, udata->EN_vect, yvec_d);
 
 #ifdef AMREX_USE_OMP
   amrex::Gpu::Device::streamSynchronize();
 #endif
 
-  initCvode(y, A, udata, NLS, LS, cvode_mem, stream, time_start, ncells, Tgas_in, Te_in, EN_in);
+  initCvode(y, A, udata, NLS, LS, cvode_mem, stream, time_start, ncells);
 
   // Setup tolerances with typical values
   utils::set_sundials_solver_tols<Ordering>(
@@ -427,7 +419,7 @@ ReactorCvode::react(
 
         amrex::Real* yvec_d = N_VGetArrayPointer(y);
         utils::box_flatten<Ordering>(
-          icell, i, j, k, ncells, nspec_in, Tgas_in, Te_in, EN_in, Ue_in, yvec_d, udata->Ue_init);
+          icell, i, j, k, ncells, nspec_in, Ue_in, EN_in, udata->EN_vect, yvec_d);
 
         // ReInit CVODE is faster
         CVodeReInit(cvode_mem, time_start, y);
@@ -455,16 +447,14 @@ ReactorCvode::react(
         const long int nfe_tot = nfe + nfeLS;
 
         utils::box_unflatten<Ordering>(
-          icell, i, j, k, ncells, nspec_in, Te_in, Ue_in,
-          FC_in, yvec_d, udata->Ue_init, nfe_tot, dt_react);
+          icell, i, j, k, ncells, nspec_in, Ue_in, Te_in,
+          yvec_d, dt_react);
 
         // cppcheck-suppress knownConditionTrueFalse
         if ((udata->verbose > 3) && (omp_thread == 0)) {
           amrex::Print() << "END : time curr is " << CvodeActual_time_final
                          << " and actual dt_react is " << actual_dt << "\n";
         }
-      } else {
-        FC_in(i, j, k, 0) = 0.0;
       }
     });
 
@@ -521,11 +511,11 @@ ReactorCvode::cF_RHS(
 
   const auto ncells = udata->ncells;
   const auto dt_save = udata->dt_save;
-  const auto reactor_type = udata->reactor_type;
-  auto* Ue_init = udata->Ue_init;
+  auto* EN_in = udata->EN_vect;
+  amrex::Real Tgas_in = udata->Tgas_vect;
   amrex::ParallelFor(ncells, [=] AMREX_GPU_DEVICE(int icell) noexcept {
     utils::fKernelSpec<Ordering>(
-      icell, ncells, dt_save, yvec_d, ydot_d, Ue_init, Tgas_in, Te_in, EN_in);
+      icell, ncells, dt_save, EN_in, Tgas_in, yvec_d, ydot_d);
   });
   amrex::Gpu::Device::streamSynchronize();
   return 0;
@@ -534,110 +524,10 @@ ReactorCvode::cF_RHS(
 void
 ReactorCvode::freeUserData(CVODEUserData* data_wk)
 {
-  amrex::The_Arena()->free(data_wk->Ue_init);
+  amrex::The_Arena()->free(data_wk->EN_vect);
   amrex::The_Arena()->free(data_wk->mask);
-
-#ifdef AMREX_USE_GPU
-
-  if (data_wk->solve_type == cvode::sparseDirect) {
-#ifdef AMREX_USE_CUDA
-    amrex::The_Pinned_Arena()->free(data_wk->csr_row_count_h);
-    amrex::The_Pinned_Arena()->free(data_wk->csr_col_index_h);
-    cusolverStatus_t cusolver_status =
-      cusolverSpDestroy(data_wk->cusolverHandle);
-    AMREX_ASSERT(cusolver_status == CUSOLVER_STATUS_SUCCESS);
-    cusparseStatus_t cusparse_status = cusparseDestroy(data_wk->cuSPHandle);
-    AMREX_ASSERT(cusparse_status == CUSPARSE_STATUS_SUCCESS);
-#endif
-  } else if (data_wk->solve_type == cvode::customDirect) {
-#ifdef AMREX_USE_CUDA
-    amrex::The_Pinned_Arena()->free(data_wk->csr_row_count_h);
-    amrex::The_Pinned_Arena()->free(data_wk->csr_col_index_h);
-    cusparseStatus_t cusparse_status = cusparseDestroy(data_wk->cuSPHandle);
-    AMREX_ASSERT(cusparse_status == CUSPARSE_STATUS_SUCCESS);
-#endif
-  }
-  // Preconditioner analytical Jacobian data
-  if (data_wk->precond_type == cvode::sparseSimpleAJac) {
-#ifdef AMREX_USE_CUDA
-    amrex::The_Pinned_Arena()->free(data_wk->csr_row_count_h);
-    amrex::The_Pinned_Arena()->free(data_wk->csr_col_index_h);
-    amrex::The_Arena()->free(data_wk->csr_row_count_d);
-    amrex::The_Arena()->free(data_wk->csr_col_index_d);
-    amrex::The_Arena()->free(data_wk->csr_val_d);
-    amrex::The_Arena()->free(data_wk->csr_jac_d);
-    cusolverStatus_t cusolver_status =
-      cusolverSpDestroy(data_wk->cusolverHandle);
-    AMREX_ASSERT(cusolver_status == CUSOLVER_STATUS_SUCCESS);
-    cusolver_status = cusolverSpDestroyCsrqrInfo(data_wk->info);
-    AMREX_ASSERT(cusolver_status == CUSOLVER_STATUS_SUCCESS);
-    cudaFree(data_wk->buffer_qr);
-#endif
-  }
-  delete data_wk;
-
-#else
   amrex::The_Arena()->free(data_wk->FCunt);
-
-  // Direct solver Jac. data
-  if (data_wk->solve_type == cvode::sparseDirect) {
-#ifdef PELE_USE_KLU
-    delete[] data_wk->colPtrs;
-    delete[] data_wk->rowVals;
-    delete[] data_wk->Jdata;
-    SUNMatDestroy(A);
-    SUNMatDestroy((data_wk->PS)[0]);
-    delete[] (data_wk->PS);
-#endif
-  } else if (data_wk->solve_type == cvode::customDirect) {
-    SUNMatDestroy(data_wk->PSc);
-  }
-
-  // Preconditionner Jac. data
-  if (data_wk->precond_type == cvode::denseSimpleAJac) {
-    for (int i = 0; i < data_wk->ncells; ++i) {
-      SUNDlsMat_destroyMat((data_wk->P)[i][i]);
-      SUNDlsMat_destroyMat((data_wk->Jbd)[i][i]);
-      SUNDlsMat_destroyArray((data_wk->pivot)[i][i]);
-    }
-    for (int i = 0; i < data_wk->ncells; ++i) {
-      delete[] (data_wk->P)[i];
-      delete[] (data_wk->Jbd)[i];
-      delete[] (data_wk->pivot)[i];
-    }
-    delete[] (data_wk->P);
-    delete[] (data_wk->Jbd);
-    delete[] (data_wk->pivot);
-  } else if (data_wk->precond_type == cvode::sparseSimpleAJac) {
-#ifdef PELE_USE_KLU
-    delete[] data_wk->colPtrs;
-    delete[] data_wk->rowVals;
-    delete[] data_wk->Jdata;
-    for (int i = 0; i < data_wk->ncells; ++i) {
-      klu_free_symbolic(&(data_wk->Symbolic[i]), &(data_wk->Common[i]));
-      klu_free_numeric(&(data_wk->Numeric[i]), &(data_wk->Common[i]));
-      delete[] data_wk->JSPSmat[i];
-      SUNMatDestroy((data_wk->PS)[i]);
-    }
-    delete[] data_wk->JSPSmat;
-    delete[] data_wk->Common;
-    delete[] data_wk->Symbolic;
-    delete[] data_wk->Numeric;
-    delete[] data_wk->PS;
-#endif
-  } else if (data_wk->precond_type == cvode::customSimpleAJac) {
-    for (int i = 0; i < data_wk->ncells; ++i) {
-      delete[] data_wk->JSPSmat[i];
-      SUNMatDestroy((data_wk->PS)[i]);
-    }
-    delete[] data_wk->colVals;
-    delete[] data_wk->rowPtrs;
-    delete[] data_wk->PS;
-    delete[] data_wk->JSPSmat;
-  }
-
   delete data_wk;
-#endif
 }
 
 void

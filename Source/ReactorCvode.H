@@ -78,10 +78,10 @@ public:
   int react(
     const amrex::Box& box,
     amrex::Array4<amrex::Real> const& nspec_in,
-    amrex::Array4<amrex::Real> const& Te_in,
     amrex::Array4<amrex::Real> const& Ue_in,
-    amrex::Array4<amrex::Real> const& FC_in,
-    amrex::Array4<int> const& mask,
+    amrex::Array4<amrex::Real> const& Te_in,
+    amrex::Real Tgas_in,
+    amrex::Array4<amrex::Real> const& EN_in,
     amrex::Real& dt_react,
     amrex::Real& time
 #ifdef AMREX_USE_GPU
@@ -97,31 +97,26 @@ public:
     const amrex::Box& box,
     const int ncells,
     amrex::Array4<const amrex::Real> const& nspec,
-    amrex::Array4<const amrex::Real> const& Tgas,
-    amrex::Array4<const amrex::Real> const& Te,
-    amrex::Array4<const amrex::Real> const& EN,
     amrex::Array4<const amrex::Real> const& Ue,
-    amrex::Real* y_vect,
-    amrex::Real* vect_energy) override
+    amrex::Array4<const amrex::Real> const& EN,
+    amrex::Real* EN_vect,
+    amrex::Real* y_vect) override
   {
     flatten_ops.flatten(
-      box, ncells, nspec, Tgas, Te, EN, Ue, y_vect, vect_energy);
+      box, ncells, nspec, Ue, EN, EN_vect, y_vect);
   }
 
   void unflatten(
     const amrex::Box& box,
     const int ncells,
     amrex::Array4<amrex::Real> const& nspec,
-    amrex::Array4<amrex::Real> const& Te,
     amrex::Array4<amrex::Real> const& Ue,
-    amrex::Array4<amrex::Real> const& FC_in,
+    amrex::Array4<amrex::Real> const& Te,
     amrex::Real* y_vect,
-    amrex::Real* vect_energy,
-    long int* FCunt,
     amrex::Real dt) override
   {
     flatten_ops.unflatten(
-      box, ncells, nspec, Te, Ue, FC_in, y_vect, vect_energy, FCunt, dt);
+      box, ncells, nspec, Ue, Te, y_vect, dt);
   }
 
 private:

@@ -166,12 +166,10 @@ box_flatten(
   const int k,
   const int ncells,
   amrex::Array4<const amrex::Real> const& nspec,
-  amrex::Array4<const amrex::Real> const& Tgas,
-  amrex::Array4<const amrex::Real> const& Te,
-  amrex::Array4<const amrex::Real> const& EN,
   amrex::Array4<const amrex::Real> const& Ue,
-  amrex::Real* y_vect,
-  amrex::Real* vect_energy)
+  amrex::Array4<const amrex::Real> const& EN,
+  amrex::Real* EN_vect,
+  amrex::Real* y_vect)
 {
   // amrex::Real mass_frac[NUM_SPECIES];
   // amrex::Real rho = 0.0;
@@ -202,9 +200,9 @@ box_flatten(
     y_vect[idx] = nspec(i, j, k, n);
   }
 
-  amrex::Real temp = Te(i, j, k, 0);
-  vect_energy[icell] = Ue(i, j, k, 0);
-  y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = temp;
+  // Convert to electron energy
+  y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = Ue(i,j,k,0);
+  EN_vect[icell] = EN(i, j, k, 0);
 
   // amrex::Real Enrg_loc = vect_energy[icell] * rho_inv;
   // auto eos = pele::physics::PhysicsType::eos();
@@ -227,12 +225,9 @@ box_unflatten(
   const int k,
   const int ncells,
   amrex::Array4<amrex::Real> const& nspec,
-  amrex::Array4<amrex::Real> const& Te,
   amrex::Array4<amrex::Real> const& Ue,
-  amrex::Array4<amrex::Real> const& FC_in,
+  amrex::Array4<amrex::Real> const& Te,
   const amrex::Real* y_vect,
-  const amrex::Real* vect_energy,
-  long int const& FCunt,
   amrex::Real dt)
 {
   // Get the old Ys & rho as well as the clipped version
@@ -271,9 +266,8 @@ box_unflatten(
   // }
 
   for (int n = 0; n < NUM_SPECIES; n++) nspec(i,j,k,n) = y_vect[vec_index<OrderType>(n, icell, ncells)];
-  Te(i, j, k, 0) = y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
-  Ue(i, j, k, 0) = vect_energy[icell];
-  FC_in(i, j, k, 0) = static_cast<amrex::Real>(FCunt);
+  Ue(i, j, k, 0) = y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
+  Te(i, j, k, 0) = 1.5 * Ue(i,j,k,0) * K_B * nspec(i,j,k,E_ID);
 
   // amrex::Real temp = y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
   // rhoE(i, j, k, 0) = vect_energy[icell] + dt * frcEExt(i, j, k, 0);
@@ -303,10 +297,10 @@ public:
     const amrex::Box& box,
     const int ncells,
     amrex::Array4<const amrex::Real> const& nspec,
-    amrex::Array4<const amrex::Real> const& Te,
     amrex::Array4<const amrex::Real> const& Ue,
-    amrex::Real* y_vect,
-    amrex::Real* vect_energy)
+    amrex::Array4<const amrex::Real> const& EN,
+    amrex::Real* EN_vect,
+    amrex::Real* y_vect)
   {
     BL_PROFILE("Pele::flatten()");
     const auto len = amrex::length(box);
@@ -315,7 +309,7 @@ public:
       const int icell =
         (k - lo.z) * len.x * len.y + (j - lo.y) * len.x + (i - lo.x);
       box_flatten<OrderType>(
-        icell, i, j, k, ncells, nspec, Te, Ue, y_vect, vect_energy);
+        icell, i, j, k, ncells, nspec, Ue, EN, EN_vect, y_vect);
     });
   }
 
@@ -323,12 +317,9 @@ public:
     const amrex::Box& box,
     const int ncells,
     amrex::Array4<amrex::Real> const& nspec,
-    amrex::Array4<amrex::Real> const& Te,
     amrex::Array4<amrex::Real> const& Ue,
-    amrex::Array4<amrex::Real> const& FC_in,
+    amrex::Array4<amrex::Real> const& Te,
     amrex::Real* y_vect,
-    amrex::Real* vect_energy,
-    long int* FCunt,
     amrex::Real dt)
   {
     BL_PROFILE("Pele::unflatten()");
@@ -338,7 +329,7 @@ public:
       const int icell =
         (k - lo.z) * len.x * len.y + (j - lo.y) * len.x + (i - lo.x);
       box_unflatten<OrderType>(
-        icell, i, j, k, ncells, nspec, Te, Ue, FC_in, y_vect, vect_energy, FCunt[icell],dt);
+        icell, i, j, k, ncells, nspec, Ue, Te,  y_vect, dt);
     });
   }
 };
@@ -349,12 +340,11 @@ fKernelSpec(
   const int icell,
   const int ncells,
   const amrex::Real dt_save,
-  const amrex::Real* yvec_d,
-  amrex::Real* ydot_d, // NOLINT(readability-non-const-parameter)
-  const amrex::Real* Ue_init,
+  const amrex::Real* EN_in,
   const amrex::Real Tgas_in,
-  const amrex::Real Te_in, 
-  const amrex::Real EN_in)
+  const amrex::Real* yvec_d,
+  amrex::Real* ydot_d // NOLINT(readability-non-const-parameter)
+)
 {
   amrex::Real NA = 6.02214076e23;
   amrex::Real specconc[NUM_SPECIES];
@@ -366,8 +356,16 @@ fKernelSpec(
   amrex::Real Ue_pt =
     yvec_d[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
 
+  amrex::Real ne_pt =
+    yvec_d[vec_index<OrderType>(E_ID, icell, ncells)];
+
+  amrex::Real EN_pt = EN_in[icell];
+
+  // Calculate Te from Ue
+  amrex::Real Te_in = Ue_pt / (1.5 * K_B * ne_pt);
+
   amrex::Real ener_exch = 0.0;
-  CKWC(Tgas_in, specconc, wdot, Te_in, EN_in, &ener_exch);
+  CKWC(Tgas_in, specconc, wdot, Te_in, EN_pt, &ener_exch);
 
   for (int n = 0; n < NUM_SPECIES; n++) ydot_d[vec_index<OrderType>(n, icell, ncells)] = wdot[n];
 

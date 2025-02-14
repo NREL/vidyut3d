@@ -40,16 +40,14 @@ struct CVODEUserData
   int reactor_type;        // Either HP (LM) or UV (C)
   int solve_type;          // Type of linear solve for Newton direction
   int NNZ; // Number of non-zero entry for sparse representations
-  amrex::Real* Ue_init = nullptr; // Initial electron energy (rhoE for C, rhoH for LM)
   int* mask =
     nullptr; // Masking tagging cells where integration should not be performed
   int* FCunt = nullptr; // Number of RHS evaluations (not used on GPU)
   amrex::Real gamma;    // System Chem. jacobian coefficient
   int nbBlocks;         // GPU kernel launch parameter
   int nbThreads;        // GPU kernel launch parameter
-  amrex::Real* Tgas_in; 
-  amrex::Real* Te_in;
-  amrex::Real* EN_in;
+  amrex::Real Tgas_vect; 
+  amrex::Real* EN_vect = nullptr;
 };
 
 namespace cvode {
