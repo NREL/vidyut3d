@@ -459,11 +459,11 @@ void Vidyut::update_cs_technique_potential()
     for(int nch=0;nch<cs_ncharges;nch++)
     {
         
-        amrex::Real dist_ch = std::pow((cs_locx[nch]-cs_pin_locx[nch]),2.0) +
-                              std::pow((cs_locy[nch]-cs_pin_locy[nch]),2.0);
+        amrex::Real dist_ch = amrex::Math::powi<2>((cs_locx[nch]-cs_pin_locx[nch])) +
+                              amrex::Math::powi<2>((cs_locy[nch]-cs_pin_locy[nch]));
         if(!is2d)
         {
-              dist_ch+=std::pow((cs_locz[nch]-cs_pin_locz[nch]),2.0);
+              dist_ch+=amrex::Math::powi<2>((cs_locz[nch]-cs_pin_locz[nch]));
         }
         dist_ch=std::sqrt(dist_ch);
 
@@ -565,12 +565,12 @@ void Vidyut::update_cs_technique_potential()
                     amrex::Real y=prob_lo[1]+(j+0.5)*dx[1];
                     amrex::Real z=prob_lo[2]+(k+0.5)*dx[2];
 
-                    amrex::Real dist=std::pow(x-q_x,2.0) 
-                                    +std::pow(y-q_y,2.0);
+                    amrex::Real dist=amrex::Math::powi<2>(x-q_x) 
+                                    +amrex::Math::powi<2>(y-q_y);
 
                     if(!is2d)
                     {
-                        dist+=std::pow(z-q_z,2.0);
+                        dist+=amrex::Math::powi<2>(z-q_z);
                     }
                     dist=std::sqrt(dist);
 

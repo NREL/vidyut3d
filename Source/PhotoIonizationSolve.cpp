@@ -191,7 +191,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         solution[ilev].setVal(0.0);
 
         rhs[ilev].setVal(0.0);
-        acoeff[ilev].setVal(std::pow(lambda_j[sph_id]*pO2,2));
+        acoeff[ilev].setVal(amrex::Math::powi<2>(lambda_j[sph_id]*pO2));
 
         //default to homogenous Nuemann // Dirichlet
         robin_a[ilev].setVal(0.0);
@@ -232,16 +232,16 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
 
                     std::vector<amrex::Real> Fit1(7, 0.0);
                     Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
-                    amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/std::pow(Te,2) + Fit1[4]/std::pow(Te,3) + Fit1[5]/std::pow(Te,4) + Fit1[6]/std::pow(Te,5));
+                    amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/amrex::Math::powi<2>(Te) + Fit1[4]/amrex::Math::powi<3>(Te) + Fit1[5]/amrex::Math::powi<4>(Te) + Fit1[6]/amrex::Math::powi<5>(Te));
                     amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
 
                     /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                            (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                            (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                            (-9.57567162e+12)/std::pow(Te,3)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
+                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
+                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
+                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
                     */
                     
                     
