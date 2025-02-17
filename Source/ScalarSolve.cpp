@@ -30,29 +30,33 @@ void Vidyut::compute_dsdt(int lev, int specid,
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
 
-    for (MFIter mfi(dsdt, TilingIfNotGPU()); mfi.isValid(); ++mfi)
-    {
-        const Box& bx = mfi.tilebox();
+    auto rxn_arrays = rxn_src.const_arrays();
+    auto dsdt_arrays = dsdt.arrays();
 
-        Array4<Real> rxn_arr = rxn_src.array(mfi);
-        Array4<Real> dsdt_arr = dsdt.array(mfi);
-
-        GpuArray<Array4<Real>, AMREX_SPACEDIM> flux_arr{
-            AMREX_D_DECL(flux[0].array(mfi), 
-                         flux[1].array(mfi), flux[2].array(mfi))};
-
-        // update residual
-        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-            dsdt_arr(i, j, k) = (flux_arr[0](i, j, k) - flux_arr[0](i + 1, j, k)) / dx[0] 
-            + rxn_arr(i,j,k,captured_specid);
+    auto fluxx_arrays = flux[0].arrays();
 #if AMREX_SPACEDIM > 1
-            dsdt_arr(i,j,k) += (flux_arr[1](i, j, k) - flux_arr[1](i, j + 1, k)) / dx[1];
+    auto fluxy_arrays = flux[1].arrays();
 #if AMREX_SPACEDIM == 3
-            dsdt_arr(i,j,k) += (flux_arr[2](i, j, k) - flux_arr[2](i, j, k + 1)) / dx[2]; 
+    auto fluxz_arrays = flux[2].arrays();
 #endif
 #endif
-        });
-    }
+
+    // update residual
+    amrex::ParallelFor(dsdt, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+        auto dsdt_arr = dsdt_arrays[nbx];
+        auto rxn_arr = rxn_arrays[nbx];
+
+        GpuArray<Array4<Real>, AMREX_SPACEDIM> flux_arr{AMREX_D_DECL(fluxx_arrays[nbx], fluxy_arrays[nbx],fluxz_arrays[nbx])};
+
+        dsdt_arr(i, j, k) = (flux_arr[0](i, j, k) - flux_arr[0](i + 1, j, k)) / dx[0] 
+        + rxn_arr(i,j,k,captured_specid);
+#if AMREX_SPACEDIM > 1
+        dsdt_arr(i,j,k) += (flux_arr[1](i, j, k) - flux_arr[1](i, j + 1, k)) / dx[1];
+#if AMREX_SPACEDIM == 3
+        dsdt_arr(i,j,k) += (flux_arr[2](i, j, k) - flux_arr[2](i, j, k + 1)) / dx[2]; 
+#endif
+#endif
+    });
 }
 
 void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
@@ -134,39 +138,36 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
         auto prob_lo = geom[lev].ProbLoArray();
         auto prob_hi = geom[lev].ProbHiArray();
 
-        for (MFIter mfi(rxn_src[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            const Box& gbx = amrex::grow(bx, 1);
+        auto sborder_arrays = Sborder[lev].arrays();
+        auto rxn_arrays = rxn_src[lev].arrays();
 
-            Array4<Real> sborder_arr = Sborder[lev].array(mfi);
-            Array4<Real> rxn_arr = rxn_src[lev].array(mfi);
+        // update residual
+        amrex::ParallelFor(rxn_src[lev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+            auto sborder_arr = sborder_arrays[nbx];
+            auto rxn_arr = rxn_arrays[nbx];
 
-            // update residual
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                // Create array with species concentrations
-                amrex::Real spec_C[NUM_SPECIES];
-                amrex::Real spec_wdot[NUM_SPECIES];
-                amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
-                amrex::Real EN = sborder_arr(i,j,k,REF_ID);
-                amrex::Real ener_exch = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
+            // Create array with species concentrations
+            amrex::Real spec_C[NUM_SPECIES];
+            amrex::Real spec_wdot[NUM_SPECIES];
+            amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
+            amrex::Real EN = sborder_arr(i,j,k,REF_ID);
+            amrex::Real ener_exch = 0.0;
+            for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
 
-                // Get molar production rates
-                CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
+            // Get molar production rates
+            CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
 
-                // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
-                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
-                rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
+            // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
+            for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
+            rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
 
-                // Add on user-defined reactive sources
-                user_sources::add_user_react_sources
-                (i, j, k, sborder_arr, rxn_arr,
-                 prob_lo, prob_hi, dx, time, *localprobparm,
-                 captured_gastemp,
-                 captured_gaspres);
-            });
-        }
+            // Add on user-defined reactive sources
+            user_sources::add_user_react_sources
+            (i, j, k, sborder_arr, rxn_arr,
+             prob_lo, prob_hi, dx, time, *localprobparm,
+             captured_gastemp,
+             captured_gaspres);
+        });
     }
 }
 
@@ -267,30 +268,28 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
 
-    for (MFIter mfi(dsdt, TilingIfNotGPU()); mfi.isValid(); ++mfi)
-    {
-        const Box& bx = mfi.tilebox();
+    auto sborder_arrays = Sborder.const_arrays();
+    auto dsdt_arrays = dsdt.arrays();
 
-        Array4<Real> s_arr = Sborder.array(mfi);
-        Array4<Real> dsdt_arr = dsdt.array(mfi);
+    // Evaluate cell-centered axisymmetric source terms (Gamma_k / r)
+    amrex::ParallelFor(dsdt, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+      auto s_arr = sborder_arrays[nbx];
+      auto dsdt_arr = dsdt_arrays[nbx];
 
-        // Evaluate cell-centered axisymmetric source terms (Gamma_k / r)
-        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-          // calculate r which is always x
-          // ideally x will be positive for axisymmetric cases
-          amrex::Real rval = amrex::Math::abs(prob_lo[0]+(i+0.5)*dx[0]);
+      // calculate r which is always x
+      // ideally x will be positive for axisymmetric cases
+      amrex::Real rval = amrex::Math::abs(prob_lo[0]+(i+0.5)*dx[0]);
 
-          // Calculate the advective source term component
-          amrex::Real etemp = s_arr(i,j,k,ETEMP_ID);
-          amrex::Real ndens = 0.0;
-          amrex::Real Esum = 0.0;
-          for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
-          for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(s_arr(i,j,k,EFX_ID+dim),2.0);
-          amrex::Real efield_mag=std::sqrt(Esum);
-          amrex::Real mu = specMob(specid, etemp, ndens, efield_mag,captured_gastemp);  
-          dsdt_arr(i,j,k) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
-        });
-    }
+      // Calculate the advective source term component
+      amrex::Real etemp = s_arr(i,j,k,ETEMP_ID);
+      amrex::Real ndens = 0.0;
+      amrex::Real Esum = 0.0;
+      for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+      for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(s_arr(i,j,k,EFX_ID+dim),2.0);
+      amrex::Real efield_mag=std::sqrt(Esum);
+      amrex::Real mu = specMob(specid, etemp, ndens, efield_mag,captured_gastemp);  
+      dsdt_arr(i,j,k) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
+    });
 }
 
 void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id, 
@@ -618,25 +617,22 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         {
             amrex::Real minelecden=min_electron_density; 
             amrex::Real minspecden=min_species_density; 
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                Array4<Real> soln_arr = solution[ilev].array(mfi);
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+            auto soln_arrays = solution[ilev].arrays();
 
-                    if(electron_flag){
-                      if(soln_arr(i,j,k) < minelecden)
-                      {
-                        soln_arr(i,j,k)=minelecden;
-                      } 
-                    } else {
-                      if(soln_arr(i,j,k) < minspecden)
-                      {
-                        soln_arr(i,j,k)=minspecden;
-                      } 
-                    }
-                });
-            }
+            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                auto soln_arr = soln_arrays[nbx];
+                if(electron_flag){
+                  if(soln_arr(i,j,k) < minelecden)
+                  {
+                    soln_arr(i,j,k)=minelecden;
+                  } 
+                } else {
+                  if(soln_arr(i,j,k) < minspecden)
+                  {
+                    soln_arr(i,j,k)=minspecden;
+                  } 
+                }
+            });
         }
     }
     if(electron_flag)
@@ -665,21 +661,18 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         for (int ilev = 0; ilev <= finest_level; ilev++)
         {
             amrex::Real minetemp=min_electron_temp; 
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                Array4<Real> phi_arr = phi_new[ilev].array(mfi);
-                Array4<Real> sb_arr = Sborder[ilev].array(mfi);
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-
-                    phi_arr(i,j,k,ETEMP_ID)=twothird/K_B*phi_arr(i,j,k,EEN_ID)/sb_arr(i,j,k,eidx);
-                    if(phi_arr(i,j,k,ETEMP_ID) < minetemp)
-                    {
-                        phi_arr(i,j,k,ETEMP_ID)=minetemp;
-                        phi_arr(i,j,k,EEN_ID)=1.5*K_B*phi_arr(i,j,k,eidx)*minetemp;
-                    }
-                });
-            }
+            auto phi_arrays = phi_new[ilev].arrays();
+            auto sborder_arrays = Sborder[ilev].const_arrays();
+            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                auto phi_arr = phi_arrays[nbx];
+                auto sb_arr = sborder_arrays[nbx];
+                phi_arr(i,j,k,ETEMP_ID)=twothird/K_B*phi_arr(i,j,k,EEN_ID)/sb_arr(i,j,k,eidx);
+                if(phi_arr(i,j,k,ETEMP_ID) < minetemp)
+                {
+                    phi_arr(i,j,k,ETEMP_ID)=minetemp;
+                    phi_arr(i,j,k,EEN_ID)=1.5*K_B*phi_arr(i,j,k,eidx)*minetemp;
+                }
+            });
         }
     }
 
