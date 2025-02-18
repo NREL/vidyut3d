@@ -104,15 +104,15 @@ void Vidyut::compute_elecenergy_source(int lev,
                     Real efieldvec_face[AMREX_SPACEDIM];
                     efieldvec_face[0]=0.5*(sborder_arr(lcell,EFX_ID) 
                                   + sborder_arr(rcell,EFX_ID));
-                    Esum += std::pow(efieldvec_face[0], 2.0);
+                    Esum += amrex::Math::powi<2>(efieldvec_face[0]);
 #if AMREX_SPACEDIM > 1
                     efieldvec_face[1]=0.5*(sborder_arr(lcell,EFY_ID) 
                                   + sborder_arr(rcell,EFY_ID));
-                    Esum += std::pow(efieldvec_face[1], 2.0);
+                    Esum += amrex::Math::powi<2>(efieldvec_face[1]);
 #if AMREX_SPACEDIM == 3
                     efieldvec_face[2]=0.5*(sborder_arr(lcell,EFZ_ID) 
                                   + sborder_arr(rcell,EFZ_ID));
-                    Esum += std::pow(efieldvec_face[2], 2.0);
+                    Esum += amrex::Math::powi<2>(efieldvec_face[2]);
 #endif
 #endif
             

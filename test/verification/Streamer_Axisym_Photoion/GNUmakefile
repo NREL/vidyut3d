@@ -1,5 +1,5 @@
-VIDYUT_DIR ?= /project/me-crfel/tanej013/vidyut/vidyut3d
-AMREX_HOME ?= /project/me-crfel/tanej013/vidyut/amrex
+VIDYUT_DIR ?= ../../../
+AMREX_HOME ?= ../../../../amrex
 
 PRECISION  = DOUBLE
 PROFILE    = FALSE
