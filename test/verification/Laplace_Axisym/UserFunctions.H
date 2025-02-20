@@ -169,21 +169,22 @@ namespace user_transport
     
     AMREX_GPU_DEVICE AMREX_INLINE
     amrex::Real compute_vel(IntVect iv, int dir,
-                     int specid,
-                     Array4<Real> const& phi,
-                     GpuArray<Real, AMREX_SPACEDIM> dx,
-                     const Real time,
-                     ProbParm const& prob_parm,
-                     amrex::Real Tg,amrex::Real Pg)
+                            int specid,
+                            Array4<Real> const& phi,
+                            GpuArray<Real, AMREX_SPACEDIM> dx,
+                            const Real time,
+                            ProbParm const& prob_parm,
+                            amrex::Real Tg,amrex::Real Pg)
     {
-        amrex::Real efieldmag=std::sqrt( std::pow(phi(iv,EFX_ID),2.0)+
-                                         std::pow(phi(iv,EFY_ID),2.0)+
-                                         std::pow(phi(iv,EFZ_ID),2.0) );
+        amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(iv,EFX_ID))+
+                                        amrex::Math::powi<2>(phi(iv,EFY_ID))+
+                                        amrex::Math::powi<2>(phi(iv,EFZ_ID)));
+
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(iv,sp);
-        
+
         amrex::Real mu = specMob(specid,phi(iv,ETEMP_ID),
-                                              ndens,efieldmag,Tg);
+                                 ndens,efieldmag,Tg);
 
         return(mu*phi(iv,EFX_ID+dir));
     }
