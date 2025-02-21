@@ -77,8 +77,6 @@ amr.chk_file = chk      # root name of checkpoint file
 amr.chk_int_old  = 100       # number of timesteps between checkpoint files
 amr.chk_int = 50
 
-amr.restart = chk00118
-
 vidyut.bound_specden=1
 vidyut.min_species_density=1e0
 #vidyut.min_electron_density=1e8

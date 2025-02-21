@@ -106,12 +106,12 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 for(int sd=0;sd<prob_parm->nseeds;sd++)
                 {
 
-                    Real dist2 = std::pow(x-prob_parm->loc_x[sd],2.0)
-                    + std::pow(y-prob_parm->loc_y[sd],2.0);
+                    Real dist2 = amrex::Math::powi<2>(x-prob_parm->loc_x[sd])
+                    + amrex::Math::powi<2>(y-prob_parm->loc_y[sd]);
 
                     if(!prob_parm->twod)
                     {
-                        dist2 += std::pow(z-prob_parm->loc_z[sd],2.0);
+                        dist2 += amrex::Math::powi<2>(z-prob_parm->loc_z[sd]);
                     }
 
                     phi(i,j,k,ARp_ID) += prob_parm->ampl*exp(-dist2/prob_parm->rad/prob_parm->rad);

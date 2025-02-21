@@ -61,15 +61,15 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real z = prob_lo[2] + (0.5+k) * dx[2];
                 Real y = prob_lo[1] + (0.5+j) * dx[1];
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
-
-                Real dist2 = std::pow(x-prob_parm->loc_x,2.0)
-                      + std::pow(y-prob_parm->loc_y,2.0);
+                
+                Real dist2 = amrex::Math::powi<2>(x-prob_parm->loc_x)
+                      + amrex::Math::powi<2>(y-prob_parm->loc_y);
                 
                 if(!prob_parm->twod)
                 {
-                    dist2 += std::pow(z-prob_parm->loc_z,2.0);
+                    dist2 += amrex::Math::powi<2>(z-prob_parm->loc_z);
                 }
-               
+
                 phi(i,j,k,N2_ID)    = P_NTP/K_B/T_NTP;  
                 phi(i,j,k,N2p_ID)    = (prob_parm->bg + 
                                       prob_parm->ampl*exp(-dist2/prob_parm->rad/prob_parm->rad))/prob_parm->ns;

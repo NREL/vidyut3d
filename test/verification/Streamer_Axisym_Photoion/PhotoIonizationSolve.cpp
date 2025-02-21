@@ -189,7 +189,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         
         rhs[ilev].setVal(0.0);
         // TST - Ideally want to access this at each grid point.
-        acoeff[ilev].setVal(std::pow(lambda_j[sph_id]*pO2,2));
+        acoeff[ilev].setVal(amrex::Math::powi<2>(lambda_j[sph_id]*pO2));
 
         //default to homogenous Nuemann //Dirichlet
         robin_a[ilev].setVal(0.0);
@@ -226,7 +226,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
                 amrex::Real EN = phi_arr(i,j,k,REF_ID);
                 amrex::Real efield_mag = EN * N2_num_density * 1e-21;
-                amrex::Real alpha = (1.1944e6 + 4.3666e26/std::pow(efield_mag,3.0))*std::exp(-2.73e7/efield_mag);
+                amrex::Real alpha = (1.1944e6 + 4.3666e26/amrex::Math::powi<3>(efield_mag))*std::exp(-2.73e7/efield_mag);
                 amrex::Real mu_e = 2.3987 * std::pow(efield_mag,-0.26);
                 amrex::Real rate_N2_ion = alpha*mu_e*efield_mag*e_num_density;
 

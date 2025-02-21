@@ -229,7 +229,7 @@ productionRate(amrex::Real *wdot, const amrex::Real *sc, const amrex::Real T, co
 
   {
     // reaction 0:  N2 + E => E + N2p + E
-    amrex::Real alpha = (1.1944e6 + 4.3666e26/std::pow(efield_mag,3.0))
+    amrex::Real alpha = (1.1944e6 + 4.3666e26/amrex::Math::powi<3>(efield_mag))
     *std::exp(-2.73e7/efield_mag);
     amrex::Real eta = 340.75;
     amrex::Real alpha_bar = alpha-eta;
