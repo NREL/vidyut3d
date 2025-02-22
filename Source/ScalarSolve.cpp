@@ -432,11 +432,6 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
         robin_f[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
     }
 
-    LPInfo info;
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info));
     MLMG mlmg(*linsolve_ptr);
     mlmg.setMaxIter(linsolve_maxiter);
     mlmg.setVerbose(linsolve_verbose);

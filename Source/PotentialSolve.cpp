@@ -151,14 +151,6 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
     }
 
-    LPInfo info;
-    info.setAgglomeration(true);
-    info.setConsolidation(true);
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info));
-
     linsolve_ptr->setMaxOrder(2);
     linsolve_ptr->setDomainBC(bc_potsolve_lo, bc_potsolve_hi);
     linsolve_ptr->setScalars(ascalar, bscalar);

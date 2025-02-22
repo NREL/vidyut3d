@@ -22,6 +22,7 @@ void Vidyut::Evolve()
     Real plottime = 0.0;
     Real chktime = 0.0;
     int sph_id = 0;
+    int max_coarsening_level = linsolve_max_coarsening_level;
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
@@ -74,6 +75,13 @@ void Vidyut::Evolve()
             if (istep[0] % regrid_int == 0)
             {
                 regrid(0, cur_time);
+                LPInfo info;
+                info.setAgglomeration(true);
+                info.setConsolidation(true);
+                info.setMaxCoarseningLevel(max_coarsening_level);
+                linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level),
+                                       boxArray(0,finest_level),
+                                       DistributionMap(0,finest_level), info));
             }
         }
 
