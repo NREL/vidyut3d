@@ -247,25 +247,26 @@ void Vidyut::ErrorEst(int lev, TagBoxArray& tags, Real time, int ngrow)
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
-        auto sb_arrays = Sborder.arrays();
-        auto tags_arrays = tags.arrays();
 
-        amrex::Real* refine_phi_dat = refine_phi.data();
-        amrex::Real* refine_phigrad_dat = refine_phigrad.data();
-        int* refine_phi_comps_dat = refine_phi_comps.data();
-        int ntagged_comps = refine_phi_comps.size();
+        for (MFIter mfi(Sborder, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            const auto statefab = Sborder.array(mfi);
+            const auto tagfab = tags.array(mfi);
 
-        amrex::ParallelFor(Sborder, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-            auto statefab = sb_arrays[nbx];
-            auto tagfab = tags_arrays[nbx];
-            state_based_refinement(i, j, k, tagfab, statefab, refine_phi_dat, refine_phi_comps_dat, ntagged_comps, tagval);
-        });
+            amrex::Real* refine_phi_dat = refine_phi.data();
+            amrex::Real* refine_phigrad_dat = refine_phigrad.data();
+            int* refine_phi_comps_dat = refine_phi_comps.data();
+            int ntagged_comps = refine_phi_comps.size();
 
-        amrex::ParallelFor(Sborder, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-            auto statefab = sb_arrays[nbx];
-            auto tagfab = tags_arrays[nbx];
-            stategrad_based_refinement(i, j, k, tagfab, statefab, refine_phigrad_dat, refine_phi_comps_dat, ntagged_comps, tagval);
-        });
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                state_based_refinement(i, j, k, tagfab, statefab, refine_phi_dat, refine_phi_comps_dat, ntagged_comps, tagval);
+            });
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                stategrad_based_refinement(i, j, k, tagfab, statefab, refine_phigrad_dat, refine_phi_comps_dat, ntagged_comps, tagval);
+            });
+        }
     }
 }
 

@@ -41,139 +41,130 @@ void Vidyut::compute_elecenergy_source(int lev,
     GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
     GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
-    auto sborder_arrays = Sborder.const_arrays();
-    auto rxn_arrays = rxnsrc.const_arrays();
-    auto phi_arrays = phi_new[lev].arrays();
-    auto dsdt_arrays = dsdt.arrays();
+    for (MFIter mfi(dsdt, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        const Box& gbx = amrex::grow(bx, 1);
 
-    auto gradnex_arrays = gradne[0].arrays();
-#if AMREX_SPACEDIM > 1
-    auto gradney_arrays = gradne[1].arrays();
-#if AMREX_SPACEDIM == 3
-    auto gradnez_arrays = gradne[2].arrays();
-#endif
-#endif
+        Array4<Real> sborder_arr = Sborder.array(mfi);
+        Array4<Real> dsdt_arr = dsdt.array(mfi);
+        Array4<Real> phi_arr = phi_new[lev].array(mfi);
+        Array4<Real> rxn_arr = rxnsrc.array(mfi);
+        
+        GpuArray<Array4<Real>, AMREX_SPACEDIM> 
+        gradne_arr{AMREX_D_DECL(gradne[0].array(mfi), 
+                                gradne[1].array(mfi), 
+                                gradne[2].array(mfi))};
 
-    auto efx_arrays = efield[0].arrays();
-#if AMREX_SPACEDIM > 1
-    auto efy_arrays = efield[1].arrays();
-#if AMREX_SPACEDIM == 3
-    auto efz_arrays = efield[2].arrays();
-#endif
-#endif
+        GpuArray<Array4<Real>, AMREX_SPACEDIM>
+        ef_arr{AMREX_D_DECL(efield[0].array(mfi),
+                            efield[1].array(mfi),
+                            efield[2].array(mfi))};
 
-    amrex::ParallelFor(dsdt, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+    
+            //Joule heating
+            amrex::Real mu,dcoeff,etemp,ne;
+            amrex::Real efield_x,efield_y,efield_z,efield_face,gradne_face;
+            amrex::Real charge=plasmachem::get_charge(eidx)*ECHARGE;
+            amrex::Real current_density;
+            amrex::Real elec_jheat=0.0;
 
-        auto sborder_arr = sborder_arrays[nbx];
-        auto rxn_arr = rxn_arrays[nbx];
-        auto phi_arr = phi_arrays[nbx];
-        auto dsdt_arr = dsdt_arrays[nbx];
-
-        GpuArray<Array4<Real>, AMREX_SPACEDIM> gradne_arr{AMREX_D_DECL(gradnex_arrays[nbx], gradney_arrays[nbx], gradnez_arrays[nbx])};
-
-        GpuArray<Array4<Real>, AMREX_SPACEDIM> ef_arr{AMREX_D_DECL(efx_arrays[nbx], efy_arrays[nbx], efz_arrays[nbx])};
-
-        //Joule heating
-        amrex::Real mu,dcoeff,etemp,ne;
-        amrex::Real efield_x,efield_y,efield_z,efield_face,gradne_face;
-        amrex::Real charge=plasmachem::get_charge(eidx)*ECHARGE;
-        amrex::Real current_density;
-        amrex::Real elec_jheat=0.0;
-
-        //FIXME: This can be done more efficiently sweeping over
-        //faces
-        for(int idim=0;idim<AMREX_SPACEDIM;idim++)
-        {
-            //left,right,top,bottom,front,back
-            for(int f=0;f<2;f++)
+            //FIXME: This can be done more efficiently sweeping over
+            //faces
+            for(int idim=0;idim<AMREX_SPACEDIM;idim++)
             {
-                IntVect face{AMREX_D_DECL(i,j,k)};
-                face[idim]+=f;
-
-                if(face[idim]==domlo[idim])
+                //left,right,top,bottom,front,back
+                for(int f=0;f<2;f++)
                 {
-                   //do the interior face
-                   face[idim]+=1;
-                }
-                
-                if(face[idim]==(domhi[idim]+1))
-                {
-                   //do the interior face
-                    face[idim]-=1;
-                }
-                
-                IntVect lcell{AMREX_D_DECL(face[0],face[1],face[2])};
-                IntVect rcell{AMREX_D_DECL(face[0],face[1],face[2])};
-                lcell[idim]-=1;
-                
-                etemp=0.5*(sborder_arr(lcell,ETEMP_ID) 
-                           + sborder_arr(rcell,ETEMP_ID));
+                    IntVect face{AMREX_D_DECL(i,j,k)};
+                    face[idim]+=f;
 
-                //FIXME:use face centered updated efields here?
-                Real Esum = 0.0;
-                Real efieldvec_face[AMREX_SPACEDIM];
-                efieldvec_face[0]=0.5*(sborder_arr(lcell,EFX_ID) 
-                              + sborder_arr(rcell,EFX_ID));
-                Esum += std::pow(efieldvec_face[0], 2.0);
+                    if(face[idim]==domlo[idim])
+                    {
+                       //do the interior face
+                       face[idim]+=1;
+                    }
+                    
+                    if(face[idim]==(domhi[idim]+1))
+                    {
+                       //do the interior face
+                        face[idim]-=1;
+                    }
+                    
+                    IntVect lcell{AMREX_D_DECL(face[0],face[1],face[2])};
+                    IntVect rcell{AMREX_D_DECL(face[0],face[1],face[2])};
+                    lcell[idim]-=1;
+                    
+                    etemp=0.5*(sborder_arr(lcell,ETEMP_ID) 
+                               + sborder_arr(rcell,ETEMP_ID));
+
+                    //FIXME:use face centered updated efields here?
+                    Real Esum = 0.0;
+                    Real efieldvec_face[AMREX_SPACEDIM];
+                    efieldvec_face[0]=0.5*(sborder_arr(lcell,EFX_ID) 
+                                  + sborder_arr(rcell,EFX_ID));
+                    Esum += std::pow(efieldvec_face[0], 2.0);
 #if AMREX_SPACEDIM > 1
-                efieldvec_face[1]=0.5*(sborder_arr(lcell,EFY_ID) 
-                              + sborder_arr(rcell,EFY_ID));
-                Esum += std::pow(efieldvec_face[1], 2.0);
+                    efieldvec_face[1]=0.5*(sborder_arr(lcell,EFY_ID) 
+                                  + sborder_arr(rcell,EFY_ID));
+                    Esum += std::pow(efieldvec_face[1], 2.0);
 #if AMREX_SPACEDIM == 3
-                efieldvec_face[2]=0.5*(sborder_arr(lcell,EFZ_ID) 
-                              + sborder_arr(rcell,EFZ_ID));
-                Esum += std::pow(efieldvec_face[2], 2.0);
+                    efieldvec_face[2]=0.5*(sborder_arr(lcell,EFZ_ID) 
+                                  + sborder_arr(rcell,EFZ_ID));
+                    Esum += std::pow(efieldvec_face[2], 2.0);
 #endif
 #endif
-        
-                amrex::Real efield_mag=std::sqrt(Esum);
+            
+                    amrex::Real efield_mag=std::sqrt(Esum);
 
-                ne = 0.5*(sborder_arr(lcell,eidx) 
-                          + sborder_arr(rcell,eidx));
+                    ne = 0.5*(sborder_arr(lcell,eidx) 
+                              + sborder_arr(rcell,eidx));
 
-                //efield_face=ef_arr[idim](face);
-                efield_face = (captured_cs_technique) ? efieldvec_face[idim] : ef_arr[idim](face);
-                gradne_face=gradne_arr[idim](face);
+                    //efield_face=ef_arr[idim](face);
+                    efield_face = (captured_cs_technique) ? efieldvec_face[idim] : ef_arr[idim](face);
+                    gradne_face=gradne_arr[idim](face);
 
-                amrex::Real ndens = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
+                    amrex::Real ndens = 0.0;
+                    for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
 
-                mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
+                    mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
 
-                dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
+                    dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
 
-                current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
-                elec_jheat += current_density*efield_face;
+                    current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
+                    elec_jheat += current_density*efield_face;
+                }
             }
-        }
 
-        //why only 0.5? 
-        //because left and right contribute to JxEx, 
-        //top and bottom contribute to JyEy,
-        //front and back contribute to JzEz,
-        //so we are averaging each component, so it is 1/2 and not 1/6
-        //read Deconinck, T, S. Mahadevan, and L. L. Raja. 
-        //"Discretization of the Joule heating term for plasma discharge 
-        //fluid models in unstructured meshes." 
-        //Journal of computational physics 228.12 (2009): 4435-4443.
+            //why only 0.5? 
+            //because left and right contribute to JxEx, 
+            //top and bottom contribute to JyEy,
+            //front and back contribute to JzEz,
+            //so we are averaging each component, so it is 1/2 and not 1/6
+            //read Deconinck, T, S. Mahadevan, and L. L. Raja. 
+            //"Discretization of the Joule heating term for plasma discharge 
+            //fluid models in unstructured meshes." 
+            //Journal of computational physics 228.12 (2009): 4435-4443.
 
-        elec_jheat*=0.5;
+            elec_jheat*=0.5;
 
-        //a switch to make sure joule heating is 
-        //heating the electrons and not cooling them
-        if(floor_jh)
-        {
-           if(elec_jheat < 0.0)
-           {
-              elec_jheat=0.0;
-           }
-        }
-        
-        //inelastic term already added through reaction source
-        dsdt_arr(i, j, k) += (elec_jheat);
-        // TODO: Adjust reactive source calculations to split into elastic/inelastic
-        phi_arr(i,j,k,EJH_ID)=elec_jheat;
-        phi_arr(i,j,k,EIH_ID)=rxn_arr(i,j,k,EEN_ID); //EEN_ID is same as NUM_SPECIES+1
-        // phi_arr(i,j,k,EEH_ID)=elec_elastic_coll_term;
-    });
+            //a switch to make sure joule heating is 
+            //heating the electrons and not cooling them
+            if(floor_jh)
+            {
+               if(elec_jheat < 0.0)
+               {
+                  elec_jheat=0.0;
+               }
+            }
+            
+            //inelastic term already added through reaction source
+            dsdt_arr(i, j, k) += (elec_jheat);
+            // TODO: Adjust reactive source calculations to split into elastic/inelastic
+            phi_arr(i,j,k,EJH_ID)=elec_jheat;
+            phi_arr(i,j,k,EIH_ID)=rxn_arr(i,j,k,EEN_ID); //EEN_ID is same as NUM_SPECIES+1
+            // phi_arr(i,j,k,EEH_ID)=elec_elastic_coll_term;
+        });
+    }
 }
