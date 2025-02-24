@@ -36,6 +36,15 @@ void Vidyut::Evolve()
     amrex::Real dt_edrift,dt_ediff,dt_diel_relax;
     amrex::Real dt_edrift_lev,dt_ediff_lev,dt_diel_relax_lev;
 
+    // First initialization of MLMG solver
+    LPInfo info;
+    info.setAgglomeration(true);
+    info.setConsolidation(true);
+    info.setMaxCoarseningLevel(max_coarsening_level);
+    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level),
+                           boxArray(0,finest_level),
+                           DistributionMap(0,finest_level), info));
+
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         amrex::Real strt_time = amrex::second();
@@ -75,10 +84,6 @@ void Vidyut::Evolve()
             if (istep[0] % regrid_int == 0)
             {
                 regrid(0, cur_time);
-                LPInfo info;
-                info.setAgglomeration(true);
-                info.setConsolidation(true);
-                info.setMaxCoarseningLevel(max_coarsening_level);
                 linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level),
                                        boxArray(0,finest_level),
                                        DistributionMap(0,finest_level), info));
