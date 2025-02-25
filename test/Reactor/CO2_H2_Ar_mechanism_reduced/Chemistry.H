@@ -947,8 +947,10 @@ productionRate(amrex::Real *wdot, const amrex::Real *sc, const amrex::Real T,
   double TeeV = Te / 11595.0;
   double logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
   double invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
-  double Te_pow[] = {pow(logTe, 0), pow(logTe, 1), pow(logTe, 2), pow(logTe, 3), pow(logTe, 4), pow(logTe, 5), pow(logTe, 6), pow(logTe, 7), pow(logTe, 8)};
-  double invTe_pow[] = {pow(invTeeV, 1), pow(invTeeV, 2), pow(invTeeV, 3), pow(invTeeV, 4)};
+  double Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
+      amrex::Math::powi<4>(logTe), amrex::Math::powi<5>(logTe), amrex::Math::powi<6>(logTe), amrex::Math::powi<7>(logTe), 
+      amrex::Math::powi<8>(logTe)};
+  double invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
 
   tc[0] = log(T/300.0);   // temperature factors use (T/300)^beta
   std::vector<double> Jfit_coefs = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};

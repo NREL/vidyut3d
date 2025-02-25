@@ -285,7 +285,7 @@ void Vidyut::compute_axisym_correction(int lev, MultiFab& Sborder,MultiFab& dsdt
       amrex::Real ndens = 0.0;
       amrex::Real Esum = 0.0;
       for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
-      for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(s_arr(i,j,k,EFX_ID+dim),2.0);
+      for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += amrex::Math::powi<2>(s_arr(i,j,k,EFX_ID+dim));
       amrex::Real efield_mag=std::sqrt(Esum);
       amrex::Real mu = specMob(specid, etemp, ndens, efield_mag,captured_gastemp);  
       dsdt_arr(i,j,k) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
@@ -494,7 +494,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt, int spec_id,
 
                 //FIXME:may be use updated efields here
                     amrex::Real Esum = 0.0;
-                    for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += std::pow(sb_arr(i,j,k,EFX_ID+dim),2.0);
+                    for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += amrex::Math::powi<2>(sb_arr(i,j,k,EFX_ID+dim));
                     amrex::Real efield_mag=std::sqrt(Esum);
                 
                     amrex::Real ndens = 0.0;

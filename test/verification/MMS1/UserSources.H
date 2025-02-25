@@ -48,7 +48,7 @@ namespace user_sources
 
         IntVect iv{AMREX_D_DECL(i, j, k)};
         amrex::Real x=prob_lo[bigdir]+(iv[bigdir]+0.5)*dx[bigdir];
-        rxnsrc(i,j,k,AR_ID) += 5.0*std::pow(x,4.0)/3.0-x/6.0-2.0;
+        rxnsrc(i,j,k,AR_ID) += 5.0*amrex::Math::powi<4>(x)/3.0-x/6.0-2.0;
     }
 
     AMREX_GPU_DEVICE AMREX_INLINE

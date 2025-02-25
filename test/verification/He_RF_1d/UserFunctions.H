@@ -172,9 +172,9 @@ namespace user_transport
         if(spec_id==E_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
             
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
             
@@ -190,9 +190,9 @@ namespace user_transport
 
         if(spec_id==HEp_ID)
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
         
             amrex::Real mu = specMob(spec_id,phi(cell_int,ETEMP_ID),
                                            ndens, efieldmag,
@@ -214,9 +214,9 @@ namespace user_transport
 
         if(spec_id==HEm_ID || spec_id==HE2m_ID)
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
             
             
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
@@ -229,9 +229,9 @@ namespace user_transport
         if(spec_id==EEN_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
             
             amrex::Real Te=phi(cell_int,ETEMP_ID);
             
@@ -253,9 +253,9 @@ namespace user_transport
                      ProbParm const& prob_parm,
                      amrex::Real Tg,amrex::Real Pg)
     {
-        amrex::Real efieldmag=std::sqrt( std::pow(phi(cellid,EFX_ID),2.0)+
-                                         std::pow(phi(cellid,EFY_ID),2.0)+
-                                         std::pow(phi(cellid,EFZ_ID),2.0) );
+        amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(cellid,EFX_ID))+
+                                         amrex::Math::powi<2>(phi(cellid,EFY_ID))+
+                                         amrex::Math::powi<2>(phi(cellid,EFZ_ID)) );
         
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cellid,sp);

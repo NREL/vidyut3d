@@ -182,9 +182,9 @@ namespace user_transport
         amrex::Real vel=0.0;
         if(dir==prob_parm.axdir && specid==AR_ID)
         {
-            Real efieldmag = std::sqrt(std::pow(phi(cellid,EFX_ID),2.0) +
-                                       std::pow(phi(cellid,EFY_ID),2.0) +
-                                       std::pow(phi(cellid,EFZ_ID),2.0) );
+            amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(cellid,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFZ_ID)));
             
             amrex::Real ndens=1.0; //dummy
             amrex::Real mu = specMob(specid,phi(cellid,ETEMP_ID), ndens,

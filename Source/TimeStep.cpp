@@ -75,7 +75,7 @@ void Vidyut::find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_edi
 
             amrex::Real etemp=state_array(i,j,k,ETEMP_ID); 
             amrex::Real Esum = 0.0;
-            for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(state_array(i,j,k,EFX_ID+dim),2.0);
+            for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += amrex::Math::powi<2>(state_array(i,j,k,EFX_ID+dim));
             amrex::Real efield_mag=std::sqrt(Esum);
 
             amrex::Real ndens = 0.0; 
