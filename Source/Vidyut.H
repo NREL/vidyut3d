@@ -18,7 +18,7 @@
 #include <AMReX_MLABecLaplacian.H>
 #include <UnivConstants.H>
 #include <VarDefines.H>
-
+#include "ReactorBase.H"
 
 using namespace amrex;
 
@@ -98,7 +98,7 @@ public:
     
     void update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                                             Vector<MultiFab>& rxn_src, 
-                                            amrex::Real cur_time);
+                                            amrex::Real cur_time, amrex::Real dt);
     
     void implicit_solve_scalar(Real current_time,Real dt,int spec_id,
             Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
@@ -126,6 +126,9 @@ public:
     static ProbParm* d_prob_parm;
    
     std::unique_ptr<amrex::MLABecLaplacian> linsolve_ptr;
+#ifdef USE_CVODE
+    std::unique_ptr<pele::physics::reactions::ReactorBase> reactor_ptr;
+#endif
     
     ////////////////
     amrex::Gpu::ManagedVector<Real> refine_phi;

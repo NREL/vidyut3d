@@ -115,7 +115,7 @@ void Vidyut::update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
 
 void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                                          Vector<MultiFab>& rxn_src, 
-                                         amrex::Real cur_time)
+                                         amrex::Real cur_time, amrex::Real dt)
 {
     amrex::Real time = cur_time;
     ProbParm const* localprobparm = d_prob_parm;
@@ -142,6 +142,23 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
             Array4<Real> sborder_arr = Sborder[lev].array(mfi);
             Array4<Real> rxn_arr = rxn_src[lev].array(mfi);
 
+            Array4<Real> nspec_arr = Sborder[lev].array(mfi,0);
+            Array4<Real> Ue_arr = Sborder[lev].array(mfi,EEN_ID);
+            Array4<Real> Te_arr = Sborder[lev].array(mfi,ETEMP_ID);
+            Array4<Real> EN_arr = Sborder[lev].array(mfi,REF_ID);
+
+#ifdef USE_CVODE
+            reactor_ptr->react(bx, nspec_arr, Ue_arr, Te_arr, captured_gastemp, EN_arr, dt, cur_time);
+
+            // add on user sources
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                user_sources::add_user_react_sources
+                (i, j, k, sborder_arr, rxn_arr,
+                 prob_lo, prob_hi, dx, time, *localprobparm,
+                 captured_gastemp,
+                 captured_gaspres);
+            });
+#else
             // update residual
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
                 // Create array with species concentrations
@@ -166,6 +183,7 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                  captured_gastemp,
                  captured_gaspres);
             });
+#endif
         }
     }
 }

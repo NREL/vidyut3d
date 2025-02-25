@@ -137,16 +137,10 @@ private:
     amrex::gpuStream_t stream,
 #endif
     const amrex::Real& a_time,
-    int ncells,
-    const amrex::Real Tgas_in,
-    const amrex::Real Te_in,
-    const amrex::Real EN_in);
+    int ncells);
   void allocUserData(
     CVODEUserData* udata,
-    int a_ncells,
-    amrex::Real Tgas_in,
-    amrex::Real Te_in,
-    amrex::Real EN_in
+    int a_ncells
 #ifdef AMREX_USE_GPU
     ,
     SUNMatrix& a_A,

@@ -121,6 +121,10 @@ Vidyut::Vidyut()
       amrex::Abort("Electron not found in chemistry mechanism!\n");
     }
 
+#ifdef USE_CVODE
+    reactor_ptr->init(1,1);
+#endif
+
     //Check inputs for axisymmetric geometry
     //only needed if one boundary is at r=0 and 
     //the user will set the condition accordingly

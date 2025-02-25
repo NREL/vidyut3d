@@ -134,7 +134,7 @@ ReactorCvode::initCvode(
   }
 
   // Populate the userData
-  allocUserData(a_udata, ncells, Tgas_in, Te_in, EN_in);
+  allocUserData(a_udata, ncells);
   if (utils::check_flag(static_cast<void*>(a_udata), "allocUserData", 2) != 0) {
     return (1);
   }
@@ -239,7 +239,7 @@ ReactorCvode::checkCvodeOptions(
 void
 ReactorCvode::allocUserData(
   CVODEUserData* udata,
-  int a_ncells,
+  int a_ncells
 #ifdef AMREX_USE_GPU
   ,
   SUNMatrix& a_A,
@@ -283,7 +283,7 @@ ReactorCvode::react(
   amrex::Real Tgas_in,
   amrex::Array4<amrex::Real> const& EN_in,
   amrex::Real& dt_react,
-  amrex::Real& time,
+  amrex::Real& time
 #ifdef AMREX_USE_GPU
   ,
   amrex::gpuStream_t stream
@@ -415,7 +415,6 @@ ReactorCvode::react(
   ParallelFor(
     box, [=, &CvodeActual_time_final] AMREX_GPU_DEVICE(
            int i, int j, int k) noexcept {
-      if (mask(i, j, k) != -1) {
 
         amrex::Real* yvec_d = N_VGetArrayPointer(y);
         utils::box_flatten<Ordering>(
@@ -455,7 +454,6 @@ ReactorCvode::react(
           amrex::Print() << "END : time curr is " << CvodeActual_time_final
                          << " and actual dt_react is " << actual_dt << "\n";
         }
-      }
     });
 
 #ifdef MOD_REACTOR

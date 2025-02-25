@@ -230,7 +230,7 @@ void Vidyut::Evolve()
             // Calculate the reactive source terms for all species/levels
             if(do_reactions)
             {
-                update_rxnsrc_at_all_levels(Sborder, rxn_src, cur_time);
+                update_rxnsrc_at_all_levels(Sborder, rxn_src, cur_time, dt_common);
             }
 
   
