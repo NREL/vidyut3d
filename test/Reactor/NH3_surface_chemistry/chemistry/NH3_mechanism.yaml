@@ -1,0 +1,1361 @@
+description: |-
+  Argon-CO2 plasma mechanism
+
+generator: ck2yaml
+input-files: [mechanism.inp, therm_vibs.dat]
+cantera-version: 3.0.0
+date: Tue, 05 Nov 2024 11:18:26 -0700
+
+units: {length: cm, time: s, quantity: molec, activation-energy: cal/mol}
+
+phases:
+- name: gas
+  thermo: ideal-gas
+  elements: [E, N, H]
+  species: [E, H, H2, H2v1, H2v2, H2v3, N, N2, N2v1, N2v2, N2v3, N2v4, N2v5,
+    N2v6, N2v7, N2v8, N2A3, N2B3, N2a1, N2C3, H2B3, H2B1, H2C3, H2A3, H2R,
+    N2D, N2P, NH, NH2, NH3, H-, H+, H2+, H3+, N+, N2+, N3+, N4+, NH+, N2H+,
+    NH2+, NH3+, NH4+]
+  kinetics: gas
+  transport: mixture-averaged
+  state: {T: 300.0, P: 1 atm}
+
+species:
+- name: E
+  composition: {E: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 1.0e+04]
+    data:
+    - [2.5002515, 0.0, 0.0, 0.0, 0.0, -745.97839, -11.736856]
+    - [2.5002515, 0.0, 0.0, 0.0, 0.0, -745.97845, -11.736856]
+    note: |-
+      71091
+       GRI-Mech Version 3.0 Thermodynamics released 7/30/99
+       NASA Polynomial format for CHEMKIN-II
+       see README file for disclaimer
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 850.0
+    diameter: 425.0
+    rotational-relaxation: 1.0
+- name: H
+  composition: {H: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.5, 7.05332819e-13, -1.99591964e-15, 2.30081632e-18, -9.27732332e-22,
+      2.54736599e+04, -0.446682853]
+    - [2.50000001, -2.30842973e-11, 1.61561948e-14, -4.73515235e-18, 4.98197357e-22,
+      2.54736599e+04, -0.446682914]
+    note: L 7/88
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 145.0
+    diameter: 2.05
+- name: H2
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.44017591, 6.13208604e-04, -1.75902954e-06, 2.13122139e-09, -8.74854349e-13,
+      -1041.25142, -4.02487957]
+    - [3.67547542, -2.63053162e-04, 1.63587111e-07, -2.64246381e-11, 1.13728972e-15,
+      -1115.07908, -5.2351001]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2v1
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.42813042, 7.15087289e-04, -2.03573009e-06, 2.45753517e-09, -1.00823377e-12,
+      4944.62917, -3.92258494]
+    - [3.75040362, -4.18328668e-04, 2.75758939e-07, -5.42878261e-11, 3.24294287e-15,
+      4844.22801, -5.58669275]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2v2
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.45551851, 4.78324942e-04, -1.32537937e-06, 1.62699514e-09, -6.74924652e-13,
+      1.05780801e+04, -3.97519433]
+    - [3.76074142, -4.75923385e-04, 3.47578236e-07, -7.70667476e-11, 5.20504557e-15,
+      1.04823184e+04, -5.5678418]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2v3
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50635858, 4.08371726e-05, -2.84605024e-08, 1.09454913e-10, -6.41483328e-14,
+      1.58604321e+04, -4.11841032]
+    - [3.74110447, -4.93848895e-04, 4.07913801e-07, -9.82190607e-11, 7.09151307e-15,
+      1.57852416e+04, -5.37206389]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: N
+  composition: {N: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 5.6104638e+04, 4.1939088]
+    - [2.4159429, 1.7489065e-04, -1.1902369e-07, 3.0226244e-11, -2.0360983e-15,
+      5.6133775e+04, 4.6496095]
+    note: L 6/88
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 71.4
+    diameter: 3.298
+- name: N2
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001341, 3.97660402e-06, 1.98493538e-10, -1.19427857e-13, 3.91100022e-17,
+      -1043.75155, 3.08922444]
+    - [3.50000063, 4.04455495e-06, 6.18876803e-11, 1.07202443e-15, 5.02875364e-20,
+      -1043.74952, 3.0892827]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v1
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001318, 4.04912275e-06, 1.98392792e-10, -1.17381775e-13, 3.8480162e-17,
+      2308.48524, 3.09796793]
+    - [3.50000062, 4.11591233e-06, 6.40798682e-11, 1.13222785e-15, 5.37248582e-20,
+      2308.48724, 3.09802519]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v2
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001297, 4.12336336e-06, 1.98912712e-10, -1.15938638e-13, 3.80938764e-17,
+      5619.47467, 3.10678844]
+    - [3.50000057, 4.18924931e-06, 6.63261835e-11, 1.20680152e-15, 5.657342e-20,
+      5619.47666, 3.10684501]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v3
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001278, 4.1994753e-06, 1.99821734e-10, -1.14819298e-13, 3.78384445e-17,
+      8889.19724, 3.11568737]
+    - [3.5000005, 4.26459684e-06, 6.86543287e-11, 1.29063999e-15, 5.93087767e-20,
+      8889.19921, 3.11574343]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v4
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001261, 4.27739588e-06, 2.01516711e-10, -1.14483004e-13, 3.78994402e-17,
+      1.21176334e+04, 3.12466607]
+    - [3.50000037, 4.34208888e-06, 7.10325182e-11, 1.39311447e-15, 6.11992784e-20,
+      1.21176354e+04, 3.12472205]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v5
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001249, 4.35707343e-06, 2.0437152e-10, -1.15360735e-13, 3.84507508e-17,
+      1.53047637e+04, 3.13372594]
+    - [3.50000015, 4.42185712e-06, 7.34326858e-11, 1.5228162e-15, 6.15821658e-20,
+      1.53047658e+04, 3.13378249]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v6
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001243, 4.43841017e-06, 2.08904691e-10, -1.18052882e-13, 3.97347055e-17,
+      1.84505686e+04, 3.14286837]
+    - [3.4999998, 4.50406161e-06, 7.58119018e-11, 1.69213986e-15, 5.9473693e-20,
+      1.84505708e+04, 3.1429265]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v7
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001246, 4.52123858e-06, 2.15849133e-10, -1.23411178e-13, 4.20951691e-17,
+      2.15550286e+04, 3.15209478]
+    - [3.49999925, 4.58890236e-06, 7.81054698e-11, 1.91899875e-15, 5.34220476e-20,
+      2.15550309e+04, 3.15215596]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2v8
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.50001277, 4.6040092e-06, 2.29970239e-10, -1.37016752e-13, 4.77831468e-17,
+      2.46181241e+04, 3.16140598]
+    - [3.49999808, 4.67722479e-06, 7.98618526e-11, 2.31589056e-15, 3.39603558e-20,
+      2.46181269e+04, 3.16147479]
+    note: EXC 21
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2A3
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 1.4082404e-03, -3.963222e-06, 5.641515e-09, -2.444854e-12,
+      7.057910608e+04, 3.950372]
+    - [2.92664, 1.4879768e-03, -5.68476e-07, 1.0097038e-10, -6.753351e-15,
+      7.067710608e+04, 5.980528]
+    note: '121286'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2B3
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 1.4082404e-03, -3.963222e-06, 5.641515e-09, -2.444854e-12,
+      7.057910608e+04, 3.950372]
+    - [2.92664, 1.4879768e-03, -5.68476e-07, 1.0097038e-10, -6.753351e-15,
+      7.067710608e+04, 5.980528]
+    note: '121286'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2a1
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 1.4082404e-03, -3.963222e-06, 5.641515e-09, -2.444854e-12,
+      7.057910608e+04, 3.950372]
+    - [2.92664, 1.4879768e-03, -5.68476e-07, 1.0097038e-10, -6.753351e-15,
+      7.067710608e+04, 5.980528]
+    note: '121286'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N2C3
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 1.4082404e-03, -3.963222e-06, 5.641515e-09, -2.444854e-12,
+      7.057910608e+04, 3.950372]
+    - [2.92664, 1.4879768e-03, -5.68476e-07, 1.0097038e-10, -6.753351e-15,
+      7.067710608e+04, 5.980528]
+    note: '121286'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: H2B3
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.34433112, 7.98052075e-03, -1.9478151e-05, 2.01572094e-08, -7.37611761e-12,
+      -917.935173, 0.683010238]
+    - [3.3372792, -4.94024731e-05, 4.99456778e-07, -1.79566394e-10, 2.00255376e-14,
+      -950.158922, -3.20502331]
+    note: TPIS78
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2B1
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.34433112, 7.98052075e-03, -1.9478151e-05, 2.01572094e-08, -7.37611761e-12,
+      -917.935173, 0.683010238]
+    - [3.3372792, -4.94024731e-05, 4.99456778e-07, -1.79566394e-10, 2.00255376e-14,
+      -950.158922, -3.20502331]
+    note: TPIS78
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2C3
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.34433112, 7.98052075e-03, -1.9478151e-05, 2.01572094e-08, -7.37611761e-12,
+      -917.935173, 0.683010238]
+    - [3.3372792, -4.94024731e-05, 4.99456778e-07, -1.79566394e-10, 2.00255376e-14,
+      -950.158922, -3.20502331]
+    note: TPIS78
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2A3
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.34433112, 7.98052075e-03, -1.9478151e-05, 2.01572094e-08, -7.37611761e-12,
+      -917.935173, 0.683010238]
+    - [3.3372792, -4.94024731e-05, 4.99456778e-07, -1.79566394e-10, 2.00255376e-14,
+      -950.158922, -3.20502331]
+    note: TPIS78
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H2R
+  composition: {H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.34433112, 7.98052075e-03, -1.9478151e-05, 2.01572094e-08, -7.37611761e-12,
+      -917.935173, 0.683010238]
+    - [3.3372792, -4.94024731e-05, 4.99456778e-07, -1.79566394e-10, 2.00255376e-14,
+      -950.158922, -3.20502331]
+    note: TPIS78
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: N2D
+  composition: {N: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 5.6104638e+04, 4.1939088]
+    - [2.4159429, 1.7489065e-04, -1.1902369e-07, 3.0226244e-11, -2.0360983e-15,
+      5.6133775e+04, 4.6496095]
+    note: L 6/88
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 71.4
+    diameter: 3.298
+- name: N2P
+  composition: {N: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 5.6104638e+04, 4.1939088]
+    - [2.4159429, 1.7489065e-04, -1.1902369e-07, 3.0226244e-11, -2.0360983e-15,
+      5.6133775e+04, 4.6496095]
+    note: L 6/88
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 71.4
+    diameter: 3.298
+- name: NH
+  composition: {N: 1, H: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.49295037, 3.1179572e-04, -1.48906628e-06, 2.48167402e-09, -1.03570916e-12,
+      4.21059722e+04, 1.84834973]
+    - [2.78372644, 1.32985888e-03, -4.24785573e-07, 7.83494442e-11, -5.5045131e-15,
+      4.23461945e+04, 5.74084863]
+    note: ATcT/A
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 80.0
+    diameter: 2.65
+    rotational-relaxation: 4.0
+- name: NH2
+  composition: {N: 1, H: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3000.0]
+    data:
+    - [4.19198016, -2.04602827e-03, 6.67756134e-06, -5.24907235e-09, 1.55589948e-12,
+      2.14991387e+04, -0.0904785244]
+    - [2.59263049, 3.47683597e-03, -1.08271624e-06, 1.49342558e-10, -5.75241187e-15,
+      2.18865421e+04, 7.90565351]
+    note: AMIDOGEN RAD IU3/03
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 80.0
+    diameter: 2.65
+    polarizability: 2.26
+    rotational-relaxation: 4.0
+- name: NH3
+  composition: {H: 3, N: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [4.46075151, -5.68781763e-03, 2.11411484e-05, -2.0284998e-08, 6.89500555e-12,
+      -6707.53514, -1.34450793]
+    - [2.09566674, 6.14750045e-03, -2.00328925e-06, 3.01334626e-10, -1.71227204e-14,
+      -6309.45436, 9.59574081]
+    note: RRHO         A12/04
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 481.0
+    diameter: 2.92
+    dipole: 1.47
+    rotational-relaxation: 10.0
+- name: H-
+  composition: {H: 1, E: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 6000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 1.5976167e+04, -1.1390139]
+    note: L/7/88
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 145.0
+    diameter: 2.05
+- name: H+
+  composition: {H: 1, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 6000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 1.84021488e+05, -1.14064664]
+    note: g10/00
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 145.0
+    diameter: 2.05
+- name: H2+
+  composition: {H: 2, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.77256072, -1.9574659e-03, 4.54812047e-06, -2.82152141e-09, 5.33969209e-13,
+      1.78694654e+05, -3.96609192]
+    - [3.44204765, 5.99083239e-04, 6.69133685e-08, -3.43574373e-11, 1.97626599e-15,
+      1.78650236e+05, -2.79499055]
+    note: ATcT A
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: H3+
+  composition: {H: 3, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [4.1795698, -8.68875627e-04, -1.09017371e-07, 4.13349766e-09, -2.37877027e-12,
+      1.32635537e+05, -5.838001]
+    - [2.01435718, 4.15925769e-03, -1.42664877e-06, 2.22372739e-10, -1.29346518e-14,
+      1.33230507e+05, 5.46168967]
+    note: TRIHYDROGEN   T 6/11
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: N+
+  composition: {N: 1, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [2.79781357, -1.41287178e-03, 2.68686998e-06, -2.31615591e-09, 7.49585578e-13,
+      2.25548731e+05, 3.59928845]
+    - [2.51210704, 1.7536744e-06, -1.50557538e-08, 7.06834189e-12, -6.31861166e-16,
+      2.25597004e+05, 4.92236293]
+    note: g 6/97
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 71.4
+    diameter: 3.298
+- name: N2+
+  composition: {N: 2, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.77540711, -2.06459157e-03, 4.75752301e-06, -3.15664228e-09, 6.70509973e-13,
+      1.80481115e+05, 2.69322178]
+    - [3.58661363, 2.53071949e-04, 1.84778214e-07, -4.55257223e-11, 3.26818029e-15,
+      1.80390994e+05, 3.09584143]
+    note: tpis89
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N3+
+  composition: {N: 3, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.67011652, 4.59806506e-03, 1.39108363e-06, -5.02694961e-09, 2.2115576e-12,
+      1.81883765e+05, 3.94467784]
+    - [5.48199577, 2.01665176e-03, -7.78258436e-07, 1.31617313e-10, -8.13320494e-15,
+      1.81240003e+05, -6.06985591]
+    note: cation        T 7/11
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: N4+
+  composition: {N: 4, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.32596515, 0.0143909181, -1.56797253e-05, 9.52287848e-09, -2.53566648e-12,
+      2.15553183e+05, 7.8229064]
+    - [7.05285816, 2.91094469e-03, -1.11573999e-06, 1.87883944e-10, -1.15769013e-14,
+      2.14540545e+05, -11.2429353]
+    note: cyclo         T 1/11
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: NH+
+  composition: {N: 1, H: 1, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [4.61611136, -3.13435677e-03, 2.9170513e-06, 2.57384848e-10, -7.31431347e-13,
+      1.99085043e+05, -2.9275846]
+    - [2.9591898, 1.34991719e-03, -4.61487782e-07, 8.26977666e-11, -5.55758913e-15,
+      1.99524505e+05, 5.59978021]
+    note: L 2/89
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 80.0
+    diameter: 2.65
+    rotational-relaxation: 4.0
+- name: N2H+
+  composition: {N: 2, H: 1, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.80587024, 8.75013564e-03, -1.48964077e-05, 1.32707617e-08, -4.53576366e-12,
+      1.89061925e+04, 4.29885227]
+    - [5.30541037, 1.58633107e-03, -5.88188542e-07, 9.69276999e-11, -5.88438811e-15,
+      1.86066309e+04, -2.79110083]
+    note: T 9/11
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 80.0
+    diameter: 2.65
+    polarizability: 2.26
+    rotational-relaxation: 4.0
+- name: NH2+
+  composition: {N: 1, H: 2, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [4.1121889, -1.58941762e-03, 5.72106358e-06, -4.30114907e-09, 1.18451647e-12,
+      1.51543764e+05, -0.385152148]
+    - [2.66715572, 3.42795845e-03, -1.12917766e-06, 1.71028505e-10, -9.76274694e-15,
+      1.51884335e+05, 6.81237195]
+    note: cation       T09/09
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 80.0
+    diameter: 2.65
+    polarizability: 2.26
+    rotational-relaxation: 4.0
+- name: NH3+
+  composition: {N: 1, H: 3, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [3.62055372, 6.38852979e-04, 8.28649096e-06, -9.01954415e-09, 3.20297454e-12,
+      1.12286783e+05, 2.80176176]
+    - [2.58855213, 5.74163681e-03, -1.86472122e-06, 2.79719766e-10, -1.58594375e-14,
+      1.12470081e+05, 7.60835234]
+    note: cation       T09/09
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 481.0
+    diameter: 2.92
+    dipole: 1.47
+    rotational-relaxation: 10.0
+- name: NH4+
+  composition: {N: 1, H: 4, E: -1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [298.15, 1000.0, 6000.0]
+    data:
+    - [5.02209414, -0.0117099068, 3.97600414e-05, -3.69420221e-08, 1.20264627e-11,
+      7.53952917e+04, -4.20522854]
+    - [1.31570332, 9.64926655e-03, -3.29049612e-06, 5.12045458e-10, -2.98499121e-14,
+      7.58200207e+04, 12.0930966]
+    note: ATcT A
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 481.0
+    diameter: 2.92
+    dipole: 1.47
+    rotational-relaxation: 10.0
+
+reactions:
+- equation: E + N2 => E + N2  # Reaction 1
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+  note: 'ELECTRON IMPACT REACTIONS : ELASTIC, EXCITATIONS, DISSOCIATIONS,
+    AND IONIZATION'
+- equation: E + N2 => E + N2v1  # Reaction 2
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v2  # Reaction 3
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v3  # Reaction 4
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v4  # Reaction 5
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v5  # Reaction 6
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v6  # Reaction 7
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v7  # Reaction 8
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2v8  # Reaction 9
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2A3  # Reaction 10
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2B3  # Reaction 11
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2a1  # Reaction 12
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N2C3  # Reaction 13
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + E + N2+  # Reaction 14
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2  # Reaction 15
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2v1  # Reaction 16
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2v2  # Reaction 17
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2v3  # Reaction 18
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2B3  # Reaction 19
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2B1  # Reaction 20
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2C3  # Reaction 21
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2A3  # Reaction 22
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H2R  # Reaction 23
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + E + H2+  # Reaction 24
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N => E + E + N+  # Reaction 25
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H => E + E + H+  # Reaction 26
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH => E + E + NH+  # Reaction 27
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH2 => E + E + NH2+  # Reaction 28
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH3 => E + E + NH3+  # Reaction 29
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + N + N  # Reaction 30
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H2 => E + H + H  # Reaction 31
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH => E + N + H  # Reaction 32
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH2 => E + N + H2  # Reaction 33
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH2 => E + NH + H  # Reaction 34
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH3 => E + NH2 + H  # Reaction 35
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH3 => E + NH + H2  # Reaction 36
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2 <=> N2 + N2  # Reaction 37
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+  note: V-T RELAXATION REACTIONS
+- equation: N2v2 + N2 <=> N2v1 + N2  # Reaction 38
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2 <=> N2v2 + N2  # Reaction 39
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N2 <=> N2v3 + N2  # Reaction 40
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + N2 <=> N2v4 + N2  # Reaction 41
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + N2 <=> N2v5 + N2  # Reaction 42
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + N2 <=> N2v6 + N2  # Reaction 43
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v8 + N2 <=> N2v7 + N2  # Reaction 44
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + H2 <=> N2 + H2  # Reaction 45
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + H2 <=> N2v1 + H2  # Reaction 46
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + H2 <=> N2v2 + H2  # Reaction 47
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + H2 <=> N2v3 + H2  # Reaction 48
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + H2 <=> N2v4 + H2  # Reaction 49
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + H2 <=> N2v5 + H2  # Reaction 50
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + H2 <=> N2v6 + H2  # Reaction 51
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v8 + H2 <=> N2v7 + H2  # Reaction 52
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N <=> N2 + N  # Reaction 53
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N <=> N2v1 + N  # Reaction 54
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N <=> N2v2 + N  # Reaction 55
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N <=> N2v3 + N  # Reaction 56
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + N <=> N2v4 + N  # Reaction 57
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + N <=> N2v5 + N  # Reaction 58
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + N <=> N2v6 + N  # Reaction 59
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v8 + N <=> N2v7 + N  # Reaction 60
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + H <=> N2 + H  # Reaction 61
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + H <=> N2v1 + H  # Reaction 62
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + H <=> N2v2 + H  # Reaction 63
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + H <=> N2v3 + H  # Reaction 64
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + H <=> N2v4 + H  # Reaction 65
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + H <=> N2v5 + H  # Reaction 66
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + H <=> N2v6 + H  # Reaction 67
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v8 + H <=> N2v7 + H  # Reaction 68
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + H2 <=> H2 + H2  # Reaction 72
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + H2 <=> H2v1 + H2  # Reaction 73
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v3 + H2 <=> H2v2 + H2  # Reaction 74
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + H <=> H2 + H  # Reaction 78
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + H <=> H2v1 + H  # Reaction 79
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v3 + H <=> H2v2 + H  # Reaction 80
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v1 <=> N2 + N2v2  # Reaction 81
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+  note: V-V RELAXATION REACTIONS
+- equation: N2v1 + N2v2 <=> N2 + N2v3  # Reaction 82
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v3 <=> N2 + N2v4  # Reaction 83
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v4 <=> N2 + N2v5  # Reaction 84
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v5 <=> N2 + N2v6  # Reaction 85
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v6 <=> N2 + N2v7  # Reaction 86
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + N2v7 <=> N2 + N2v8  # Reaction 87
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v2 <=> N2v1 + N2v3  # Reaction 88
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v3 <=> N2v1 + N2v4  # Reaction 89
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v4 <=> N2v1 + N2v5  # Reaction 90
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v5 <=> N2v1 + N2v6  # Reaction 91
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v6 <=> N2v1 + N2v7  # Reaction 92
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + N2v7 <=> N2v1 + N2v8  # Reaction 93
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2v3 <=> N2v2 + N2v4  # Reaction 94
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2v4 <=> N2v2 + N2v5  # Reaction 95
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2v5 <=> N2v2 + N2v6  # Reaction 96
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2v6 <=> N2v2 + N2v7  # Reaction 97
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + N2v7 <=> N2v2 + N2v8  # Reaction 98
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N2v4 <=> N2v3 + N2v5  # Reaction 99
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N2v5 <=> N2v3 + N2v6  # Reaction 100
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N2v6 <=> N2v3 + N2v7  # Reaction 101
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + N2v7 <=> N2v3 + N2v8  # Reaction 102
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + N2v5 <=> N2v4 + N2v6  # Reaction 103
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + N2v6 <=> N2v4 + N2v7  # Reaction 104
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + N2v7 <=> N2v4 + N2v8  # Reaction 105
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + N2v6 <=> N2v5 + N2v7  # Reaction 106
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + N2v7 <=> N2v5 + N2v8  # Reaction 107
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + N2v7 <=> N2v6 + N2v8  # Reaction 108
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + H2v1 <=> H2 + H2v2  # Reaction 109
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + H2v2 <=> H2 + H2v3  # Reaction 110
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + H2v2 <=> H2v1 + H2v3  # Reaction 111
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2 + H2v1 <=> N2v1 + H2  # Reaction 112
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + H2v1 <=> N2v2 + H2  # Reaction 113
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + H2v1 <=> N2v3 + H2  # Reaction 114
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + H2v1 <=> N2v4 + H2  # Reaction 115
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + H2v1 <=> N2v5 + H2  # Reaction 116
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + H2v1 <=> N2v6 + H2  # Reaction 117
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + H2v1 <=> N2v7 + H2  # Reaction 118
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + H2v1 <=> N2v8 + H2  # Reaction 119
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2 + H2v2 <=> N2v1 + H2v1  # Reaction 120
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + H2v2 <=> N2v2 + H2v1  # Reaction 121
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + H2v2 <=> N2v3 + H2v1  # Reaction 122
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + H2v2 <=> N2v4 + H2v1  # Reaction 123
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + H2v2 <=> N2v5 + H2v1  # Reaction 124
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + H2v2 <=> N2v6 + H2v1  # Reaction 125
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + H2v2 <=> N2v7 + H2v1  # Reaction 126
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + H2v2 <=> N2v8 + H2v1  # Reaction 127
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2 + H2v3 <=> N2v1 + H2v2  # Reaction 128
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v1 + H2v3 <=> N2v2 + H2v2  # Reaction 129
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v2 + H2v3 <=> N2v3 + H2v2  # Reaction 130
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v3 + H2v3 <=> N2v4 + H2v2  # Reaction 131
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v4 + H2v3 <=> N2v5 + H2v2  # Reaction 132
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v5 + H2v3 <=> N2v6 + H2v2  # Reaction 133
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v6 + H2v3 <=> N2v7 + H2v2  # Reaction 134
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2v7 + H2v3 <=> N2v8 + H2v2  # Reaction 135
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v2 <=> H2v1 + N2  # Reaction 136
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v3 <=> H2v1 + N2v1  # Reaction 137
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v4 <=> H2v1 + N2v2  # Reaction 138
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v5 <=> H2v1 + N2v3  # Reaction 139
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v6 <=> H2v1 + N2v4  # Reaction 140
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v7 <=> H2v1 + N2v5  # Reaction 141
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2 + N2v8 <=> H2v1 + N2v6  # Reaction 142
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v2 <=> H2v2 + N2  # Reaction 143
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v3 <=> H2v2 + N2v1  # Reaction 144
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v4 <=> H2v2 + N2v2  # Reaction 145
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v5 <=> H2v2 + N2v3  # Reaction 146
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v6 <=> H2v2 + N2v4  # Reaction 147
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v7 <=> H2v2 + N2v5  # Reaction 148
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v1 + N2v8 <=> H2v2 + N2v6  # Reaction 149
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v2 <=> H2v3 + N2  # Reaction 150
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v3 <=> H2v3 + N2v1  # Reaction 151
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v4 <=> H2v3 + N2v2  # Reaction 152
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v5 <=> H2v3 + N2v3  # Reaction 153
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v6 <=> H2v3 + N2v4  # Reaction 154
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v7 <=> H2v3 + N2v5  # Reaction 155
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: H2v2 + N2v8 <=> H2v3 + N2v6  # Reaction 156
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2v6 => N2B3 + N2  # Reaction 157
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+  note: ELECTRONIC TRANSITION REACTIONS
+- equation: N2A3 + N2v7 => N2B3 + N2v1  # Reaction 158
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2v8 => N2B3 + N2v2  # Reaction 159
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 + N2 => N2A3 + N2v6  # Reaction 160
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 + N2v1 => N2A3 + N2v7  # Reaction 161
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 + N2v2 => N2A3 + N2v8  # Reaction 162
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 => N2A3  # Reaction 163
+  rate-constant: {A: 1.35e+05, b: 0.0, Ea: 0.0}
+  note: RADIATIVE TRANSITIONS
+- equation: N2a1 => N2  # Reaction 164
+  rate-constant: {A: 100.0, b: 0.0, Ea: 0.0}
+- equation: N2C3 => N2B3  # Reaction 165
+  rate-constant: {A: 2.45e+07, b: 0.0, Ea: 0.0}
+- equation: E + N2 => E + E + N + N+  # Reaction 166
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+  note: DISSOCIATVE IONIZATION AND RECOMBINATION
+- equation: E + H2 => E + E + H + H+  # Reaction 167
+  rate-constant: {A: 3.0e-08, b: 0.0, Ea: 0.0}
+- equation: E + N2+ => N + N  # Reaction 168
+  rate-constant: {A: 9.0e-08, b: 0.0, Ea: 0.0}
+- equation: E + N2+ => N + N2D  # Reaction 169
+  rate-constant: {A: 8.1e-08, b: 0.0, Ea: 0.0}
+- equation: E + N2+ => N + N2P  # Reaction 170
+  rate-constant: {A: 9.0e-09, b: 0.0, Ea: 0.0}
+- equation: E + N3+ => N2 + N  # Reaction 171
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: E + N4+ => N2 + N2  # Reaction 172
+  rate-constant: {A: 2.3e-06, b: 0.0, Ea: 0.0}
+- equation: E + H2+ => H + H  # Reaction 173
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H3+ => H + H + H  # Reaction 174
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + H3+ => H2 + H  # Reaction 175
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+- equation: E + NH+ => N + H  # Reaction 176
+  rate-constant: {A: 4.3e-08, b: 0.0, Ea: 0.0}
+- equation: E + NH2+ => NH + H  # Reaction 177
+  rate-constant: {A: 1.02e-07, b: 0.0, Ea: 0.0}
+- equation: E + NH2+ => N + H + H  # Reaction 178
+  rate-constant: {A: 1.98e-07, b: 0.0, Ea: 0.0}
+- equation: E + NH3+ => NH + H + H  # Reaction 179
+  rate-constant: {A: 1.55e-07, b: 0.0, Ea: 0.0}
+- equation: E + NH3+ => NH2 + H  # Reaction 180
+  rate-constant: {A: 1.55e-07, b: 0.0, Ea: 0.0}
+- equation: E + NH4+ => NH3 + H  # Reaction 181
+  rate-constant: {A: 8.01e-07, b: 0.0, Ea: 0.0}
+- equation: E + NH4+ => NH2 + H + H  # Reaction 182
+  rate-constant: {A: 1.23e-07, b: 0.0, Ea: 0.0}
+- equation: E + N2H+ => N2 + H  # Reaction 183
+  rate-constant: {A: 7.1e-07, b: 0.0, Ea: 0.0}
+- equation: N2+ + H2 => N2H+ + H  # Reaction 184
+  rate-constant: {A: 2.0e-09, b: 0.0, Ea: 0.0}
+  note: ION MOLECULE REACTIONS
+- equation: N2+ + N2A3 => N3+ + N  # Reaction 185
+  rate-constant: {A: 3.0e-10, b: 0.0, Ea: 0.0}
+- equation: N2+ + N => N+ + N2  # Reaction 186
+  rate-constant: {A: 7.2e-13, b: 0.0, Ea: 0.0}
+- equation: N2+ + N2 + N => N3+ + N2  # Reaction 187
+  rate-constant: {A: 9.0e-30, b: 0.0, Ea: 0.0}
+- equation: N2+ + N2 + N2 => N4+ + N2  # Reaction 188
+  rate-constant: {A: 5.2e-29, b: 0.0, Ea: 0.0}
+- equation: N2+ + NH3 => NH3+ + N2  # Reaction 189
+  rate-constant: {A: 1.95e-09, b: 0.0, Ea: 0.0}
+- equation: N3+ + N => N2+ + N2  # Reaction 190
+  rate-constant: {A: 6.6e-11, b: 0.0, Ea: 0.0}
+- equation: N4+ + N => N+ + N2 + N2  # Reaction 191
+  rate-constant: {A: 1.0e-11, b: 0.0, Ea: 0.0}
+- equation: N4+ + N2 => N2+ + N2 + N2  # Reaction 192
+  rate-constant: {A: 2.1e-16, b: 0.0, Ea: 0.0}
+- equation: N+ + H2 => NH+ + H  # Reaction 193
+  rate-constant: {A: 5.0e-10, b: 0.0, Ea: 0.0}
+- equation: N+ + NH3 => NH2+ + NH  # Reaction 194
+  rate-constant: {A: 4.7e-10, b: 0.0, Ea: 0.0}
+- equation: N+ + NH3 => NH3+ + N  # Reaction 195
+  rate-constant: {A: 1.67e-09, b: 0.0, Ea: 0.0}
+- equation: N+ + NH3 => N2H+ + H2  # Reaction 196
+  rate-constant: {A: 2.12e-10, b: 0.0, Ea: 0.0}
+- equation: H2+ + H => H2 + H+  # Reaction 197
+  rate-constant: {A: 6.4e-10, b: 0.0, Ea: 0.0}
+- equation: H2+ + H2 => H3+ + H  # Reaction 198
+  rate-constant: {A: 2.0e-09, b: 0.0, Ea: 0.0}
+- equation: H2+ + NH3 => NH3+ + H2  # Reaction 199
+  rate-constant: {A: 5.7e-09, b: 0.0, Ea: 0.0}
+- equation: H2+ + N2 => N2H+ + H  # Reaction 200
+  rate-constant: {A: 2.0e-09, b: 0.0, Ea: 0.0}
+- equation: H+ + NH3 => NH3+ + H  # Reaction 201
+  rate-constant: {A: 5.2e-09, b: 0.0, Ea: 0.0}
+- equation: NH+ + H2 => H3+ + N  # Reaction 202
+  rate-constant: {A: 1.85e-10, b: 0.0, Ea: 0.0}
+- equation: NH+ + H2 => NH2+ + H  # Reaction 203
+  rate-constant: {A: 1.05e-09, b: 0.0, Ea: 0.0}
+- equation: NH+ + NH3 => NH3+ + NH  # Reaction 204
+  rate-constant: {A: 1.8e-09, b: 0.0, Ea: 0.0}
+- equation: NH+ + NH3 => NH4+ + N  # Reaction 205
+  rate-constant: {A: 6.0e-10, b: 0.0, Ea: 0.0}
+- equation: NH+ + N2 => N2H+ + N  # Reaction 206
+  rate-constant: {A: 6.5e-10, b: 0.0, Ea: 0.0}
+- equation: NH2+ + H2 => NH3+ + H  # Reaction 207
+  rate-constant: {A: 1.95e-10, b: 0.0, Ea: 0.0}
+- equation: NH2+ + NH3 => NH3+ + NH2  # Reaction 208
+  rate-constant: {A: 1.15e-09, b: 0.0, Ea: 0.0}
+- equation: NH2+ + NH3 => NH4+ + NH  # Reaction 209
+  rate-constant: {A: 1.15e-09, b: 0.0, Ea: 0.0}
+- equation: NH3+ + NH3 => NH4+ + NH2  # Reaction 210
+  rate-constant: {A: 2.1e-09, b: 0.0, Ea: 0.0}
+- equation: N2H+ + NH3 => NH4+ + N2  # Reaction 211
+  rate-constant: {A: 2.3e-09, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N => N2 + N  # Reaction 212
+  rate-constant: {A: 2.0e-12, b: 0.0, Ea: 0.0}
+  note: BINARY PROCESSES BETWEEN NITROGEN SPECIES
+- equation: N2A3 + N => N2 + N2P  # Reaction 213
+  rate-constant: {A: 4.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2 => N2 + N2  # Reaction 214
+  rate-constant: {A: 3.0e-16, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2A3 => N2 + N2B3  # Reaction 215
+  rate-constant: {A: 3.0e-10, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2A3 => N2 + N2C3  # Reaction 216
+  rate-constant: {A: 1.5e-10, b: 0.0, Ea: 0.0}
+- equation: N2A3 + N2A3 => N2 + N + N  # Reaction 217
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 + N2 => N2A3 + N2  # Reaction 218
+  rate-constant: {A: 3.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2B3 + N2 => N2 + N2  # Reaction 219
+  rate-constant: {A: 2.0e-12, b: 0.0, Ea: 0.0}
+- equation: N2a1 + N2 => N2B3 + N2  # Reaction 220
+  rate-constant: {A: 1.9e-13, b: 0.0, Ea: 0.0}
+- equation: N2a1 + N2a1 => N2+ + N2 + E  # Reaction 221
+  rate-constant: {A: 1.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2a1 + N2a1 => N4+ + E  # Reaction 222
+  rate-constant: {A: 1.0e-11, b: 0.0, Ea: 0.0}
+- equation: N2a1 + N2A3 => N4+ + E  # Reaction 223
+  rate-constant: {A: 4.0e-12, b: 0.0, Ea: 0.0}
+- equation: N2D + N2 => N + N2  # Reaction 224
+  rate-constant: {A: 2.3e-14, b: 0.0, Ea: 0.0}
+- equation: N2P + N => N + N  # Reaction 225
+  rate-constant: {A: 1.8e-12, b: 0.0, Ea: 0.0}
+- equation: N2P + N => N2D + N  # Reaction 226
+  rate-constant: {A: 6.0e-13, b: 0.0, Ea: 0.0}
+- equation: N2P + N2 => N + N2  # Reaction 227
+  rate-constant: {A: 6.0e-14, b: 0.0, Ea: 0.0}
+- equation: N2A3 + H => N2 + H  # Reaction 228
+  rate-constant: {A: 5.0e-11, b: 0.0, Ea: 0.0}
+  note: OTHER BINARY PROCESSES
+- equation: N2A3 + H2 => N2 + H + H  # Reaction 229
+  rate-constant: {A: 2.0e-10, b: 0.0, Ea: 0.0}
+- equation: N2A3 + NH3 => N2 + NH3  # Reaction 230
+  rate-constant: {A: 1.6e-10, b: 0.0, Ea: 0.0}
+- equation: N2B3 + H2 => N2A3 + H2  # Reaction 231
+  rate-constant: {A: 2.5e-11, b: 0.0, Ea: 0.0}
+- equation: N2a1 + H => N2 + H  # Reaction 232
+  rate-constant: {A: 1.5e-11, b: 0.0, Ea: 0.0}
+- equation: N2a1 + H2 => N2 + H + H  # Reaction 233
+  rate-constant: {A: 2.6e-11, b: 0.0, Ea: 0.0}
+- equation: N + H2v1 => H + NH  # Reaction 234
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2v2 => H + NH  # Reaction 235
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2v3 => H + NH  # Reaction 236
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2B3 => H + NH  # Reaction 237
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2B1 => H + NH  # Reaction 238
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2C3 => H + NH  # Reaction 239
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2A3 => H + NH  # Reaction 240
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N + H2R => H + NH  # Reaction 241
+  rate-constant: {A: 4.0e-10, b: 0.0, Ea: 0.0}
+- equation: N2D + H2 => H + NH  # Reaction 242
+  rate-constant: {A: 2.3e-12, b: 0.0, Ea: 0.0}
+- equation: N2D + NH3 => NH + NH2  # Reaction 243
+  rate-constant: {A: 1.1e-10, b: 0.0, Ea: 0.0}
+- equation: N2P + H2 => H + NH  # Reaction 244
+  rate-constant: {A: 2.5e-14, b: 0.0, Ea: 0.0}
+- equation: N + NH => H + N2  # Reaction 245
+  rate-constant: {A: 5.0e-11, b: 0.0, Ea: 0.0}
+- equation: H + NH => H2 + N  # Reaction 246
+  rate-constant: {A: 5.4e-11, b: 0.0, Ea: 0.0}
+- equation: NH + NH => H2 + N2  # Reaction 247
+  rate-constant: {A: 5.0e-14, b: 0.0, Ea: 0.0}
+- equation: NH + NH => N + NH2  # Reaction 248
+  rate-constant: {A: 1.7e-12, b: 0.0, Ea: 0.0}
+- equation: NH + NH => N2 + H + H  # Reaction 249
+  rate-constant: {A: 8.5e-11, b: 0.0, Ea: 0.0}
+- equation: H + NH2 => H2 + NH  # Reaction 250
+  rate-constant: {A: 6.6e-11, b: 0.0, Ea: 0.0}
+- equation: N + NH2 => N2 + H + H  # Reaction 251
+  rate-constant: {A: 1.2e-10, b: 0.0, Ea: 0.0}
+- equation: N + NH2 => N2 + H2  # Reaction 252
+  rate-constant: {A: 1.2e-10, b: 0.0, Ea: 0.0}
+- equation: NH + NH2 => NH3 + N  # Reaction 253
+  rate-constant: {A: 1.66e-12, b: 0.0, Ea: 0.0}
+- equation: H2 + NH2 => NH3 + H  # Reaction 254
+  rate-constant: {A: 5.4e-11, b: 0.0, Ea: 0.0}
+- equation: H + NH3 => NH2 + H2  # Reaction 255
+  rate-constant: {A: 8.4e-14, b: 0.0, Ea: 0.0}
+- equation: N + N + N2 => N2A3 + N2  # Reaction 256
+  rate-constant: {A: 4.4e-36, b: 0.0, Ea: 0.0}
+  note: THREE-BODY PROCESSES
+- equation: N + N + H2 => N2A3 + H2  # Reaction 257
+  rate-constant: {A: 4.4e-36, b: 0.0, Ea: 0.0}
+- equation: N + N + N => N2A3 + N  # Reaction 258
+  rate-constant: {A: 2.6e-35, b: 0.0, Ea: 0.0}
+- equation: N + N + H => N2A3 + H  # Reaction 259
+  rate-constant: {A: 2.6e-35, b: 0.0, Ea: 0.0}
+- equation: N + N + N2 => N2B3 + N2  # Reaction 260
+  rate-constant: {A: 6.2e-36, b: 0.0, Ea: 0.0}
+- equation: N + N + H2 => N2B3 + H2  # Reaction 261
+  rate-constant: {A: 6.2e-36, b: 0.0, Ea: 0.0}
+- equation: N + N + N => N2B3 + N  # Reaction 262
+  rate-constant: {A: 3.6e-35, b: 0.0, Ea: 0.0}
+- equation: N + N + H => N2B3 + H  # Reaction 263
+  rate-constant: {A: 3.6e-35, b: 0.0, Ea: 0.0}
+- equation: N + N + N2 => N2 + N2  # Reaction 264
+  rate-constant: {A: 2.4e-36, b: 0.0, Ea: 0.0}
+- equation: N + N + H2 => N2 + H2  # Reaction 265
+  rate-constant: {A: 2.4e-36, b: 0.0, Ea: 0.0}
+- equation: H + H + H2 => H2 + H2  # Reaction 266
+  rate-constant: {A: 2.3e-35, b: 0.0, Ea: 0.0}
+- equation: H + H + N2 => H2 + N2  # Reaction 267
+  rate-constant: {A: 2.2e-35, b: 0.0, Ea: 0.0}
+- equation: N + H + N2 => NH + N2  # Reaction 268
+  rate-constant: {A: 2.6e-36, b: 0.0, Ea: 0.0}
+- equation: N + H + H2 => NH + H2  # Reaction 269
+  rate-constant: {A: 2.6e-36, b: 0.0, Ea: 0.0}
+- equation: N + H2 + N2 => NH2 + N2  # Reaction 270
+  rate-constant: {A: 2.6e-37, b: 0.0, Ea: 0.0}
+- equation: N + H2 + H2 => NH2 + H2  # Reaction 271
+  rate-constant: {A: 2.6e-37, b: 0.0, Ea: 0.0}
+- equation: NH + H + N2 => NH2 + N2  # Reaction 272
+  rate-constant: {A: 2.6e-35, b: 0.0, Ea: 0.0}
+- equation: NH + H + H2 => NH2 + H2  # Reaction 273
+  rate-constant: {A: 2.6e-35, b: 0.0, Ea: 0.0}
+- equation: H + NH2 + N2 => NH3 + N2  # Reaction 274
+  rate-constant: {A: 1.4e-32, b: 0.0, Ea: 0.0}
+- equation: H + NH2 + H2 => NH3 + H2  # Reaction 275
+  rate-constant: {A: 1.4e-32, b: 0.0, Ea: 0.0}
+- equation: NH + H2 + N2 => NH3 + N2  # Reaction 276
+  rate-constant: {A: 6.5e-38, b: 0.0, Ea: 0.0}
+- equation: NH + H2 + H2 => NH3 + H2  # Reaction 277
+  rate-constant: {A: 6.5e-38, b: 0.0, Ea: 0.0}
+- equation: E + H2 => H + H-  # Reaction 278
+  rate-constant: {A: 0.0, b: 0.0, Ea: 0.0}
+  note: PRODUCTION AND LOSS OF H- ANION
+- equation: H- + H2+ => H + H + H  # Reaction 279
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: H- + H3+ => H2 + H + H  # Reaction 280
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: H- + N2+ => N2 + H  # Reaction 281
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: H- + N4+ => N2 + N2 + H  # Reaction 282
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: H- + N2H+ => H2 + N2  # Reaction 283
+  rate-constant: {A: 2.0e-07, b: 0.0, Ea: 0.0}
+- equation: H- + H2+ + N2 => H2 + H + N2  # Reaction 284
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + H2+ + H2 => H2 + H + H2  # Reaction 285
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + H3+ + N2 => H2 + H2 + N2  # Reaction 286
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + H3+ + H2 => H2 + H2 + H2  # Reaction 287
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N2+ + N2 => N2 + H + N2  # Reaction 288
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N2+ + H2 => N2 + H + H2  # Reaction 289
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N4+ + N2 => N2 + N2 + H + N2  # Reaction 290
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N4+ + H2 => N2 + N2 + H + H2  # Reaction 291
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N2H+ + N2 => H2 + N2 + N2  # Reaction 292
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
+- equation: H- + N2H+ + H2 => H2 + N2 + H2  # Reaction 293
+  rate-constant: {A: 5.0e-28, b: 0.0, Ea: 0.0}
