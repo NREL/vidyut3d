@@ -122,6 +122,7 @@ Vidyut::Vidyut()
     }
 
 #ifdef USE_CVODE
+    reactor_ptr = pele::physics::reactions::ReactorBase::create("ReactorCvode");
     reactor_ptr->init(1,1);
 #endif
 
