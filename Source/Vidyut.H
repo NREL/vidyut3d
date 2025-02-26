@@ -69,64 +69,67 @@ public:
     virtual void ErrorEst(int lev, amrex::TagBoxArray& tags, 
                           amrex::Real time, int ngrow) override;
 
-   void compute_scalar_transport_flux(int lev, MultiFab& Sborder, 
-                                             Array<MultiFab,AMREX_SPACEDIM>& flux, 
-                                             Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                             Real time,int specid);
-  
-   void compute_axisym_correction(int lev, MultiFab& Sborder, 
-                                  MultiFab& dsdt,
-                                  Real time,int specid);
+    void compute_scalar_transport_flux(int startspec, int numspec,
+                                       int lev, MultiFab& Sborder, 
+                                       Array<MultiFab,AMREX_SPACEDIM>& flux, 
+                                       Vector<int>& bc_lo, Vector<int>& bc_hi,
+                                       Real time,int specid);
 
-    void compute_dsdt(int lev, int specid,
-        Array<MultiFab,AMREX_SPACEDIM>& flux, 
-        MultiFab& rxn_src,
-        MultiFab& dsdt,
-        Real time, Real dt);
+    void compute_axisym_correction(int startspec, int numspec,
+                                   int lev, MultiFab& Sborder, 
+                                   MultiFab& dsdt,
+                                   Real time,int specid);
+
+    void compute_dsdt(int startspec, int numspec, int lev, int specid,
+                      Array<MultiFab,AMREX_SPACEDIM>& flux, 
+                      MultiFab& rxn_src,
+                      MultiFab& dsdt,
+                      Real time, Real dt);
 
     void solve_potential(Real current_time, Vector<MultiFab>& Sborder, 
                          Vector<int>& bc_lo, Vector<int>& bc_hi,
                          Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec);
 
 
-    void update_explsrc_at_all_levels(int specid, Vector<MultiFab>& Sborder,
-                                            Vector<Array<MultiFab,AMREX_SPACEDIM>>& flux,
-                                            Vector<MultiFab>& rxn_src, 
-                                            Vector<MultiFab>& expl_src, 
-                                            Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                            amrex::Real cur_time);
-    
+    void update_explsrc_at_all_levels(int startspec, int numspec, 
+                                      Vector<MultiFab>& Sborder,
+                                      Vector<Array<MultiFab,AMREX_SPACEDIM>>& flux,
+                                      Vector<MultiFab>& rxn_src, 
+                                      Vector<MultiFab>& expl_src, 
+                                      Vector<int>& bc_lo, Vector<int>& bc_hi,
+                                      amrex::Real cur_time);
+
     void update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
-                                            Vector<MultiFab>& rxn_src, 
-                                            amrex::Real cur_time);
-    
-    void implicit_solve_scalar(Real current_time,Real dt,int spec_id,
-            Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
-                                Vector<MultiFab>& dsdt_expl,
-                         Vector<int>& bc_lo, Vector<int>& bc_hi,
-                         Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc);
+                                     Vector<MultiFab>& rxn_src, 
+                                     amrex::Real cur_time);
+
+    void implicit_solve_scalar(Real current_time,Real dt,int startspec,int numspec,
+                               Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
+                               Vector<MultiFab>& dsdt_expl,
+                               Vector<int>& bc_lo, Vector<int>& bc_hi,
+                               Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc);
 
     void solve_photoionization(Real current_time, Vector<MultiFab>& Sborder, 
-                         Vector<int>& bc_lo, Vector<int>& bc_hi,
-                         Vector<MultiFab>& photoion_src, int sph_id);
+                               Vector<int>& bc_lo, Vector<int>& bc_hi,
+                               Vector<MultiFab>& photoion_src, int sph_id);
 
     void compute_elecenergy_source(int lev, 
-                            MultiFab& Sborder, 
-                            MultiFab& rxnsrc, 
-                            Array<MultiFab,AMREX_SPACEDIM>& efield,
-                            Array<MultiFab,AMREX_SPACEDIM>& gradne, 
-                            MultiFab& dsdt,
-                            Real time, Real dt,int floor_jh);
+                                   MultiFab& Sborder, 
+                                   MultiFab& rxnsrc, 
+                                   Array<MultiFab,AMREX_SPACEDIM>& efield,
+                                   Array<MultiFab,AMREX_SPACEDIM>& gradne, 
+                                   MultiFab& dsdt,
+                                   Real time, Real dt,int floor_jh);
 
     // compute dt from CFL considerations
     void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
-            amrex::Real& dt_diel_relax);
+                          amrex::Real& dt_diel_relax);
 
     static ProbParm* h_prob_parm;
     static ProbParm* d_prob_parm;
-   
+
     std::unique_ptr<amrex::MLABecLaplacian> linsolve_ptr;
-    
+
     ////////////////
     amrex::Gpu::ManagedVector<Real> refine_phi;
     amrex::Gpu::ManagedVector<Real> refine_phigrad;
@@ -160,16 +163,16 @@ public:
 
     amrex::Vector<int> pot_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> pot_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
     amrex::Vector<int> eden_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> eden_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
     amrex::Vector<int> eenrg_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> eenrg_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
     amrex::Vector<int> ion_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> ion_bc_hi{ROBINBC, ROBINBC, ROBINBC};
-    
+
     amrex::Vector<int> neutral_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> neutral_bc_hi{ROBINBC, ROBINBC, ROBINBC};
 
@@ -227,6 +230,7 @@ public:
     int do_bg_reactions=0;
     int do_photoionization=0;
     int photoion_ID=-1;
+    int multicompsolves=0;
 
     // Voltage options
     int voltage_profile=0;
@@ -253,7 +257,7 @@ public:
     void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
 
     void update_surf_charge(Vector<MultiFab>& Sborder,
-                                Real current_time, Real dt);
+                            Real current_time, Real dt);
 
 
     // how often each level regrids the higher levels of refinement
