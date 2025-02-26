@@ -367,7 +367,7 @@ fKernelSpec(
   amrex::Real ener_exch = 0.0;
   CKWC(Tgas_in, specconc, wdot, Te_in, EN_pt, &ener_exch);
 
-  for (int n = 0; n < NUM_SPECIES; n++) ydot_d[vec_index<OrderType>(n, icell, ncells)] = wdot[n];
+  for (int n = 0; n < NUM_SPECIES; n++) ydot_d[vec_index<OrderType>(n, icell, ncells)] = wdot[n] * NA;
 
   ydot_d[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = ener_exch;
 }

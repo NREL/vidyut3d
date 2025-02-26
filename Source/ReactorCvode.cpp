@@ -404,6 +404,9 @@ ReactorCvode::react(
 
   initCvode(y, A, udata, NLS, LS, cvode_mem, time_start, ncells);
 
+  // TODO: UPDATE LATER WHEN GAS TEMP IS ADDED IN
+  udata->Tgas_vect = Tgas_in;
+
   // Update TypicalValues
   // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
   utils::set_sundials_solver_tols<Ordering>(

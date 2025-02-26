@@ -18,7 +18,9 @@
 #include <AMReX_MLABecLaplacian.H>
 #include <UnivConstants.H>
 #include <VarDefines.H>
+#ifdef USE_CVODE
 #include "ReactorBase.H"
+#endif
 
 using namespace amrex;
 

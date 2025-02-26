@@ -120,10 +120,16 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
     amrex::Real time = cur_time;
     ProbParm const* localprobparm = d_prob_parm;
 
+    Vector<MultiFab> Sborder_temp(finest_level+1);
+    int num_grow=ngrow_for_fillpatch;
+
     // Zero out reactive source MFs
     for(int lev=0; lev <= finest_level; lev++)
     {
         rxn_src[lev].setVal(0.0);
+        // TODO: Is there a better way to do this that doesnt involve copying the solution?
+        Sborder_temp[lev].define(grids[lev], dmap[lev], phi_new[lev].nComp(), num_grow);
+        amrex::MultiFab::Copy(Sborder_temp[lev], Sborder[lev], 0, 0, Sborder[lev].nComp(), num_grow);
     }
 
     for(int lev=0;lev<=finest_level;lev++)
@@ -139,19 +145,22 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
             const Box& bx = mfi.tilebox();
             const Box& gbx = amrex::grow(bx, 1);
 
-            Array4<Real> sborder_arr = Sborder[lev].array(mfi);
+            Array4<Real> sborder_arr = Sborder_temp[lev].array(mfi);
+            Array4<Real> sborder_arr_old = Sborder[lev].array(mfi);
             Array4<Real> rxn_arr = rxn_src[lev].array(mfi);
 
-            Array4<Real> nspec_arr = Sborder[lev].array(mfi,0);
-            Array4<Real> Ue_arr = Sborder[lev].array(mfi,EEN_ID);
-            Array4<Real> Te_arr = Sborder[lev].array(mfi,ETEMP_ID);
-            Array4<Real> EN_arr = Sborder[lev].array(mfi,REF_ID);
+            Array4<Real> nspec_arr = Sborder_temp[lev].array(mfi,0);
+            Array4<Real> Ue_arr = Sborder_temp[lev].array(mfi,EEN_ID);
+            Array4<Real> Te_arr = Sborder_temp[lev].array(mfi,ETEMP_ID);
+            Array4<Real> EN_arr = Sborder_temp[lev].array(mfi,REF_ID);
 
 #ifdef USE_CVODE
             reactor_ptr->react(bx, nspec_arr, Ue_arr, Te_arr, captured_gastemp, EN_arr, dt, cur_time);
 
             // add on user sources
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                for(int sp=0; sp<=NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)) / dt;
+
                 user_sources::add_user_react_sources
                 (i, j, k, sborder_arr, rxn_arr,
                  prob_lo, prob_hi, dx, time, *localprobparm,
