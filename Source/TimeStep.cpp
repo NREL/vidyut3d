@@ -13,16 +13,23 @@
 // a wrapper for EstTimeStep
 void Vidyut::ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real dt_edrift, amrex::Real dt_ediff, amrex::Real dt_diel_relax)
 {
-    if(adaptive_dt && cur_time > dt_delay){
-      amrex::Real old_dt = dt[0];
-      amrex::Real trans_min_dt = std::numeric_limits<Real>::max();
-      amrex::Real adp_dt = std::numeric_limits<Real>::max();
-      if(do_transport) trans_min_dt = std::min(dt_edrift*advective_cfl, dt_ediff*diffusive_cfl);
-      adp_dt = std::min(trans_min_dt, dt_diel_relax*dielectric_cfl);
-      if(adp_dt > dt_max) adp_dt = dt_max;
-      if(adp_dt < dt_min) adp_dt = dt_min;
-      dt[0] = std::min(old_dt*dt_stretch, adp_dt);
+    BL_PROFILE("vidyut::ComputeDt()");
+    if(adaptive_dt && cur_time > dt_delay)
+    {
+        amrex::Real old_dt = dt[0];
+        amrex::Real trans_min_dt = std::numeric_limits<Real>::max();
+        amrex::Real adp_dt = std::numeric_limits<Real>::max();
+        if(do_transport) trans_min_dt = std::min(dt_edrift*advective_cfl, dt_ediff*diffusive_cfl);
+        adp_dt = std::min(trans_min_dt, dt_diel_relax*dielectric_cfl);
+        if(adp_dt > dt_max) adp_dt = dt_max;
+        if(adp_dt < dt_min) adp_dt = dt_min;
+        dt[0] = std::min(old_dt*dt_stretch, adp_dt);
     }
+    else
+    {
+        dt[0]=fixed_dt; //from input file
+    }
+
 
     for (int lev = 1; lev <= finest_level; ++lev)
     {
@@ -32,16 +39,16 @@ void Vidyut::ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real d
 
 // compute dt from CFL considerations
 void Vidyut::find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
-            amrex::Real& dt_diel_relax)
+                              amrex::Real& dt_diel_relax)
 {
-    BL_PROFILE("Vidyut::EstTimeStep()");
+    BL_PROFILE("Vidyut::find_time_scales()");
     dt_edrift = std::numeric_limits<Real>::max();
     dt_diel_relax = std::numeric_limits<Real>::max();
     dt_ediff = std::numeric_limits<Real>::max();
 
     const auto dx = geom[lev].CellSizeArray();
     MultiFab& S_new = phi_new[lev];
-    
+
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
     int eidx = E_IDX;
@@ -53,34 +60,35 @@ void Vidyut::find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_edi
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
-        for (MFIter mfi(S_new, TilingIfNotGPU()); mfi.isValid(); ++mfi) 
-        {
-            const Box& bx = mfi.tilebox();
-            Array4<Real> state_array = S_new.array(mfi);
-            Array4<Real> edriftvel_array = edriftvel.array(mfi);
-            Array4<Real> ediff_array = ediff.array(mfi);
-            Array4<Real> mue_ne_array = mue_ne.array(mfi);
-            auto prob_lo = geom[lev].ProbLoArray();
-            
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) 
-            {
-                amrex::Real etemp=state_array(i,j,k,ETEMP_ID); 
-                amrex::Real Esum = 0.0;
-                for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += std::pow(state_array(i,j,k,EFX_ID+dim),2.0);
-                amrex::Real efield_mag=std::sqrt(Esum);
-               
-                amrex::Real ndens = 0.0; 
-                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += state_array(i,j,k,sp);
+        auto state_arrays = S_new.arrays();
+        auto edriftvel_arrays = edriftvel.arrays();
+        auto ediff_arrays = ediff.arrays();
+        auto mue_ne_arrays = mue_ne.arrays();
+        auto prob_lo = geom[lev].ProbLoArray();
 
-                amrex::Real dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
-                
-                amrex::Real mu = specMob(eidx, etemp, ndens, efield_mag, captured_gastemp);
-                
-                edriftvel_array(i,j,k)=amrex::Math::abs(mu)*efield_mag;
-                ediff_array(i,j,k)=dcoeff;
-                mue_ne_array(i,j,k)=amrex::Math::abs(mu)*state_array(i,j,k,eidx);
-            });
-        }
+        amrex::ParallelFor(S_new, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept
+        {
+            auto state_array = state_arrays[nbx];
+            auto edriftvel_array = edriftvel_arrays[nbx];
+            auto ediff_array = ediff_arrays[nbx];
+            auto mue_ne_array = mue_ne_arrays[nbx];
+
+            amrex::Real etemp=state_array(i,j,k,ETEMP_ID); 
+            amrex::Real Esum = 0.0;
+            for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += amrex::Math::powi<2>(state_array(i,j,k,EFX_ID+dim));
+            amrex::Real efield_mag=std::sqrt(Esum);
+
+            amrex::Real ndens = 0.0; 
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += state_array(i,j,k,sp);
+
+            amrex::Real dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
+
+            amrex::Real mu = specMob(eidx, etemp, ndens, efield_mag, captured_gastemp);
+
+            edriftvel_array(i,j,k)=amrex::Math::abs(mu)*efield_mag;
+            ediff_array(i,j,k)=dcoeff;
+            mue_ne_array(i,j,k)=amrex::Math::abs(mu)*state_array(i,j,k,eidx);
+        });
     }
 
     amrex::Real max_edriftvel = edriftvel.norm0(0,0,true);

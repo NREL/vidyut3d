@@ -151,14 +151,6 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
     }
 
-    LPInfo info;
-    info.setAgglomeration(true);
-    info.setConsolidation(true);
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info));
-
     linsolve_ptr->setMaxOrder(2);
     linsolve_ptr->setDomainBC(bc_potsolve_lo, bc_potsolve_hi);
     linsolve_ptr->setScalars(ascalar, bscalar);
@@ -194,42 +186,38 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
 
         // fill cell centered diffusion coefficients and rhs
         if(do_spacechrg){
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                const Box& gbx = amrex::grow(bx, 1);
-                const auto dx = geom[ilev].CellSizeArray();
-                auto prob_lo = geom[ilev].ProbLoArray();
-                auto prob_hi = geom[ilev].ProbHiArray();
-                const Box& domain = geom[ilev].Domain();
+            const auto dx = geom[ilev].CellSizeArray();
+            auto prob_lo = geom[ilev].ProbLoArray();
+            auto prob_hi = geom[ilev].ProbHiArray();
+            const Box& domain = geom[ilev].Domain();
 
-                Real time = current_time; // for GPU capture
+            Real time = current_time; // for GPU capture
 
-                Array4<Real> phi_arr = Sborder[ilev].array(mfi);
-                Array4<Real> rhs_arr = rhs[ilev].array(mfi);
+            auto sborder_arrays = Sborder[ilev].arrays();
+            auto rhs_arrays = rhs[ilev].arrays();
+            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                auto phi_arr = sborder_arrays[nbx];
+                auto rhs_arr = rhs_arrays[nbx];
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-
-                    //include electrons
-                    rhs_arr(i,j,k)=0.0;
-                    for(int sp=0;sp<NUM_SPECIES;sp++)
+                //include electrons
+                rhs_arr(i,j,k)=0.0;
+                for(int sp=0;sp<NUM_SPECIES;sp++)
+                {
+                    if(amrex::Math::abs(plasmachem::get_charge(sp)) > 0)
                     {
-                        if(amrex::Math::abs(plasmachem::get_charge(sp)) > 0)
-                        {
-                            rhs_arr(i,j,k)+=plasmachem::get_charge(sp)*phi_arr(i,j,k,sp);
-                        }
+                        rhs_arr(i,j,k)+=plasmachem::get_charge(sp)*phi_arr(i,j,k,sp);
                     }
-                    //why minus sign?
-                    //remember del.E = rho/eps0
-                    //but E= -grad phi
-                    //del^2 phi = -rho/eps0
-                    rhs_arr(i,j,k)*=(-ECHARGE/EPS0);
+                }
+                //why minus sign?
+                //remember del.E = rho/eps0
+                //but E= -grad phi
+                //del^2 phi = -rho/eps0
+                rhs_arr(i,j,k)*=(-ECHARGE/EPS0);
 
-                    user_sources::add_user_potential_sources(i, j, k, phi_arr, 
-                                                             rhs_arr, prob_lo, prob_hi, 
-                                                             dx, time, *localprobparm);
-                });
-            }
+                user_sources::add_user_potential_sources(i, j, k, phi_arr, 
+                                                         rhs_arr, prob_lo, prob_hi, 
+                                                         dx, time, *localprobparm);
+            });
         }
 
         // average cell coefficients to faces, this includes boundary faces
@@ -369,23 +357,17 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
             average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
 
             // Calculate the reduced electric field
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                const Box& gbx = amrex::grow(bx, 1);
-
-                Array4<Real> s_arr = phi_new[ilev].array(mfi);
-
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                    RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
-                    Real Esum = 0.0;
-                    amrex::Real ndens = 0.0;
-                    for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
-                    ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
-                    for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
-                    s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
-                });
-            }
+            auto phi_arrays = phi_new[ilev].arrays();
+            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                auto s_arr = phi_arrays[nbx];
+                RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
+                Real Esum = 0.0;
+                amrex::Real ndens = 0.0;
+                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+                ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
+                for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
+                s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
+            });
         }
     }
     
@@ -403,6 +385,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
 
 void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
 {
+    BL_PROFILE("Vidyut::update_cc_efields()");
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         const auto dx = geom[ilev].CellSizeArray();
@@ -412,42 +395,40 @@ void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
         GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
         GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
-        for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            Array4<Real> s_arr   = Sborder[ilev].array(mfi);
-            Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+        auto sborder_arrays = Sborder[ilev].arrays();
+        auto phi_arrays = phi_new[ilev].arrays();
+        amrex::ParallelFor(Sborder[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+            auto phi_arr = phi_arrays[nbx];
+            auto s_arr = sborder_arrays[nbx];
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+            s_arr(i,j,k,EFX_ID)=0.0;
+            s_arr(i,j,k,EFY_ID)=0.0;
+            s_arr(i,j,k,EFZ_ID)=0.0;
 
-                s_arr(i,j,k,EFX_ID)=0.0;
-                s_arr(i,j,k,EFY_ID)=0.0;
-                s_arr(i,j,k,EFZ_ID)=0.0;
-
-                s_arr(i,j,k,EFX_ID)=get_efield_alongdir(i,j,k,0,domlo,domhi,dx,s_arr);
+            s_arr(i,j,k,EFX_ID)=get_efield_alongdir(i,j,k,0,domlo,domhi,dx,s_arr);
 #if AMREX_SPACEDIM > 1
-                s_arr(i,j,k,EFY_ID)=get_efield_alongdir(i,j,k,1,domlo,domhi,dx,s_arr);
+            s_arr(i,j,k,EFY_ID)=get_efield_alongdir(i,j,k,1,domlo,domhi,dx,s_arr);
 #if AMREX_SPACEDIM == 3
-                s_arr(i,j,k,EFZ_ID)=get_efield_alongdir(i,j,k,2,domlo,domhi,dx,s_arr);
+            s_arr(i,j,k,EFZ_ID)=get_efield_alongdir(i,j,k,2,domlo,domhi,dx,s_arr);
 #endif
 #endif
-                phi_arr(i,j,k,EFX_ID)=s_arr(i,j,k,EFX_ID);
-                phi_arr(i,j,k,EFY_ID)=s_arr(i,j,k,EFY_ID);
-                phi_arr(i,j,k,EFZ_ID)=s_arr(i,j,k,EFZ_ID);
+            phi_arr(i,j,k,EFX_ID)=s_arr(i,j,k,EFX_ID);
+            phi_arr(i,j,k,EFY_ID)=s_arr(i,j,k,EFY_ID);
+            phi_arr(i,j,k,EFZ_ID)=s_arr(i,j,k,EFZ_ID);
 
-                RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
-                amrex::Real ndens = 0.0;
-                amrex::Real Esum = 0.0; 
-                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
-                for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
-                s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
-                phi_arr(i,j,k,REF_ID) = s_arr(i,j,k,REF_ID);
-            });
-        }
+            RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
+            amrex::Real ndens = 0.0;
+            amrex::Real Esum = 0.0; 
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+            for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
+            s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
+            phi_arr(i,j,k,REF_ID) = s_arr(i,j,k,REF_ID);
+        });
     }
 }
 void Vidyut::update_cs_technique_potential()
 {
+    BL_PROFILE("Vidyut::cs_technique_potential()");
     int findlev_local=-1;
     int findlev_global=-1;
     int found=0; 
@@ -457,11 +438,11 @@ void Vidyut::update_cs_technique_potential()
     for(int nch=0;nch<cs_ncharges;nch++)
     {
         
-        amrex::Real dist_ch = std::pow((cs_locx[nch]-cs_pin_locx[nch]),2.0) +
-                              std::pow((cs_locy[nch]-cs_pin_locy[nch]),2.0);
+        amrex::Real dist_ch = amrex::Math::powi<2>((cs_locx[nch]-cs_pin_locx[nch])) +
+                              amrex::Math::powi<2>((cs_locy[nch]-cs_pin_locy[nch]));
         if(!is2d)
         {
-              dist_ch+=std::pow((cs_locz[nch]-cs_pin_locz[nch]),2.0);
+              dist_ch+=amrex::Math::powi<2>((cs_locz[nch]-cs_pin_locz[nch]));
         }
         dist_ch=std::sqrt(dist_ch);
 
@@ -552,36 +533,32 @@ void Vidyut::update_cs_technique_potential()
             auto prob_hi = geom[ilev].ProbHiArray();
             const auto dx = geom[ilev].CellSizeArray();
             
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                Array4<Real> phi_arr   = phi_new[ilev].array(mfi);
+            auto phi_arrays = phi_new[ilev].arrays();
+            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                auto phi_arr = phi_arrays[nbx];
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                amrex::Real x=prob_lo[0]+(i+0.5)*dx[0];
+                amrex::Real y=prob_lo[1]+(j+0.5)*dx[1];
+                amrex::Real z=prob_lo[2]+(k+0.5)*dx[2];
 
-                    amrex::Real x=prob_lo[0]+(i+0.5)*dx[0];
-                    amrex::Real y=prob_lo[1]+(j+0.5)*dx[1];
-                    amrex::Real z=prob_lo[2]+(k+0.5)*dx[2];
+                amrex::Real dist=amrex::Math::powi<2>(x-q_x) 
+                                +amrex::Math::powi<2>(y-q_y);
 
-                    amrex::Real dist=std::pow(x-q_x,2.0) 
-                                    +std::pow(y-q_y,2.0);
+                if(!is2d)
+                {
+                    dist+=amrex::Math::powi<2>(z-q_z);
+                }
+                dist=std::sqrt(dist);
 
-                    if(!is2d)
-                    {
-                        dist+=std::pow(z-q_z,2.0);
-                    }
-                    dist=std::sqrt(dist);
-
-                    phi_arr(i,j,k,POT_ID) += cs_charge/(4.0*PI*EPS0*dist);
-
-                });
-            }
+                phi_arr(i,j,k,POT_ID) += cs_charge/(4.0*PI*EPS0*dist);
+            });
         }
     }
 }
 
 void Vidyut::potential_gradlimiter(Vector<MultiFab>& Sborder)
 {
+    BL_PROFILE("Vidyut::potential_gradlimiter()");
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         auto prob_lo = geom[ilev].ProbLoArray();

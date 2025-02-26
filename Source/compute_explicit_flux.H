@@ -39,14 +39,14 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     amrex::Real phi_iphalf_2 = -(1.0/6.0)*phi_im1 + (5.0/6.0)*phi_i + (1.0/3.0)*phi_ip1;
     amrex::Real phi_iphalf_3 = (1.0/3.0)*phi_i + (5.0/6.0)*phi_ip1 - (1.0/6.0)*phi_ip2;
 
-    amrex::Real beta_1 = (13.0/12.0)*std::pow((phi_im2-2.0*phi_im1+phi_i),2.0) + 
-    (1.0/4.0)*std::pow((phi_im2-4.0*phi_im1+3.0*phi_i),2.0);
+    amrex::Real beta_1 = (13.0/12.0)*amrex::Math::powi<2>(phi_im2-2.0*phi_im1+phi_i) + 
+    (1.0/4.0)*amrex::Math::powi<2>(phi_im2-4.0*phi_im1+3.0*phi_i);
 
-    amrex::Real beta_2 = (13.0/12.0)*std::pow((phi_im1-2.0*phi_i+phi_ip1),2.0) 
-    + (1.0/4.0)*std::pow((phi_im1-phi_ip1),2.0);
+    amrex::Real beta_2 = (13.0/12.0)*amrex::Math::powi<2>(phi_im1-2.0*phi_i+phi_ip1) 
+    + (1.0/4.0)*amrex::Math::powi<2>(phi_im1-phi_ip1);
 
-    amrex::Real beta_3 = (13.0/12.0)*std::pow((phi_i-2.0*phi_ip1+phi_ip2),2.0) 
-    + (1.0/4.0)*std::pow((3.0*phi_i-4.0*phi_ip1+phi_ip2),2.0);
+    amrex::Real beta_3 = (13.0/12.0)*amrex::Math::powi<2>(phi_i-2.0*phi_ip1+phi_ip2) 
+    + (1.0/4.0)*amrex::Math::powi<2>(3.0*phi_i-4.0*phi_ip1+phi_ip2);
 
     amrex::Real gama_1 = (1.0/10.0);
     amrex::Real gama_2 = (6.0/10.0);
@@ -63,17 +63,17 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     //WENO JS   
     if(scheme==1)
     { 
-        alpha_1 = gama_1/std::pow((beta_1+eps),2.0);
-        alpha_2 = gama_2/std::pow((beta_2+eps),2.0);
-        alpha_3 = gama_3/std::pow((beta_3+eps),2.0);
+        alpha_1 = gama_1/amrex::Math::powi<2>(beta_1+eps);
+        alpha_2 = gama_2/amrex::Math::powi<2>(beta_2+eps);
+        alpha_3 = gama_3/amrex::Math::powi<2>(beta_3+eps);
     }
     //WENO M
     else if(scheme==2)
     {
         //do JS stuff
-        alpha_1 = gama_1/std::pow((beta_1+eps),2.0);
-        alpha_2 = gama_2/std::pow((beta_2+eps),2.0);
-        alpha_3 = gama_3/std::pow((beta_3+eps),2.0);
+        alpha_1 = gama_1/amrex::Math::powi<2>(beta_1+eps);
+        alpha_2 = gama_2/amrex::Math::powi<2>(beta_2+eps);
+        alpha_3 = gama_3/amrex::Math::powi<2>(beta_3+eps);
 
         amrex::Real sum_alpha=(alpha_1+alpha_2+alpha_3);
 
@@ -90,9 +90,9 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     else if(scheme==3)
     {
         amrex::Real tau = std::abs(beta_1 - beta_3);
-        alpha_1=gama_1*(1.0+std::pow(tau/(beta_1+eps),2.0));
-        alpha_2=gama_2*(1.0+std::pow(tau/(beta_2+eps),2.0));
-        alpha_3=gama_3*(1.0+std::pow(tau/(beta_3+eps),2.0));
+        alpha_1=gama_1*(1.0+amrex::Math::powi<2>(tau/(beta_1+eps)));
+        alpha_2=gama_2*(1.0+amrex::Math::powi<2>(tau/(beta_2+eps)));
+        alpha_3=gama_3*(1.0+amrex::Math::powi<2>(tau/(beta_3+eps)));
 
     }
     else

@@ -20,9 +20,9 @@
         {
            specden[sp]=phi(i,j,k,sp); //no offset needed
         }
-        amrex::Real efieldmag =std::sqrt(std::pow(phi(i,j,k,EFX_ID),2.0)+
-                               std::pow(phi(i,j,k,EFY_ID),2.0)+
-                               std::pow(phi(i,j,k,EFZ_ID),2.0));
+        amrex::Real efieldmag =std::sqrt(amrex::Math::powi<2>(phi(i,j,k,EFX_ID))+
+                                         amrex::Math::powi<2>(phi(i,j,k,EFY_ID))+
+                                         amrex::Math::powi<2>(phi(i,j,k,EFZ_ID)));
         
         plasmachem::get_reaction_rateconstants(phi(i,j,k,ETEMP_ID), Tg, Pg, efieldmag, 
                                    specden,rateconsts);

@@ -1,9 +1,9 @@
 name: CIvidyut                                                                                                                                        
 on: 
    push:
-     branches: [ main ]
+     branches: [ main, hackathon_2025 ]
    pull_request:
-     branches: [ main ]
+     branches: [ main, hackathon_2025 ]
 
 jobs:
   cputest:

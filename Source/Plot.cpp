@@ -28,6 +28,7 @@ Vector<const MultiFab*> Vidyut::PlotFileMF() const
 // write plotfile to disk
 void Vidyut::WritePlotFile(int plotfilenum) const
 {
+    BL_PROFILE("Vidyut::WritePlotFile()");
     const std::string& plotfilename = amrex::Concatenate(plot_file, plotfilenum, 5);
     const auto& mf = PlotFileMF();
 
@@ -40,6 +41,7 @@ void Vidyut::WritePlotFile(int plotfilenum) const
 void Vidyut::WriteCheckpointFile(int chkfilenum) const
 {
 
+    BL_PROFILE("Vidyut::WriteCheckpointFile()");
     // chk00010            write a checkpoint file with this root directory
     // chk00010/Header     this contains information you need to save (e.g., finest_level, t_new, etc.) and also
     //                     the BoxArrays at each level
@@ -209,6 +211,7 @@ void Vidyut::ReadCheckpointFile()
 }
 
 void Vidyut::WriteMonitorFile(amrex::Real time){
+    BL_PROFILE("Vidyut::WriteMonitorFile()");
     for (int lev = 0; lev <= finest_level; ++lev){
         // Check to see if monitor file exists already, and create if it doesn't
         std::string baseName = "MonitorFile_Level";

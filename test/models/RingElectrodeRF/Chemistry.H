@@ -192,11 +192,11 @@ specMob(const int specid, const amrex::Real Te, const amrex::Real ndens, const a
     //Turner, Miles M., et al. "Simulation benchmarks for low-pressure
     //plasmas: Capacitive discharges." 
     //Physics of Plasmas 20.1 (2013): 013507.
-    amrex::Real Hepmob=2.69*std::pow((1.0+1.2e-3*std::pow(EbyN,2.0)+4.2e-8*std::pow(EbyN,4.0)),-0.125);
+    amrex::Real Hepmob=2.69*std::pow((1.0+1.2e-3*amrex::Math::powi<2>(EbyN)+4.2e-8*amrex::Math::powi<4>(EbyN)),-0.125);
 
     //computed by Taaresh Taneja (U Minnesota) using Turner's cross sections
     amrex::Real elecmob = (-1.0)*std::exp(55.0 + 0.3942*std::log(meanE) + 2.134/meanE
-               -0.6433/std::pow(meanE,2.0) + (0.7112e-1)/std::pow(meanE,3.0)) / ndens;
+               -0.6433/amrex::Math::powi<2>(meanE) + (0.7112e-1)/amrex::Math::powi<3>(meanE)) / ndens;
 
     if(specid==E_ID)
     {
