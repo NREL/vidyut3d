@@ -45,16 +45,21 @@ void Vidyut::compute_dsdt(int startspec, int numspec, int lev,
         // update residual
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
 
-            for(int c=startspec;c<(startspec<numspec);c++)
+            for(int c=captured_startspec;
+                c<(captured_startspec+captured_numspec);c++)
             {
-                dsdt_arr(i, j, k, c) = (flux_arr[0](i, j, k, c-startspec) - flux_arr[0](i + 1, j, k, c-startspec)) / dx[0] 
+                dsdt_arr(i, j, k, c) = (flux_arr[0](i, j, k, c-captured_startspec) 
+                                        - flux_arr[0](i + 1, j, k, c-captured_startspec)) / dx[0] 
                 + rxn_arr(i,j,k,c);
 #if AMREX_SPACEDIM > 1
-                dsdt_arr(i,j,k,c) += (flux_arr[1](i, j, k, c-startspec) - flux_arr[1](i, j + 1, k, c-startspec)) / dx[1];
+                dsdt_arr(i,j,k,c) += (flux_arr[1](i, j, k, c-captured_startspec) 
+                                      - flux_arr[1](i, j + 1, k, c-captured_startspec)) / dx[1];
 #if AMREX_SPACEDIM == 3
-                dsdt_arr(i,j,k,c) += (flux_arr[2](i, j, k, c-startspec) - flux_arr[2](i, j, k + 1, c-startspec)) / dx[2]; 
+                dsdt_arr(i,j,k,c) += (flux_arr[2](i, j, k, c-captured_startspec) 
+                                      - flux_arr[2](i, j, k + 1, c-captured_startspec)) / dx[2]; 
 #endif
-#endif      }
+#endif      
+            }
         });
     }
 }
@@ -118,7 +123,7 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
     for(int lev=0;lev<=finest_level;lev++)
     {
         //FIXME: need to avoid this fillpatch
-        compute_dsdt(startspec, numspec, lev, specid, 
+        compute_dsdt(startspec, numspec, lev, 
                      flux[lev], rxn_src[lev], expl_src[lev], 
                      cur_time, dt[lev]);
     }
@@ -127,7 +132,7 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
     if(geom[0].IsRZ()){
         for (int lev = 0; lev <= finest_level; lev++)
         {
-            compute_axisym_correction(startspec, endspec, 
+            compute_axisym_correction(startspec, numspec, 
                                       lev, Sborder[lev], 
                                       expl_src[lev], cur_time);   
         }
@@ -253,7 +258,8 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
             //amrex::Print()<<"bx:"<<bx<<"\n";
             //amrex::Print()<<"bx_x:"<<bx_x<<"\n";
             amrex::ParallelFor(bx_x, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                for(int c=captured_startspec;c<(captured_startspec+captured_numspec);c++)
+                for(int c=captured_startspec;
+                    c<(captured_startspec+captured_numspec);c++)
                 {
                     compute_flux(i, j, k, 0, c, (c-captured_startspec), sborder_arr, 
                                  bclo, bchi, domlo, domhi, flux_arr[0], 
@@ -265,7 +271,8 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
 
 #if AMREX_SPACEDIM > 1
             amrex::ParallelFor(bx_y, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                for(int c=captured_startspec;c<(captured_startspec+captured_numspec);c++)
+                for(int c=captured_startspec;
+                    c<(captured_startspec+captured_numspec);c++)
                 {
                     compute_flux(i, j, k, 1, c, (c-captured_startspec), sborder_arr, 
                                  bclo, bchi, domlo, domhi, flux_arr[1], 
@@ -277,7 +284,8 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
 
 #if AMREX_SPACEDIM == 3
             amrex::ParallelFor(bx_z, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                for(int c=captured_startspec;c<(captured_startspec+captured_numspec);c++)
+                for(int c=captured_startspec;
+                    c<(captured_startspec+captured_numspec);c++)
                 {
                     compute_flux(i, j, k, 2, c, (c-captured_startspec), sborder_arr, 
                                  bclo, bchi, domlo, domhi, flux_arr[2], 
@@ -294,7 +302,7 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
 
 void Vidyut::compute_axisym_correction(int startspec, int numspec, 
                                        int lev, MultiFab& Sborder,MultiFab& dsdt,
-                                       Real time,int specid)
+                                       Real time)
 {
     BL_PROFILE("Vidyut::compute_axisym_correction()");
     amrex::Real captured_gastemp=gas_temperature;
@@ -324,10 +332,11 @@ void Vidyut::compute_axisym_correction(int startspec, int numspec,
             for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
             for (int dim = 0; dim < AMREX_SPACEDIM; dim++) Esum += amrex::Math::powi<2>(s_arr(i,j,k,EFX_ID+dim));
             amrex::Real efield_mag=std::sqrt(Esum);
-            for(int c=captured_startspec;c<(captured_startspec+captured_numspec);c++)
+            for(int c=captured_startspec;
+                c<(captured_startspec+captured_numspec);c++)
             {
-                amrex::Real mu = specMob(specid, etemp, ndens, efield_mag,captured_gastemp);  
-                dsdt_arr(i,j,k) -= mu * s_arr(i,j,k,specid) * s_arr(i,j,k,EFX_ID) / rval;
+                amrex::Real mu = specMob(c, etemp, ndens, efield_mag,captured_gastemp);  
+                dsdt_arr(i,j,k,c) -= mu * s_arr(i,j,k,c) * s_arr(i,j,k,EFX_ID) / rval;
             }
         });
     }
@@ -591,7 +600,8 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                 amrex::Real ndens = 0.0;
                 for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(i,j,k,sp);
 
-                for(int specid=captured_startspec;specid<(captured_startspec+captured_numspec);specid++)
+                for(int specid=captured_startspec;
+                    specid<(captured_startspec+captured_numspec);specid++)
                 {
                     bcoeff_arr(i,j,k,specid-captured_startspec) = specDiff(specid, 
                                                sb_arr(i,j,k,ETEMP_ID), ndens,
@@ -646,10 +656,11 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                         amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                             if(userdefspec == 1)
                             {
-                                for(int specid=captured_firstspec;specid<(captured_firstspec+captured_numspec);specid++)
+                                for(int specid=captured_startspec;
+                                    specid<(captured_startspec+captured_numspec);specid++)
                                 {
                                     user_transport::species_bc(i, j, k, idim, -1, 
-                                                               specid, specid-captured_firstspec,
+                                                               specid, specid-captured_startspec,
                                                                sb_arr, bc_arr, robin_a_arr,
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time, *localprobparm,
@@ -658,10 +669,11 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                             } 
                             else 
                             {
-                                for(int specid=captured_firstspec;specid<(captured_firstspec+captured_numspec);specid++)
+                                for(int specid=captured_startspec;
+                                    specid<(captured_startspec+captured_numspec);specid++)
                                 {
                                     plasmachem_transport::species_bc(i, j, k, idim, -1, 
-                                                                     specid, specid-captured_firstspec,
+                                                                     specid, specid-captured_startspec,
                                                                      sb_arr, bc_arr, robin_a_arr,
                                                                      robin_b_arr, robin_f_arr, 
                                                                      prob_lo, prob_hi, dx, time, *localprobparm,
@@ -675,10 +687,11 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                         amrex::ParallelFor(amrex::bdryHi(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                             if(userdefspec == 1)
                             {
-                                for(int specid=captured_firstspec;specid<(captured_firstspec+captured_numspec);specid++)
+                                for(int specid=captured_startspec;
+                                    specid<(captured_startspec+captured_numspec);specid++)
                                 {
                                     user_transport::species_bc(i, j, k, idim, +1, 
-                                                               specid, specid-captured_firstspec,
+                                                               specid, specid-captured_startspec,
                                                                sb_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr,
                                                                prob_lo, prob_hi, dx, time, *localprobparm,
@@ -687,10 +700,11 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                             } 
                             else 
                             {
-                                for(int specid=captured_firstspec;specid<(captured_firstspec+captured_numspec);specid++)
+                                for(int specid=captured_startspec;
+                                    specid<(captured_startspec+captured_numspec);specid++)
                                 {
                                     plasmachem_transport::species_bc(i, j, k, idim, +1, 
-                                                                     specid, specid-captured_firstspec,
+                                                                     specid, specid-captured_startspec,
                                                                      sb_arr, bc_arr, robin_a_arr, 
                                                                      robin_b_arr, robin_f_arr,
                                                                      prob_lo, prob_hi, dx, time, 
@@ -771,7 +785,12 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, startspec, numspec, 0);
     }
 
-    Print()<<"Solved species:"<<allvarnames[spec_id]<<"\n";
+    Print()<<"Solved species:";
+    for(int sp=startspec;sp<(startspec+numspec);sp++)
+    {
+        Print()<<allvarnames[sp]<<"\t";
+    }
+    Print()<<"\n";
 
     if(electron_energy_flag)
     {

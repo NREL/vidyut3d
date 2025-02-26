@@ -342,6 +342,7 @@ void Vidyut::ReadParameters()
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);
+        bg_specid_list.resize(0);
         pp.queryarr("bg_species_ids",bg_specid_list);
         
         pp.query("weno_scheme",weno_scheme);

@@ -135,9 +135,6 @@ void Vidyut::Evolve()
                 BoxArray ba = grids[lev];
                 ba.surroundingNodes(idim);
 
-                flux[lev][idim].define(ba, dmap[lev], NUM_SPECIES+1, 0);
-                flux[lev][idim].setVal(0.0);
-
                 efield_fc[lev][idim].define(ba, dmap[lev], 1, 0);
                 efield_fc[lev][idim].setVal(0.0);
 
@@ -177,7 +174,6 @@ void Vidyut::Evolve()
 
                 for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
                 {
-                    flux[lev][idim].setVal(0.0);
                     gradne_fc[lev][idim].setVal(0.0);
                     grad_fc[lev][idim].setVal(0.0);
                     efield_fc[lev][idim].setVal(0.0);
@@ -271,7 +267,7 @@ void Vidyut::Evolve()
             }
             
             //electron density solve
-            update_explsrc_at_all_levels(E_IDX, 1, Sborder, flux, rxn_src, expl_src, 
+            update_explsrc_at_all_levels(E_IDX, 1, Sborder, rxn_src, expl_src, 
                                          eden_bc_lo, eden_bc_hi, cur_time+time_offset);
             implicit_solve_scalar(cur_time+time_offset,dt_common,E_IDX, 1,Sborder,
                                   Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, gradne_fc);
@@ -279,7 +275,7 @@ void Vidyut::Evolve()
             //electron energy solve
             if(elecenergy_solve)
             {
-                update_explsrc_at_all_levels(EEN_ID, 1, Sborder, flux, 
+                update_explsrc_at_all_levels(EEN_ID, 1, Sborder, 
                                              rxn_src, expl_src, 
                                              eenrg_bc_lo,eenrg_bc_hi,
                                              cur_time+time_offset);
@@ -320,19 +316,25 @@ void Vidyut::Evolve()
                         //ions
                         if(plasmachem::get_charge(ind)!=0)
                         {
-                            update_explsrc_at_all_levels(ind, 1, Sborder, flux, rxn_src,
-                                                         expl_src, ion_bc_lo, ion_bc_hi, cur_time+time_offset);
+                            update_explsrc_at_all_levels(ind, 1, Sborder, 
+                                                         rxn_src,
+                                                         expl_src, ion_bc_lo, ion_bc_hi, 
+                                                         cur_time+time_offset);
 
-                            implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, Sborder, Sborder_old,
+                            implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, 
+                                                  Sborder, Sborder_old,
                                                   expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
                         }
                         //neutrals
                         else
                         {
-                            update_explsrc_at_all_levels(ind, 1, Sborder, flux, rxn_src, expl_src, 
-                                                         neutral_bc_lo, neutral_bc_hi, cur_time+time_offset);
+                            update_explsrc_at_all_levels(ind, 1, Sborder, 
+                                                         rxn_src, expl_src, 
+                                                         neutral_bc_lo, neutral_bc_hi, 
+                                                         cur_time+time_offset);
 
-                            implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, Sborder, Sborder_old,
+                            implicit_solve_scalar(cur_time+time_offset, dt_common, 
+                                                  ind, 1, Sborder, Sborder_old,
                                                   expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc);
                         }
                     } 
@@ -361,18 +363,60 @@ void Vidyut::Evolve()
             }
             else
             {
-                update_explsrc_at_all_levels(FIRST_ION, NUM_IONS, Sborder, flux, rxn_src,
-                                             expl_src, ion_bc_lo, ion_bc_hi, cur_time+time_offset);
+                if(NUM_IONS > 0)
+                {
+                    update_explsrc_at_all_levels(FIRST_ION, NUM_IONS, Sborder, rxn_src,
+                                                 expl_src, ion_bc_lo, ion_bc_hi, 
+                                                 cur_time+time_offset);
 
-                implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, Sborder, Sborder_old,
-                                      expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
-                
-                update_explsrc_at_all_levels(FIRST_NEUTRAL, NUM_NEUTRALS, Sborder, flux, rxn_src,
-                                             expl_src, ion_bc_lo, ion_bc_hi, cur_time+time_offset);
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_ION, NUM_IONS, 
+                                          Sborder, Sborder_old,
+                                          expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                }
 
-                implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, Sborder, Sborder_old,
-                                      expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                if(NUM_NEUTRALS > 0)
+                {
+                    update_explsrc_at_all_levels(FIRST_NEUTRAL, NUM_NEUTRALS, Sborder, rxn_src,
+                                                 expl_src, neutral_bc_lo, neutral_bc_hi, 
+                                                 cur_time+time_offset);
 
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_NEUTRAL, NUM_NEUTRALS, 
+                                          Sborder, Sborder_old,
+                                          expl_src,neutral_bc_lo,neutral_bc_hi, 
+                                          grad_fc);
+                }
+
+                for(unsigned int bgind=0;bgind<bg_specid_list.size();bgind++)
+                {
+                    int ind=bg_specid_list[bgind];
+                    //reset phi_new
+                    for(int lev=0; lev<=finest_level; lev++)
+                    {
+                        amrex::MultiFab::Copy(phi_new[lev], phi_old[lev], 
+                                              ind, ind, 1, 0);
+                    }
+                    if (do_bg_reactions)
+                    {
+                        for (int ilev = 0; ilev <= finest_level; ilev++)
+                        {
+                            amrex::Real minspecden=min_species_density; 
+                            int boundspecden = bound_specden;
+                            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                            {
+                                const Box& bx = mfi.tilebox();
+                                Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+                                Array4<Real> rxn_arr = rxn_src[ilev].array(mfi);
+                                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                                    phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                    if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                    {
+                                        phi_arr(i,j,k,ind) = minspecden;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
             }
 
             if(track_surf_charge)
@@ -455,7 +499,6 @@ void Vidyut::Evolve()
 
 
         //local cleanup
-        flux.clear();
         gradne_fc.clear();
         grad_fc.clear();
         expl_src.clear();

@@ -16,11 +16,12 @@
 // advance solution to final time
 void Vidyut::Evolve()
 {
+    BL_PROFILE("Vidyut::Evolve()");
     Real cur_time = t_new[0];
     int last_plot_file_step = 0;
     Real plottime = 0.0;
     Real chktime = 0.0;
-    int sph_id = 0; // TST - For photoionization
+    int sph_id = 0;
 
     //there is a slight issue when restart file is not a multiple
     //a plot file may get the same number with an "old" file generated
@@ -88,8 +89,6 @@ void Vidyut::Evolve()
         //depending on hyperbolic order
         int num_grow=ngrow_for_fillpatch; 
 
-        Vector< Array<MultiFab,AMREX_SPACEDIM> > flux(finest_level+1);
-
         //face centered solution gradients
         Vector< Array<MultiFab,AMREX_SPACEDIM> > gradne_fc(finest_level+1);
         Vector< Array<MultiFab,AMREX_SPACEDIM> > grad_fc(finest_level+1);
@@ -101,7 +100,8 @@ void Vidyut::Evolve()
         Vector<MultiFab> Sborder_old(finest_level+1);
         Vector<MultiFab> phi_tmp(finest_level+1);
         Vector<MultiFab> photoion_src(finest_level+1);
-        Vector<MultiFab> photoion_src_total(finest_level+1); // this is declared only to copy to phi, so that it can be used to post-process as a variable
+        // this is declared only to copy to phi, so that it can be used to post-process as a variable
+        Vector<MultiFab> photoion_src_total(finest_level+1); 
 
         // edge centered efield
         Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
@@ -135,9 +135,6 @@ void Vidyut::Evolve()
                 BoxArray ba = grids[lev];
                 ba.surroundingNodes(idim);
 
-                flux[lev][idim].define(ba, dmap[lev], 1, 0);
-                flux[lev][idim].setVal(0.0);
-
                 efield_fc[lev][idim].define(ba, dmap[lev], 1, 0);
                 efield_fc[lev][idim].setVal(0.0);
 
@@ -148,7 +145,7 @@ void Vidyut::Evolve()
                 grad_fc[lev][idim].setVal(0.0);
             }
             
-            expl_src[lev].define(grids[lev], dmap[lev], 1, 0);
+            expl_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+1, 0);
             expl_src[lev].setVal(0.0);
 
             rxn_src[lev].define(grids[lev], dmap[lev], NUM_SPECIES+1, 0);
@@ -163,6 +160,9 @@ void Vidyut::Evolve()
                
         for(int niter=0;niter<num_timestep_correctors;niter++)
         {
+            //for second order accuracy in mid-point method
+            amrex::Real time_offset=(niter>0)?0.5*dt_common:0.0;
+           
             //reset all
             for(int lev=0;lev<=finest_level;lev++)
             {
@@ -174,7 +174,6 @@ void Vidyut::Evolve()
 
                 for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
                 {
-                    flux[lev][idim].setVal(0.0);
                     gradne_fc[lev][idim].setVal(0.0);
                     grad_fc[lev][idim].setVal(0.0);
                     efield_fc[lev][idim].setVal(0.0);
@@ -185,7 +184,8 @@ void Vidyut::Evolve()
                 photoion_src_total[lev].setVal(0.0);
             }
 
-            solve_potential(cur_time, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
+            //add dt/2 after niter=0
+            solve_potential(cur_time+time_offset, Sborder, pot_bc_lo, pot_bc_hi, efield_fc);
 
             if(cs_technique)
             {
@@ -230,7 +230,7 @@ void Vidyut::Evolve()
             // Calculate the reactive source terms for all species/levels
             if(do_reactions)
             {
-                update_rxnsrc_at_all_levels(Sborder, rxn_src, cur_time);
+                update_rxnsrc_at_all_levels(Sborder, rxn_src, cur_time+time_offset);
             }
 
   
@@ -238,7 +238,7 @@ void Vidyut::Evolve()
             {
                 //First add the photoionization source jth component to the total photoionization source multifab
                 //In the same loop over levels, add the inidividual components to rxn_src
-                solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 0);
+                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 0);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -246,7 +246,7 @@ void Vidyut::Evolve()
                     amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, N2p_ID, 1, 0);
                 }
 
-                solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 1);
+                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 1);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -254,7 +254,7 @@ void Vidyut::Evolve()
                     amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, N2p_ID, 1, 0);
                 }    
 
-                solve_photoionization(cur_time, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 2);
+                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, photoion_src, 2);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -267,15 +267,18 @@ void Vidyut::Evolve()
             }
             
             //electron density solve
-            update_explsrc_at_all_levels(E_IDX, Sborder, flux, rxn_src, expl_src, eden_bc_lo, eden_bc_hi, cur_time);
-            implicit_solve_scalar(cur_time,dt_common,E_IDX,Sborder,Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, gradne_fc);
+            update_explsrc_at_all_levels(E_IDX, 1, Sborder, rxn_src, expl_src, 
+                                         eden_bc_lo, eden_bc_hi, cur_time+time_offset);
+            implicit_solve_scalar(cur_time+time_offset,dt_common,E_IDX, 1,Sborder,
+                                  Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, gradne_fc);
 
             //electron energy solve
             if(elecenergy_solve)
             {
-                update_explsrc_at_all_levels(EEN_ID, Sborder, flux, rxn_src, expl_src, 
+                update_explsrc_at_all_levels(EEN_ID, 1, Sborder, 
+                                             rxn_src, expl_src, 
                                              eenrg_bc_lo,eenrg_bc_hi,
-                                             cur_time);
+                                             cur_time+time_offset);
                 
                 for (int lev = 0; lev <= finest_level; lev++)
                 {
@@ -283,74 +286,142 @@ void Vidyut::Evolve()
                                               rxn_src[lev], 
                                               efield_fc[lev],
                                               gradne_fc[lev],
-                                              expl_src[lev], cur_time, dt_common,floor_jh);
+                                              expl_src[lev], 
+                                              cur_time+time_offset, dt_common,floor_jh);
                 }
 
-                implicit_solve_scalar(cur_time,dt_common,EEN_ID, Sborder,Sborder_old, 
+                implicit_solve_scalar(cur_time+time_offset,dt_common,EEN_ID, 1, 
+                                      Sborder,Sborder_old, 
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
 
-            //all species except electrons solve
-            for(unsigned int ind=0;ind<NUM_SPECIES;ind++)
+            if(!multicompsolves)
             {
-                bool solveflag=true;
-                auto it=std::find(bg_specid_list.begin(),bg_specid_list.end(),ind);
-                if(it != bg_specid_list.end())
+                //all species except electrons solve
+                for(unsigned int ind=0;ind<NUM_SPECIES;ind++)
                 {
-                    solveflag=false;
-                }
-                if(ind==E_IDX)
-                {
-                   solveflag=false;
-                }
-
-                if(solveflag)
-                {
-                    //ions
-                    if(plasmachem::get_charge(ind)!=0)
+                    bool solveflag=true;
+                    auto it=std::find(bg_specid_list.begin(),bg_specid_list.end(),ind);
+                    if(it != bg_specid_list.end())
                     {
-                        update_explsrc_at_all_levels(ind, Sborder, flux, rxn_src,
-                                                     expl_src, ion_bc_lo, ion_bc_hi, cur_time);
-                        
-                        implicit_solve_scalar(cur_time, dt_common, ind, Sborder, Sborder_old,
-                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                        solveflag=false;
                     }
-                    //neutrals
-                    else
+                    if(ind==E_IDX)
                     {
-                        update_explsrc_at_all_levels(ind, Sborder, flux, rxn_src, expl_src, 
-                                                     neutral_bc_lo, neutral_bc_hi, cur_time);
-
-                        implicit_solve_scalar(cur_time, dt_common, ind, Sborder, Sborder_old,
-                                              expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc);
+                        solveflag=false;
                     }
-                } 
-                else if (do_bg_reactions)
-                {
-                    for (int ilev = 0; ilev <= finest_level; ilev++)
+
+                    if(solveflag)
                     {
-                        amrex::Real minspecden=min_species_density; 
-                        int boundspecden = bound_specden;
-                        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                        //ions
+                        if(plasmachem::get_charge(ind)!=0)
                         {
-                            const Box& bx = mfi.tilebox();
-                            Array4<Real> phi_arr = phi_new[ilev].array(mfi);
-                            Array4<Real> rxn_arr = rxn_src[ilev].array(mfi);
-                            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                                phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                                if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                                {
-                                    phi_arr(i,j,k,ind) = minspecden;
-                                }
-                            });
+                            update_explsrc_at_all_levels(ind, 1, Sborder, 
+                                                         rxn_src,
+                                                         expl_src, ion_bc_lo, ion_bc_hi, 
+                                                         cur_time+time_offset);
+
+                            implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, 
+                                                  Sborder, Sborder_old,
+                                                  expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                        }
+                        //neutrals
+                        else
+                        {
+                            update_explsrc_at_all_levels(ind, 1, Sborder, 
+                                                         rxn_src, expl_src, 
+                                                         neutral_bc_lo, neutral_bc_hi, 
+                                                         cur_time+time_offset);
+
+                            implicit_solve_scalar(cur_time+time_offset, dt_common, 
+                                                  ind, 1, Sborder, Sborder_old,
+                                                  expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc);
+                        }
+                    } 
+                    else if (do_bg_reactions)
+                    {
+                        for (int ilev = 0; ilev <= finest_level; ilev++)
+                        {
+                            amrex::Real minspecden=min_species_density; 
+                            int boundspecden = bound_specden;
+                            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                            {
+                                const Box& bx = mfi.tilebox();
+                                Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+                                Array4<Real> rxn_arr = rxn_src[ilev].array(mfi);
+                                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                                    phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                    if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                    {
+                                        phi_arr(i,j,k,ind) = minspecden;
+                                    }
+                                });
+                            }
                         }
                     }
                 }
-
-                if(track_surf_charge)
+            }
+            else
+            {
+                if(NUM_IONS > 0)
                 {
-                   update_surf_charge(Sborder,cur_time,dt_common);
+                    update_explsrc_at_all_levels(FIRST_ION, NUM_IONS, Sborder, rxn_src,
+                                                 expl_src, ion_bc_lo, ion_bc_hi, 
+                                                 cur_time+time_offset);
+
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_ION, NUM_IONS, 
+                                          Sborder, Sborder_old,
+                                          expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
                 }
+
+                if(NUM_NEUTRALS > 0)
+                {
+                    update_explsrc_at_all_levels(FIRST_NEUTRAL, NUM_NEUTRALS, Sborder, rxn_src,
+                                                 expl_src, neutral_bc_lo, neutral_bc_hi, 
+                                                 cur_time+time_offset);
+
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_NEUTRAL, NUM_NEUTRALS, 
+                                          Sborder, Sborder_old,
+                                          expl_src,neutral_bc_lo,neutral_bc_hi, 
+                                          grad_fc);
+                }
+
+                for(unsigned int bgind=0;bgind<bg_specid_list.size();bgind++)
+                {
+                    int ind=bg_specid_list[bgind];
+                    //reset phi_new
+                    for(int lev=0; lev<=finest_level; lev++)
+                    {
+                        amrex::MultiFab::Copy(phi_new[lev], phi_old[lev], 
+                                              ind, ind, 1, 0);
+                    }
+                    if (do_bg_reactions)
+                    {
+                        for (int ilev = 0; ilev <= finest_level; ilev++)
+                        {
+                            amrex::Real minspecden=min_species_density; 
+                            int boundspecden = bound_specden;
+                            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                            {
+                                const Box& bx = mfi.tilebox();
+                                Array4<Real> phi_arr = phi_new[ilev].array(mfi);
+                                Array4<Real> rxn_arr = rxn_src[ilev].array(mfi);
+                                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                                    phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                    if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                    {
+                                        phi_arr(i,j,k,ind) = minspecden;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(track_surf_charge)
+            {
+                update_surf_charge(Sborder,cur_time+time_offset,dt_common);
             }
 
 
@@ -367,7 +438,7 @@ void Vidyut::Evolve()
                                           0, 0, phi_new[lev].nComp(), 0);
                 }
             }
-            amrex::Print()<<"\n================== timestep iter:"<<niter<<" ================\n";
+            amrex::Print()<<"\n================== Finished timestep iter:"<<niter+1<<" ================\n";
         }
 
 
@@ -428,7 +499,6 @@ void Vidyut::Evolve()
 
 
         //local cleanup
-        flux.clear();
         gradne_fc.clear();
         grad_fc.clear();
         expl_src.clear();

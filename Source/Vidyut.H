@@ -73,14 +73,14 @@ public:
                                        int lev, MultiFab& Sborder, 
                                        Array<MultiFab,AMREX_SPACEDIM>& flux, 
                                        Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                       Real time,int specid);
+                                       Real time);
 
     void compute_axisym_correction(int startspec, int numspec,
                                    int lev, MultiFab& Sborder, 
                                    MultiFab& dsdt,
-                                   Real time,int specid);
+                                   Real time);
 
-    void compute_dsdt(int startspec, int numspec, int lev, int specid,
+    void compute_dsdt(int startspec, int numspec, int lev,
                       Array<MultiFab,AMREX_SPACEDIM>& flux, 
                       MultiFab& rxn_src,
                       MultiFab& dsdt,
@@ -93,7 +93,6 @@ public:
 
     void update_explsrc_at_all_levels(int startspec, int numspec, 
                                       Vector<MultiFab>& Sborder,
-                                      Vector<Array<MultiFab,AMREX_SPACEDIM>>& flux,
                                       Vector<MultiFab>& rxn_src, 
                                       Vector<MultiFab>& expl_src, 
                                       Vector<int>& bc_lo, Vector<int>& bc_hi,
@@ -332,7 +331,7 @@ private:
     // utility to skip to next line in Header
     static void GotoNextLine(std::istream& is);
 
-    Vector<int> bg_specid_list{-1};
+    Vector<int> bg_specid_list;
 
     // Creates monitor file showing the maximum domain value of all variables 
     void WriteMonitorFile(amrex::Real time);

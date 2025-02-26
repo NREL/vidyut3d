@@ -51,7 +51,7 @@ void CKNCF(int *ncf) {
   // E
   ncf[0 * kd + 0] = 1; // E
 
-  // AR
+  // NI
   ncf[1 * kd + 1] = 1; // Ar
 }
 
@@ -66,5 +66,5 @@ void CKSYME_STR(amrex::Vector<std::string> &ename) {
 void CKSYMS_STR(amrex::Vector<std::string> &kname) {
   kname.resize(2);
   kname[0] = "E";
-  kname[1] = "AR";
+  kname[1] = "NI";
 }

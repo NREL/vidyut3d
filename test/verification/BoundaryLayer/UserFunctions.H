@@ -124,7 +124,9 @@ namespace user_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id, 
+                    int bcspec_id,
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bcarr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -158,22 +160,22 @@ namespace user_transport
         if(sgn == -1) 
         { 
             // lo sides
-            robin_a(ghost_cell) = 1.0;
-            robin_b(ghost_cell) = 0.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 1.0;
+            robin_b(ghost_cell,bcspec_id) = 0.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
 
         }
         else
         {
-            robin_a(ghost_cell) = 1.0;
-            robin_b(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 1.0;
+            robin_b(ghost_cell,bcspec_id) = 0.0;
             if(spec_id==S1_ID)
             {
-                robin_f(ghost_cell) = 1.0;
+                robin_f(ghost_cell,bcspec_id) = 1.0;
             }
             else //also for elec energy and density
             {
-                robin_f(ghost_cell) = 0.0;
+                robin_f(ghost_cell,bcspec_id) = 0.0;
             }
         } 
 

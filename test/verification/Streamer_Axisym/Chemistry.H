@@ -16,7 +16,11 @@
 
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 3
-#define NUM_IONS 2
+#define NUM_IONS 1
+#define FIRST_ION 2
+//skipping N2_ID solves anyway
+#define NUM_NEUTRALS 0
+#define FIRST_NEUTRAL 0
 #define NUM_REACTIONS 1
 
 #define NUM_FIT 4
