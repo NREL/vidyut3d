@@ -80,7 +80,7 @@ vidyut.linsolve_maxiter=1000
 #vidyut.linsolve_reltol=1e-9
 vidyut.bg_species_ids=1
 vidyut.elecenergy_solve=1
-vidyut.track_surf_charge=1
+vidyut.track_surf_charge=0
 
 # PROB SPECIFIC
 prob.pres=133.0

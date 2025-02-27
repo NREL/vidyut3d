@@ -1,4 +1,4 @@
-VIDYUT_DIR ?= /project/me-crfel/tanej013/vidyut/vidyut3d
+VIDYUT_DIR ?= ../../../
 AMREX_HOME ?= ../../../../amrex
 
 PRECISION  = DOUBLE

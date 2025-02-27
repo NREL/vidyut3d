@@ -18,9 +18,16 @@
 #define HEm_ID 3
 #define HE2m_ID 4
 
+//note: anyway HE_ID is skipped
+//so we dont have to include it
+//in neutrals
+#define NUM_IONS 1
+#define FIRST_ION 2
+#define NUM_NEUTRALS 2
+#define FIRST_NEUTRAL 3
+
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 5
-#define NUM_IONS 1
 #define NUM_REACTIONS 4
 
 #define NUM_FIT 4
