@@ -168,14 +168,6 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
     }
 
-    LPInfo info;
-    info.setAgglomeration(true);
-    info.setConsolidation(true);
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info));
-
     linsolve_ptr->setMaxOrder(2);
     linsolve_ptr->setDomainBC(bc_photoionizationsolve_lo, bc_photoionizationsolve_hi);
     linsolve_ptr->setScalars(ascalar, bscalar);
@@ -206,54 +198,50 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
         // calculate and fill rhs 
-        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            const Box& gbx = amrex::grow(bx, 1);
-            const auto dx = geom[ilev].CellSizeArray();
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const Box& domain = geom[ilev].Domain();
+        const auto dx = geom[ilev].CellSizeArray();
+        auto prob_lo = geom[ilev].ProbLoArray();
+        auto prob_hi = geom[ilev].ProbHiArray();
+        const Box& domain = geom[ilev].Domain();
 
-            Real time = current_time; // for GPU capture
+        Real time = current_time; // for GPU capture
 
-            Array4<Real> phi_arr = Sborder[ilev].array(mfi); // species data is in num density (#/m^3) here
-            Array4<Real> rhs_arr = rhs[ilev].array(mfi);
+        auto phi_arrays = Sborder[ilev].const_arrays();
+        auto rhs_arrays = rhs[ilev].arrays();
+        amrex::ParallelFor(rhs[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+            auto phi_arr = phi_arrays[nbx];
+            auto rhs_arr = rhs_arrays[nbx];
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+            rhs_arr(i,j,k)=0.0;
+            
+            #if defined(O2_ID) && defined(N2_ID)
+                amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
+                amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
+                amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
+                amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
 
-                rhs_arr(i,j,k)=0.0;
+                std::vector<amrex::Real> Fit1(7, 0.0);
+                Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
+                amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/amrex::Math::powi<2>(Te) + Fit1[4]/amrex::Math::powi<3>(Te) + Fit1[5]/amrex::Math::powi<4>(Te) + Fit1[6]/amrex::Math::powi<5>(Te));
+                amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
+
+                /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+                        (-9.57567162e+12)/std::pow(Te,3)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
+                */
                 
-                #if defined(O2_ID) && defined(N2_ID)
-                    amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
-                    amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
-                    amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
-                    amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
+                
+                //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
+                //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. - A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
+                // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
+                // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
 
-                    std::vector<amrex::Real> Fit1(7, 0.0);
-                    Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
-                    amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/amrex::Math::powi<2>(Te) + Fit1[4]/amrex::Math::powi<3>(Te) + Fit1[5]/amrex::Math::powi<4>(Te) + Fit1[6]/amrex::Math::powi<5>(Te));
-                    amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
-
-                    /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
-                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
-                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                            (-2.17286625e+05)/Te + (2.14505360e+09)/amrex::Math::powi<2>(Te) + 
-                            (-9.57567162e+12)/amrex::Math::powi<3>(Te)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
-                    */
-                    
-                    
-                    //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
-                    //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. - A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
-                    // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
-                    // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
-
-                    rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);
-                #endif
-            });
-        }
+                rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);
+            #endif
+        });
 
         // average cell coefficients to faces, this includes boundary faces
         Array<MultiFab, AMREX_SPACEDIM> face_bcoeff;
