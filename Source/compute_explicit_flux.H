@@ -205,6 +205,7 @@ void compute_flux(
     int k,
     int sweepdir,
     int specid,
+    int fluxid,
     Array4<Real> const& phi, // state variable
     const GpuArray<int, AMREX_SPACEDIM> bclo,
     const GpuArray<int, AMREX_SPACEDIM> bchi,
@@ -244,7 +245,7 @@ void compute_flux(
 
     if(hyp_order==1)
     {
-        fx(face)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
+        fx(face,fluxid)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
     }
     else if(hyp_order==2)
     {
@@ -256,7 +257,7 @@ void compute_flux(
         amrex::Real phi_Rp1 = phi(right1, specid);
         amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
 
-        fx(face)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
+        fx(face,fluxid)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
                                           phi_R,phi_Rp1,dxmin,dt);
     }
     else if(hyp_order==5)
@@ -307,7 +308,7 @@ void compute_flux(
         weno_reconstruct(flm2,flm1,fl,fr,frp1,frp2,fmhalf,fphalf,weno_scheme);
         weno_reconstruct(ulm2,ulm1,ul,ur,urp1,urp2,umhalf,uphalf,weno_scheme);
 
-        fx(face)=0.5*(fphalf+lambda_max*uphalf) +
+        fx(face,fluxid)=0.5*(fphalf+lambda_max*uphalf) +
         0.5*(fmhalf-lambda_max*umhalf);
     }
     else
@@ -319,14 +320,14 @@ void compute_flux(
     {
         if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) )
         {
-            fx(face)=0.0;
+            fx(face,fluxid)=0.0;
         }
     }
     if(face[sweepdir]==domhi[sweepdir]+1) 
     {
         if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) )
         {
-            fx(face)=0.0;
+            fx(face,fluxid)=0.0;
         }
     }
 }

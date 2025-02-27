@@ -95,7 +95,9 @@ namespace user_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id,
+                    int bcspec_id, 
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bcarr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,

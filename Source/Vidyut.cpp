@@ -342,9 +342,11 @@ void Vidyut::ReadParameters()
         pp.query("do_bg_reactions",do_bg_reactions);
         pp.query("do_photoionization",do_photoionization);
         pp.query("photoion_ID",photoion_ID);
+        pp.query("multicompsolves",multicompsolves);
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);
+        bg_specid_list.resize(0);
         pp.queryarr("bg_species_ids",bg_specid_list);
         
         pp.query("weno_scheme",weno_scheme);

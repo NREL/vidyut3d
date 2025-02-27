@@ -170,7 +170,7 @@ void Vidyut::compute_elecenergy_source(int lev,
         }
         
         //inelastic term already added through reaction source
-        dsdt_arr(i, j, k) += (elec_jheat);
+        dsdt_arr(i, j, k, NUM_SPECIES) += (elec_jheat);
         // TODO: Adjust reactive source calculations to split into elastic/inelastic
         phi_arr(i,j,k,EJH_ID)=elec_jheat;
         phi_arr(i,j,k,EIH_ID)=rxn_arr(i,j,k,EEN_ID); //EEN_ID is same as NUM_SPECIES+1
