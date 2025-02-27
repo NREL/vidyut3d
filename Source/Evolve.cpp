@@ -351,21 +351,24 @@ void Vidyut::Evolve()
                                                   expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc);
                         }
                     } 
-                    else if (do_bg_reactions)
+                    if (do_bg_reactions)
                     {
-                        amrex::Real minspecden=min_species_density; 
-                        int boundspecden = bound_specden;
-                        auto phi_arrays = phi_new[ilev].arrays();
-                        auto rxn_arrays = rxn_src[ilev].arrays();
-                        amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                            auto phi_arr = phi_arrays[nbx];
-                            auto rxn_arr = rxn_arrays[nbx];
-                            phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                            if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                            {
-                                phi_arr(i,j,k,ind) = minspecden;
-                            }
-                        });
+                        for (int ilev = 0; ilev <= finest_level; ilev++)
+                        {
+                            amrex::Real minspecden=min_species_density; 
+                            int boundspecden = bound_specden;
+                            auto phi_arrays = phi_new[ilev].arrays();
+                            auto rxn_arrays = rxn_src[ilev].arrays();
+                            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                                auto phi_arr = phi_arrays[nbx];
+                                auto rxn_arr = rxn_arrays[nbx];
+                                phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                {
+                                    phi_arr(i,j,k,ind) = minspecden;
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -405,19 +408,22 @@ void Vidyut::Evolve()
                     }
                     if (do_bg_reactions)
                     {
-                        amrex::Real minspecden=min_species_density; 
-                        int boundspecden = bound_specden;
-                        auto phi_arrays = phi_new[ilev].arrays();
-                        auto rxn_arrays = rxn_src[ilev].arrays();
-                        amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                            auto phi_arr = phi_arrays[nbx];
-                            auto rxn_arr = rxn_arrays[nbx];
-                            phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                            if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                            {
-                                phi_arr(i,j,k,ind) = minspecden;
-                            }
-                        });
+                        for (int ilev = 0; ilev <= finest_level; ilev++)
+                        {
+                            amrex::Real minspecden=min_species_density; 
+                            int boundspecden = bound_specden;
+                            auto phi_arrays = phi_new[ilev].arrays();
+                            auto rxn_arrays = rxn_src[ilev].arrays();
+                            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                                auto phi_arr = phi_arrays[nbx];
+                                auto rxn_arr = rxn_arrays[nbx];
+                                phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                {
+                                    phi_arr(i,j,k,ind) = minspecden;
+                                }
+                            });
+                        }
                     }
                 }
             }
