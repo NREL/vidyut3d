@@ -376,22 +376,58 @@ void Vidyut::Evolve()
             {
                 if(NUM_IONS > 0)
                 {
-                    update_explsrc_at_all_levels(FIRST_ION, NUM_IONS, Sborder, rxn_src,
-                                                 expl_src, ion_bc_lo, ion_bc_hi, 
-                                                 cur_time+time_offset);
+                    int comp;
+                    for(comp=FIRST_ION;comp<(FIRST_ION+NUM_IONS-comp_ion_chunks);
+                        comp+=comp_ion_chunks)
+                    {
+                        update_explsrc_at_all_levels(comp, comp_ion_chunks, Sborder, rxn_src,
+                                                     expl_src, ion_bc_lo, ion_bc_hi, 
+                                                     cur_time+time_offset);
 
-                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_ION, NUM_IONS, 
-                                          Sborder, Sborder_old,
-                                          expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                        implicit_solve_scalar(cur_time+time_offset, dt_common, comp, comp_ion_chunks, 
+                                              Sborder, Sborder_old,
+                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                    }
+                    if(comp!=(FIRST_ION+NUM_IONS))
+                    {
+                        //remaining slack
+                        update_explsrc_at_all_levels(comp, FIRST_ION+NUM_IONS-comp, Sborder, rxn_src,
+                                                     expl_src, ion_bc_lo, ion_bc_hi, 
+                                                     cur_time+time_offset);
+
+                        implicit_solve_scalar(cur_time+time_offset, dt_common, comp, 
+                                              FIRST_ION+NUM_IONS-comp, 
+                                              Sborder, Sborder_old,
+                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
+                    }
                 }
+            }
 
-                if(NUM_NEUTRALS > 0)
+            if(NUM_NEUTRALS > 0)
+            {
+                int comp;
+                for(int comp=FIRST_NEUTRAL;comp<(FIRST_NEUTRAL+NUM_NEUTRALS-comp_neutral_chunks);
+                    comp+=comp_neutral_chunks)
                 {
-                    update_explsrc_at_all_levels(FIRST_NEUTRAL, NUM_NEUTRALS, Sborder, rxn_src,
+                    update_explsrc_at_all_levels(comp, comp_neutral_chunks, Sborder, rxn_src,
                                                  expl_src, neutral_bc_lo, neutral_bc_hi, 
                                                  cur_time+time_offset);
 
-                    implicit_solve_scalar(cur_time+time_offset, dt_common, FIRST_NEUTRAL, NUM_NEUTRALS, 
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, comp, comp_neutral_chunks, 
+                                          Sborder, Sborder_old,
+                                          expl_src,neutral_bc_lo,neutral_bc_hi, 
+                                          grad_fc);
+                }
+                if(comp!=(FIRST_NEUTRAL+NUM_NEUTRALS))
+                {
+                    //remaining slack
+                    update_explsrc_at_all_levels(comp, FIRST_NEUTRAL+NUM_NEUTRALS-comp, 
+                                                 Sborder, rxn_src,
+                                                 expl_src, neutral_bc_lo, neutral_bc_hi, 
+                                                 cur_time+time_offset);
+
+                    implicit_solve_scalar(cur_time+time_offset, dt_common, comp, 
+                                          FIRST_NEUTRAL+NUM_NEUTRALS-comp, 
                                           Sborder, Sborder_old,
                                           expl_src,neutral_bc_lo,neutral_bc_hi, 
                                           grad_fc);
@@ -414,15 +450,16 @@ void Vidyut::Evolve()
                             int boundspecden = bound_specden;
                             auto phi_arrays = phi_new[ilev].arrays();
                             auto rxn_arrays = rxn_src[ilev].arrays();
-                            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                                auto phi_arr = phi_arrays[nbx];
-                                auto rxn_arr = rxn_arrays[nbx];
-                                phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                                if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                                {
-                                    phi_arr(i,j,k,ind) = minspecden;
-                                }
-                            });
+                            amrex::ParallelFor(phi_new[ilev], [=] 
+                                               AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                                                   auto phi_arr = phi_arrays[nbx];
+                                                   auto rxn_arr = rxn_arrays[nbx];
+                                                   phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                                   if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                                   {
+                                                       phi_arr(i,j,k,ind) = minspecden;
+                                                   }
+                                               });
                         }
                     }
                 }

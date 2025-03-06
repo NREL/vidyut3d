@@ -338,6 +338,8 @@ void Vidyut::ReadParameters()
         pp.query("do_photoionization",do_photoionization);
         pp.query("photoion_ID",photoion_ID);
         pp.query("multicompsolves",multicompsolves);
+        pp.query("comp_ion_chunks",comp_ion_chunks);
+        pp.query("comp_neutral_chunks",comp_neutral_chunks);
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);

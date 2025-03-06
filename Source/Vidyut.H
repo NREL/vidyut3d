@@ -230,6 +230,8 @@ public:
     int do_photoionization=0;
     int photoion_ID=-1;
     int multicompsolves=0;
+    int comp_ion_chunks=NUM_IONS;
+    int comp_neutral_chunks=NUM_NEUTRALS;
 
     // Voltage options
     int voltage_profile=0;
