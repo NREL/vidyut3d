@@ -18,7 +18,8 @@
 
 void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                              amrex::Vector<int>& bc_lo,amrex::Vector<int>& bc_hi,
-                             amrex::Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec)
+                             amrex::Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec,
+                             amrex::MLABecLaplacian* linsolve_ptr)
 {
     BL_PROFILE("Vidyut::solve_potential()");
 

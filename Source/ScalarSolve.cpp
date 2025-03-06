@@ -346,7 +346,8 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                    Vector<MultiFab>& Sborder_old, 
                                    Vector<MultiFab>& dsdt_expl, 
                                    Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                   Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc)
+                                   Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc,
+                                   amrex::MLABecLaplacian* linsolve_ptr)
 {
     // BL_PROFILE("Vidyut::implicit_solve_species(" + std::to_string( spec_id ) + ")");
     BL_PROFILE("Vidyut::implicit_solve_scalar()");

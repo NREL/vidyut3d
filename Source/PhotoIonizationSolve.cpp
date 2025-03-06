@@ -18,7 +18,8 @@
 
 void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                              amrex::Vector<int>& bc_lo,amrex::Vector<int>& bc_hi,
-                             Vector<MultiFab>& photoionization_src, int sph_id)
+                             Vector<MultiFab>& photoionization_src, int sph_id,
+                             amrex::MLABecLaplacian* linsolve_ptr)
 {
     BL_PROFILE("Vidyut::solve_photoionization()");
 
