@@ -376,7 +376,7 @@ void Vidyut::Evolve()
             {
                 if(NUM_IONS > 0)
                 {
-                    int comp;
+                    int comp=FIRST_ION;
                     for(comp=FIRST_ION;comp<(FIRST_ION+NUM_IONS-comp_ion_chunks);
                         comp+=comp_ion_chunks)
                     {
@@ -405,7 +405,7 @@ void Vidyut::Evolve()
 
             if(NUM_NEUTRALS > 0)
             {
-                int comp;
+                int comp=FIRST_NEUTRAL;
                 for(int comp=FIRST_NEUTRAL;comp<(FIRST_NEUTRAL+NUM_NEUTRALS-comp_neutral_chunks);
                     comp+=comp_neutral_chunks)
                 {
