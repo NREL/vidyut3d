@@ -123,7 +123,7 @@ void weno_reconstruct(amrex::Real uim2,
                       amrex::Real &uphalf,
                       int weno_scheme)
 {
-    uphalf=weno(uim2,uim1,ui,uip1,uip2,weno_scheme);
+    uphalf = weno(uim2,uim1,ui,uip1,uip2,weno_scheme);
     umhalf = weno(uip3,uip2,uip1,ui,uim1,weno_scheme);
 }
 //====================================================================
@@ -226,8 +226,8 @@ void compute_flux(
     //remember: face i separates (i-1) and i cells
 
     IntVect face{AMREX_D_DECL(i,j,k)};
-    IntVect left{AMREX_D_DECL(i, j, k)};
-    IntVect right{AMREX_D_DECL(i, j, k)};
+    IntVect left{AMREX_D_DECL(i,j,k)};
+    IntVect right{AMREX_D_DECL(i,j,k)};
     left[sweepdir] -= 1;
 
     Real phi_L = phi(left, specid);
@@ -249,8 +249,8 @@ void compute_flux(
     }
     else if(hyp_order==2)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
+        IntVect left1{AMREX_D_DECL(i,j,k)};
+        IntVect right1{AMREX_D_DECL(i,j,k)};
         left1[sweepdir] -= 2;
         right1[sweepdir] += 1;
         amrex::Real phi_Lm1 = phi(left1, specid);
@@ -262,10 +262,10 @@ void compute_flux(
     }
     else if(hyp_order==5)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
-        IntVect left2{AMREX_D_DECL(i, j, k)};
-        IntVect right2{AMREX_D_DECL(i, j, k)};
+        IntVect left1{AMREX_D_DECL(i,j,k)};
+        IntVect right1{AMREX_D_DECL(i,j,k)};
+        IntVect left2{AMREX_D_DECL(i,j,k)};
+        IntVect right2{AMREX_D_DECL(i,j,k)};
         left1[sweepdir] -= 2;
         right1[sweepdir] += 1;
         left2[sweepdir] -= 3;

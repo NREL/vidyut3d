@@ -125,7 +125,6 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
 
     for(int lev=0;lev<=finest_level;lev++)
     {
-        //FIXME: need to avoid this fillpatch
         compute_dsdt(startspec, numspec, lev, 
                      flux[lev], rxn_src[lev], expl_src[lev], 
                      cur_time, dt[lev]);

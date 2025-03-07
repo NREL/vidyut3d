@@ -126,7 +126,7 @@ namespace user_transport
     void species_bc(int i,int j,int k, int dir, int sgn, 
                     int spec_id, int bcspec_id,
                     Array4<Real> const &phi, 
-                    Array4<Real> const& bcarr,
+                    Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
                     Array4<Real> const& robin_f,
@@ -160,6 +160,7 @@ namespace user_transport
             robin_a(ghost_cell,bcspec_id) = 1.0;
             robin_b(ghost_cell,bcspec_id) = 0.0;
             robin_f(ghost_cell,bcspec_id) = 0.0;
+            bc_arr(ghost_cell,bcspec_id) = 0.0;
 
         }
         else
@@ -167,6 +168,7 @@ namespace user_transport
             robin_a(ghost_cell,bcspec_id) = 1.0;
             robin_b(ghost_cell,bcspec_id) = 0.0;
             robin_f(ghost_cell,bcspec_id) = 1.0;
+            bc_arr(ghost_cell,bcspec_id) = 1.0;
         } 
 
     }
