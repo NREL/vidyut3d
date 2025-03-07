@@ -20,8 +20,8 @@
 #define NUM_SPECIES 3
 #define FIRST_ION 2
 #define NUM_IONS 1
-#define FIRST_NEUTRAL 1
-#define NUM_NEUTRALS 1
+#define FIRST_NEUTRAL 0
+#define NUM_NEUTRALS 0
 #define NUM_REACTIONS 1
 
 #define NUM_FIT 4
