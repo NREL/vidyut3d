@@ -496,17 +496,6 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         robin_f[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
     }
 
-    MLMG mlmg(*linsolve_ptr);
-    mlmg.setMaxIter(linsolve_maxiter);
-    mlmg.setVerbose(linsolve_verbose);
-
-#ifdef AMREX_USE_HYPRE
-    if (use_hypre)
-    {
-        mlmg.setHypreOptionsNamespace("vidyut.hypre");
-        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
-    }
-#endif
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
     linsolve_ptr->setScalars(ascalar, bscalar);
 
@@ -727,6 +716,18 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
             linsolve_ptr->setLevelBC(ilev, &(specdata[ilev]));
         }
     }
+    
+    MLMG mlmg(*linsolve_ptr);
+    mlmg.setMaxIter(linsolve_maxiter);
+    mlmg.setVerbose(linsolve_verbose);
+
+#ifdef AMREX_USE_HYPRE
+    if (use_hypre)
+    {
+        mlmg.setHypreOptionsNamespace("vidyut.hypre");
+        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+    }
+#endif
 
     mlmg.solve(GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
 
