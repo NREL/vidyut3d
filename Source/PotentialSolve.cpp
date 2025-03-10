@@ -29,6 +29,15 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     Real bscalar = 1.0;
     ProbParm const* localprobparm = d_prob_parm;
     int linsolve_verbose=1;
+    
+    // First initialization of MLMG solver
+    LPInfo info;
+    info.setAgglomeration(true);
+    info.setConsolidation(true);
+    info.setMaxCoarseningLevel(max_coarsening_level);
+    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                           boxArray(0,finest_level), 
+                                           DistributionMap(0,finest_level), info)); 
 
     //==================================================
     // amrex solves

@@ -28,9 +28,9 @@ vidyut.user_defined_species = 1
 vidyut.user_defined_vel = 1
 
 # Tagging
-vidyut.tagged_vars = AR
-vidyut.AR_refine = 0.5
-vidyut.AR_refinegrad = 1e20
+vidyut.tagged_vars = NI
+vidyut.NI_refine = 0.5
+vidyut.NI_refinegrad = 1e20
 
 #0 - periodic
 #1 - Dirichlet
@@ -47,11 +47,11 @@ vidyut.eden_bc_hi = 0 2 0
 vidyut.eenrg_bc_lo = 0 2 0
 vidyut.eenrg_bc_hi = 0 2 0
 
-vidyut.ion_bc_lo = 0 2 0
-vidyut.ion_bc_hi = 0 2 0
+vidyut.ion_bc_lo = 0 4 0
+vidyut.ion_bc_hi = 0 4 0
 
-vidyut.neutral_bc_lo = 0 4 0
-vidyut.neutral_bc_hi = 0 4 0
+vidyut.neutral_bc_lo = 0 2 0
+vidyut.neutral_bc_hi = 0 2 0
 
 # PLOTFILES
 amr.plot_file  = plt    # root name of plot file

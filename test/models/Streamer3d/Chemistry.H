@@ -21,7 +21,7 @@
 #define NUM_GAS_SPECIES 4// Species in the homogeneous phase
 #define NUM_GAS_REACTIONS 6// Reactions in the homogeneous phase
 
-#define SITE_DENSITY 0.000000E+00// mol/cm^2
+#define SITE_DENSITY 0.0 // mol/cm^2
 
 #define NUM_SURFACE_ELEMENTS 0// Additional elements in heterogeneous phase
 #define NUM_SURFACE_SPECIES 0// Species in the heterogeneous phase
@@ -31,9 +31,13 @@
 #define NUM_SPECIES (NUM_GAS_SPECIES + NUM_SURFACE_SPECIES)
 #define NUM_REACTIONS (NUM_GAS_REACTIONS + NUM_SURFACE_REACTIONS)
 
-#define NUM_IONS 2
 
 #define NUM_FIT 4
+
+#define FIRST_ION 3
+#define NUM_IONS 1
+#define FIRST_NEUTRAL 2
+#define NUM_NEUTRALS 1
 
 //  ALWAYS on CPU stuff -- can have different def depending on if we are CPU or GPU based. Defined in mechanism.cpp 
 void atomicWeight(amrex::Real *  awt);

@@ -188,7 +188,8 @@ namespace user_transport
     
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -219,10 +220,10 @@ namespace user_transport
         amrex::Real y=prob_lo[1]+(cell_int[1]+0.5)*dx[1];
         
         //default
-        robin_a(ghost_cell) = 0.0;
-        robin_b(ghost_cell) = 1.0;
-        robin_f(ghost_cell) = 0.0;
-        bc_arr(ghost_cell) = 0.0;
+        robin_a(ghost_cell,bcspec_id) = 0.0;
+        robin_b(ghost_cell,bcspec_id) = 1.0;
+        robin_f(ghost_cell,bcspec_id) = 0.0;
+        bc_arr(ghost_cell,bcspec_id) = 0.0;
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cell_int,sp);
@@ -243,7 +244,7 @@ namespace user_transport
             //why -flx/D?
             //because diffusive flux -D dc/dx = flx
             //so dc/dx = -flx/D
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
         if(spec_id==HEp_ID)
@@ -267,7 +268,7 @@ namespace user_transport
             //if driftvel is pointing towards the wall
             //then flux=v n - D dndx = v n
             //else  flux = v n - D dndx = 0 
-            bc_arr(ghost_cell)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
+            bc_arr(ghost_cell,bcspec_id)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
         }
 
         if(spec_id==HEm_ID || spec_id==HE2m_ID)
@@ -281,7 +282,7 @@ namespace user_transport
 
             amrex::Real cbar=sqrt(8.0*K_B*Tg/PI*imw(spec_id));
             amrex::Real flx = phi(i,j,k,spec_id)*cbar/4.0*outward_normal[dir];
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
         if(spec_id==EEN_ID)
@@ -298,7 +299,7 @@ namespace user_transport
             amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
 
             amrex::Real flx = (2.0*K_B*Te)*ne*cbar/4.0*outward_normal[dir];
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
     }

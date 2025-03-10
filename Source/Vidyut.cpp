@@ -121,6 +121,37 @@ Vidyut::Vidyut()
       amrex::Abort("Electron not found in chemistry mechanism!\n");
     }
 
+    if(multicompsolves)
+    {
+        if(   ion_bc_lo[0] == ROBINBC || ion_bc_hi[0] == ROBINBC 
+#if AMREX_SPACEDIM > 1
+          ||  ion_bc_lo[1] == ROBINBC || ion_bc_lo[1] == ROBINBC
+#if AMREX_SPACEDIM == 3
+           || ion_bc_lo[2] == ROBINBC || ion_bc_lo[2] == ROBINBC
+#endif
+#endif
+           )
+        {
+            amrex::Print()<<"cannot do multicomponent solves with Robin BC for ions**\n";
+            amrex::Print()<<"comp_ion_chunks set to 1***\n";
+            comp_ion_chunks=1;
+        }
+        
+        if(   neutral_bc_lo[0] == ROBINBC || neutral_bc_hi[0] == ROBINBC 
+#if AMREX_SPACEDIM > 1
+          ||  neutral_bc_lo[1] == ROBINBC || neutral_bc_lo[1] == ROBINBC
+#if AMREX_SPACEDIM == 3
+           || neutral_bc_lo[2] == ROBINBC || neutral_bc_lo[2] == ROBINBC
+#endif
+#endif
+           )
+        {
+            amrex::Print()<<"cannot do multicomponent solves with Robin BC for neutrals**\n";
+            amrex::Print()<<"comp_neutral_chunks set to 1***\n";
+            comp_neutral_chunks=1;
+        }
+    }
+
     //Check inputs for axisymmetric geometry
     //only needed if one boundary is at r=0 and 
     //the user will set the condition accordingly
@@ -337,9 +368,13 @@ void Vidyut::ReadParameters()
         pp.query("do_bg_reactions",do_bg_reactions);
         pp.query("do_photoionization",do_photoionization);
         pp.query("photoion_ID",photoion_ID);
+        pp.query("multicompsolves",multicompsolves);
+        pp.query("comp_ion_chunks",comp_ion_chunks);
+        pp.query("comp_neutral_chunks",comp_neutral_chunks);
 
         pp.query("gas_temperature",gas_temperature);
         pp.query("gas_pressure",gas_pressure);
+        bg_specid_list.resize(0);
         pp.queryarr("bg_species_ids",bg_specid_list);
         
         pp.query("weno_scheme",weno_scheme);

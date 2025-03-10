@@ -6,16 +6,19 @@
 
 /* Elements
 0  E
-1  Ar
+1  NI //negative ion
 */
 
 // Species
 #define E_ID 0
-#define AR_ID 1
+#define NI_ID 1
 
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 2
+#define FIRST_ION 1
 #define NUM_IONS 1
+#define FIRST_NEUTRAL 0
+#define NUM_NEUTRALS 0
 #define NUM_REACTIONS 1
 
 #define NUM_FIT 4
@@ -44,30 +47,30 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKINDX(int &mm, int &kk, int &ii,
 #ifdef AMREX_USE_GPU
 AMREX_GPU_CONSTANT const amrex::Real global_imw[2] = {
     1822.8884868472639482, // E
-    0.0250312891113892,    // AR
+    0.0250312891113892,    // NI
 };
 #endif
 const amrex::Real h_global_imw[2] = {
     1822.8884868472639482, // E
-    0.0250312891113892,    // AR
+    0.0250312891113892,    // NI
 };
 
 //  molecular weights
 #ifdef AMREX_USE_GPU
 AMREX_GPU_CONSTANT const amrex::Real global_mw[2] = {
     0.000549,  // E
-    39.950000, // AR
+    39.950000, // NI
 };
 #endif
 const amrex::Real h_global_mw[2] = {
     0.000549,  // E
-    39.950000, // AR
+    39.950000, // NI
 };
 
 //  inverse molecular weights
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_imw(amrex::Real *imw_new) {
   imw_new[0] = 1822.8884868472639482; // E
-  imw_new[1] = 0.0250312891113892;    // AR
+  imw_new[1] = 0.0250312891113892;    // NI
 }
 
 //  inverse molecular weight
@@ -81,7 +84,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real imw(const int n) {
 //  molecular weights
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_mw(amrex::Real *mw_new) {
   mw_new[0] = 0.000549;  // E
-  mw_new[1] = 39.950000; // AR
+  mw_new[1] = 39.950000; // NI
 }
 
 //  molecular weight
@@ -125,7 +128,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void gibbs(amrex::Real *species,
   }
 
   // species with no change at a midpoint T
-  // species 1: AR
+  // species 1: NI
   species[1] = -7.453750000000000e+02 * invT - 1.866000000000000e+00 -
                2.500000000000000e+00 * tc[0] - 0.000000000000000e+00 * tc[1] -
                0.000000000000000e+00 * tc[2] - 0.000000000000000e+00 * tc[3] -
@@ -146,7 +149,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
 specDiff(const int specid, const amrex::Real Te, const amrex::Real ndens, const amrex::Real emag, const amrex::Real T)
 {
     amrex::Real dcoeff=0.0;
-    if(specid==AR_ID)
+    if(specid==NI_ID)
     {
        dcoeff = 1.0;
     }
@@ -178,7 +181,7 @@ productionRate(amrex::Real *wdot, const amrex::Real *sc, const amrex::Real T) {
   gibbs(g_RT, tc);
 
   {
-    // reaction 0:  AR + E => AR + E
+    // reaction 0:  NI + E => NI + E
     const amrex::Real k_f = 0;
     const amrex::Real qf = k_f * (sc[0] * sc[1]);
     const amrex::Real qr = 0.0;
@@ -199,7 +202,7 @@ CKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot[], const amrex::Real
 //  species unit charge number
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRG(int kcharge[]) {
   kcharge[0] = -1; // E
-  kcharge[1] = 0;  // AR
+  kcharge[1] = -1;  // NI
 }
 
 //  species charge per unit mass
