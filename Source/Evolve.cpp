@@ -36,51 +36,6 @@ void Vidyut::Evolve()
     amrex::Real dt_edrift,dt_ediff,dt_diel_relax;
     amrex::Real dt_edrift_lev,dt_ediff_lev,dt_diel_relax_lev;
 
-    // First initialization of MLMG solver
-    LPInfo info;
-    info.setAgglomeration(true);
-    info.setConsolidation(true);
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    
-    singlecomp_linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level),
-                boxArray(0,finest_level),
-                DistributionMap(0,finest_level), info));
-    
-    if(multicompsolves)
-    {
-        if(NUM_IONS > 0)
-        {
-            multicomp_linsolve_ptr_ions1.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                   boxArray(0,finest_level),
-                                                                   DistributionMap(0,finest_level), info, 
-                                                                   {}, comp_ion_chunks));
-
-            if(NUM_IONS%comp_ion_chunks > 0)
-            {
-                multicomp_linsolve_ptr_ions2.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                       boxArray(0,finest_level),
-                                                                       DistributionMap(0,finest_level), info, 
-                                                                       {}, NUM_IONS%comp_ion_chunks));
-            }
-        }
-
-        if(NUM_NEUTRALS > 0)
-        {
-            multicomp_linsolve_ptr_neutrals1.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                       boxArray(0,finest_level),
-                                                                       DistributionMap(0,finest_level), info, 
-                                                                       {}, comp_neutral_chunks));
-
-            if(NUM_NEUTRALS%comp_neutral_chunks > 0)
-            {
-                multicomp_linsolve_ptr_neutrals2.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                           boxArray(0,finest_level),
-                                                                           DistributionMap(0,finest_level), info, 
-                                                                           {}, NUM_NEUTRALS%comp_neutral_chunks));
-            }
-        }
-    }
-
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         amrex::Real strt_time = amrex::second();
@@ -121,44 +76,6 @@ void Vidyut::Evolve()
             {
                 amrex::Print()<<"regridding\n";
                 regrid(0, cur_time);
-            
-                singlecomp_linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                  boxArray(0,finest_level),
-                                                                  DistributionMap(0,finest_level), info));
-                if(multicompsolves)
-                {
-                    if(NUM_IONS > 0)
-                    {
-                        multicomp_linsolve_ptr_ions1.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                               boxArray(0,finest_level),
-                                                                               DistributionMap(0,finest_level), info, 
-                                                                               {}, comp_ion_chunks));
-
-                        if(NUM_IONS%comp_ion_chunks > 0)
-                        {
-                            multicomp_linsolve_ptr_ions2.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                                   boxArray(0,finest_level),
-                                                                                   DistributionMap(0,finest_level), info, 
-                                                                                   {}, NUM_IONS%comp_ion_chunks));
-                        }
-                    }
-
-                    if(NUM_NEUTRALS > 0)
-                    {
-                        multicomp_linsolve_ptr_neutrals1.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                                   boxArray(0,finest_level),
-                                                                                   DistributionMap(0,finest_level), info, 
-                                                                                   {}, comp_neutral_chunks));
-
-                        if(NUM_NEUTRALS%comp_neutral_chunks > 0)
-                        {
-                            multicomp_linsolve_ptr_neutrals2.reset(new MLABecLaplacian(Geom(0,finest_level),
-                                                                                       boxArray(0,finest_level),
-                                                                                       DistributionMap(0,finest_level), info, 
-                                                                                       {}, NUM_NEUTRALS%comp_neutral_chunks));
-                        }
-                    }
-                }
             }
         }
 
@@ -271,7 +188,7 @@ void Vidyut::Evolve()
 
             //add dt/2 after niter=0
             solve_potential(cur_time+time_offset, Sborder, pot_bc_lo, pot_bc_hi, 
-                            efield_fc, singlecomp_linsolve_ptr.get());
+                            efield_fc);
 
             if(cs_technique)
             {
@@ -326,7 +243,7 @@ void Vidyut::Evolve()
                 //First add the photoionization source jth component to the total photoionization source multifab
                 //In the same loop over levels, add the inidividual components to rxn_src
                 solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 0, singlecomp_linsolve_ptr.get());
+                                      photoion_src, 0);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -335,7 +252,7 @@ void Vidyut::Evolve()
                 }
 
                 solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 1, singlecomp_linsolve_ptr.get());
+                                      photoion_src, 1);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -344,7 +261,7 @@ void Vidyut::Evolve()
                 }    
 
                 solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 2, singlecomp_linsolve_ptr.get());
+                                      photoion_src, 2);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
                     amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
@@ -362,7 +279,7 @@ void Vidyut::Evolve()
 
             implicit_solve_scalar(cur_time+time_offset,dt_common,E_IDX, 1,Sborder,
                                   Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, 
-                                  gradne_fc, singlecomp_linsolve_ptr.get());
+                                  gradne_fc);
 
             //electron energy solve
             if(elecenergy_solve)
@@ -384,8 +301,7 @@ void Vidyut::Evolve()
 
                 implicit_solve_scalar(cur_time+time_offset,dt_common,EEN_ID, 1, 
                                       Sborder,Sborder_old, 
-                                      expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc, 
-                                      singlecomp_linsolve_ptr.get());
+                                      expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
 
             if(!multicompsolves)
@@ -416,8 +332,7 @@ void Vidyut::Evolve()
 
                             implicit_solve_scalar(cur_time+time_offset, dt_common, ind, 1, 
                                                   Sborder, Sborder_old,
-                                                  expl_src,ion_bc_lo,ion_bc_hi, grad_fc, 
-                                                  singlecomp_linsolve_ptr.get());
+                                                  expl_src,ion_bc_lo,ion_bc_hi, grad_fc); 
                         }
                         //neutrals
                         else
@@ -429,8 +344,7 @@ void Vidyut::Evolve()
 
                             implicit_solve_scalar(cur_time+time_offset, dt_common, 
                                                   ind, 1, Sborder, Sborder_old,
-                                                  expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc, 
-                                                  singlecomp_linsolve_ptr.get());
+                                                  expl_src,neutral_bc_lo,neutral_bc_hi, grad_fc); 
                         }
                     } 
                     if (do_bg_reactions)
@@ -468,8 +382,7 @@ void Vidyut::Evolve()
 
                         implicit_solve_scalar(cur_time+time_offset, dt_common, comp, comp_ion_chunks, 
                                               Sborder, Sborder_old,
-                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc, 
-                                              multicomp_linsolve_ptr_ions1.get());
+                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc); 
                     }
                     if(comp!=(FIRST_ION+NUM_IONS))
                     {
@@ -482,8 +395,7 @@ void Vidyut::Evolve()
                         implicit_solve_scalar(cur_time+time_offset, dt_common, comp, 
                                               FIRST_ION+NUM_IONS-comp, 
                                               Sborder, Sborder_old,
-                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc,
-                                              multicomp_linsolve_ptr_ions2.get());
+                                              expl_src,ion_bc_lo,ion_bc_hi, grad_fc);
                     }
                 }
                 if(NUM_NEUTRALS > 0)
@@ -499,7 +411,7 @@ void Vidyut::Evolve()
                         implicit_solve_scalar(cur_time+time_offset, dt_common, comp, comp_neutral_chunks, 
                                               Sborder, Sborder_old,
                                               expl_src,neutral_bc_lo,neutral_bc_hi, 
-                                              grad_fc,multicomp_linsolve_ptr_neutrals1.get());
+                                              grad_fc);
                     }
                     if(comp!=(FIRST_NEUTRAL+NUM_NEUTRALS))
                     {
@@ -514,7 +426,7 @@ void Vidyut::Evolve()
                                               FIRST_NEUTRAL+NUM_NEUTRALS-comp, 
                                               Sborder, Sborder_old,
                                               expl_src,neutral_bc_lo,neutral_bc_hi, 
-                                              grad_fc,multicomp_linsolve_ptr_neutrals2.get());
+                                              grad_fc);
                     }
 
                     for(unsigned int bgind=0;bgind<bg_specid_list.size();bgind++)

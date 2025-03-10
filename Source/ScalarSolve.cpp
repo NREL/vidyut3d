@@ -345,8 +345,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                    Vector<MultiFab>& Sborder_old, 
                                    Vector<MultiFab>& dsdt_expl, 
                                    Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                   Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc,
-                                   amrex::MLABecLaplacian* linsolve_ptr)
+                                   Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc)
 {
     // BL_PROFILE("Vidyut::implicit_solve_species(" + std::to_string( spec_id ) + ")");
     BL_PROFILE("Vidyut::implicit_solve_scalar()");
@@ -392,6 +391,15 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     amrex::Real captured_gaspres=gas_pressure;
     int userdefspec = user_defined_species;
     int eidx = E_IDX;
+    
+    LPInfo info;
+    info.setAgglomeration(true);
+    info.setConsolidation(true);
+    info.setMaxCoarseningLevel(max_coarsening_level);
+    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                           boxArray(0,finest_level), 
+                                           DistributionMap(0,finest_level), info, 
+                                           {}, numspec));
 
 #ifdef AMREX_USE_HYPRE
     if(use_hypre)
@@ -496,17 +504,6 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         robin_f[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
     }
 
-    MLMG mlmg(*linsolve_ptr);
-    mlmg.setMaxIter(linsolve_maxiter);
-    mlmg.setVerbose(linsolve_verbose);
-
-#ifdef AMREX_USE_HYPRE
-    if (use_hypre)
-    {
-        mlmg.setHypreOptionsNamespace("vidyut.hypre");
-        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
-    }
-#endif
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
     linsolve_ptr->setScalars(ascalar, bscalar);
 
@@ -727,6 +724,18 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
             linsolve_ptr->setLevelBC(ilev, &(specdata[ilev]));
         }
     }
+    
+    MLMG mlmg(*linsolve_ptr);
+    mlmg.setMaxIter(linsolve_maxiter);
+    mlmg.setVerbose(linsolve_verbose);
+
+#ifdef AMREX_USE_HYPRE
+    if (use_hypre)
+    {
+        mlmg.setHypreOptionsNamespace("vidyut.hypre");
+        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+    }
+#endif
 
     mlmg.solve(GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
 
