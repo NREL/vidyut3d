@@ -88,8 +88,7 @@ public:
 
     void solve_potential(Real current_time, Vector<MultiFab>& Sborder, 
                          Vector<int>& bc_lo, Vector<int>& bc_hi,
-                         Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec,
-                          amrex::MLABecLaplacian* linsolve_ptr);
+                         Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec);
 
 
     void update_explsrc_at_all_levels(int startspec, int numspec, 
@@ -107,13 +106,11 @@ public:
                                Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
                                Vector<MultiFab>& dsdt_expl,
                                Vector<int>& bc_lo, Vector<int>& bc_hi,
-                               Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc,
-                               amrex::MLABecLaplacian* linsolve_ptr);
+                               Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc);
 
     void solve_photoionization(Real current_time, Vector<MultiFab>& Sborder, 
                                Vector<int>& bc_lo, Vector<int>& bc_hi,
-                               Vector<MultiFab>& photoion_src, int sph_id,
-                               amrex::MLABecLaplacian* linsolve_ptr);
+                               Vector<MultiFab>& photoion_src, int sph_id);
 
     void compute_elecenergy_source(int lev, 
                                    MultiFab& Sborder, 
@@ -130,11 +127,7 @@ public:
     static ProbParm* h_prob_parm;
     static ProbParm* d_prob_parm;
 
-    std::unique_ptr<amrex::MLABecLaplacian> singlecomp_linsolve_ptr;
-    std::unique_ptr<amrex::MLABecLaplacian> multicomp_linsolve_ptr_ions1;
-    std::unique_ptr<amrex::MLABecLaplacian> multicomp_linsolve_ptr_neutrals1;
-    std::unique_ptr<amrex::MLABecLaplacian> multicomp_linsolve_ptr_ions2;
-    std::unique_ptr<amrex::MLABecLaplacian> multicomp_linsolve_ptr_neutrals2;
+    std::unique_ptr<amrex::MLABecLaplacian> linsolve_ptr;
 
     ////////////////
     amrex::Gpu::ManagedVector<Real> refine_phi;
