@@ -131,7 +131,8 @@ namespace user_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -162,15 +163,15 @@ namespace user_transport
         //for all species
         if(sgn == -1) 
         { // lo sides
-            robin_a(ghost_cell) = 0.0;
-            robin_b(ghost_cell) = 1.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 0.0;
+            robin_b(ghost_cell,bcspec_id) = 1.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
         }
         else
         {
-            robin_a(ghost_cell) = 0.0;
-            robin_b(ghost_cell) = 1.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 0.0;
+            robin_b(ghost_cell,bcspec_id) = 1.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
         } 
 
     }
@@ -184,9 +185,9 @@ namespace user_transport
                      ProbParm const& prob_parm,
                      amrex::Real Tg,amrex::Real Pg)
     {
-        amrex::Real efieldmag=std::sqrt( std::pow(phi(iv,EFX_ID),2.0)+
-                                         std::pow(phi(iv,EFY_ID),2.0)+
-                                         std::pow(phi(iv,EFZ_ID),2.0) );
+        amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(iv,EFX_ID))+
+                                         amrex::Math::powi<2>(phi(iv,EFY_ID))+
+                                         amrex::Math::powi<2>(phi(iv,EFZ_ID)));
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(iv,sp);
         

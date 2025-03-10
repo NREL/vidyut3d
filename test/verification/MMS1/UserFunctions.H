@@ -124,8 +124,9 @@ namespace user_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
-                    Array4<Real> const& bcarr,
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi, 
+                    Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
                     Array4<Real> const& robin_f,
@@ -156,16 +157,18 @@ namespace user_transport
         if(sgn == -1) 
         { 
             // lo sides
-            robin_a(ghost_cell) = 1.0;
-            robin_b(ghost_cell) = 0.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 1.0;
+            robin_b(ghost_cell,bcspec_id) = 0.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
+            bc_arr(ghost_cell,bcspec_id) = 0.0;
 
         }
         else
         {
-            robin_a(ghost_cell) = 1.0;
-            robin_b(ghost_cell) = 0.0;
-            robin_f(ghost_cell) = 1.0;
+            robin_a(ghost_cell,bcspec_id) = 1.0;
+            robin_b(ghost_cell,bcspec_id) = 0.0;
+            robin_f(ghost_cell,bcspec_id) = 1.0;
+            bc_arr(ghost_cell,bcspec_id) = 1.0;
         } 
 
     }
@@ -180,11 +183,11 @@ namespace user_transport
                      amrex::Real Tg,amrex::Real Pg)
     {
         amrex::Real vel=0.0;
-        if(dir==prob_parm.axdir && specid==AR_ID)
+        if(dir==prob_parm.axdir && specid==NI_ID)
         {
-            Real efieldmag = std::sqrt(std::pow(phi(cellid,EFX_ID),2.0) +
-                                       std::pow(phi(cellid,EFY_ID),2.0) +
-                                       std::pow(phi(cellid,EFZ_ID),2.0) );
+            amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(cellid,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFZ_ID)));
             
             amrex::Real ndens=1.0; //dummy
             amrex::Real mu = specMob(specid,phi(cellid,ETEMP_ID), ndens,

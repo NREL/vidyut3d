@@ -18,9 +18,16 @@
 #define HEm_ID 3
 #define HE2m_ID 4
 
+//note: anyway HE_ID is skipped
+//so we dont have to include it
+//in neutrals
+#define NUM_IONS 1
+#define FIRST_ION 2
+#define NUM_NEUTRALS 2
+#define FIRST_NEUTRAL 3
+
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 5
-#define NUM_IONS 1
 #define NUM_REACTIONS 4
 
 #define NUM_FIT 4
@@ -192,11 +199,11 @@ specMob(const int specid, const amrex::Real Te, const amrex::Real ndens, const a
     //Turner, Miles M., et al. "Simulation benchmarks for low-pressure
     //plasmas: Capacitive discharges." 
     //Physics of Plasmas 20.1 (2013): 013507.
-    amrex::Real Hepmob=2.69*std::pow((1.0+1.2e-3*std::pow(EbyN,2.0)+4.2e-8*std::pow(EbyN,4.0)),-0.125);
+    amrex::Real Hepmob=2.69*std::pow((1.0+1.2e-3*amrex::Math::powi<2>(EbyN)+4.2e-8*amrex::Math::powi<4>(EbyN)),-0.125);
 
     //computed by Taaresh Taneja (U Minnesota) using Turner's cross sections
     amrex::Real elecmob = (-1.0)*std::exp(55.0 + 0.3942*std::log(meanE) + 2.134/meanE
-               -0.6433/std::pow(meanE,2.0) + (0.7112e-1)/std::pow(meanE,3.0)) / ndens;
+               -0.6433/amrex::Math::powi<2>(meanE) + (0.7112e-1)/amrex::Math::powi<3>(meanE)) / ndens;
 
     if(specid==E_ID)
     {

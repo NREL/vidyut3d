@@ -71,7 +71,8 @@ namespace plasmachem_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn,
-                    int spec_id, Array4<Real> const &phi,
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi,
                     Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -99,9 +100,9 @@ namespace plasmachem_transport
         cell_int[dir]+=cell_adjust;
 
         //default
-        robin_a(ghost_cell) = 0.0;
-        robin_b(ghost_cell) = 1.0;
-        robin_f(ghost_cell) = 0.0;
+        robin_a(ghost_cell,bcspec_id) = 0.0;
+        robin_b(ghost_cell,bcspec_id) = 1.0;
+        robin_f(ghost_cell,bcspec_id) = 0.0;
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cell_int,sp);
@@ -110,9 +111,9 @@ namespace plasmachem_transport
         if(spec_id==E_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
 
@@ -123,14 +124,14 @@ namespace plasmachem_transport
             //why -flx/D?
             //because diffusive flux -D dc/dx = flx
             //so dc/dx = -flx/D
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
         else if(spec_id==EEN_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real Te=phi(cell_int,ETEMP_ID);
 
@@ -139,15 +140,15 @@ namespace plasmachem_transport
             amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
 
             amrex::Real flx = (2.0*K_B*Te)*ne*cbar/4.0*Real(sgn);
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
         // Ion fluxes determined by drift velocity
         else if(plasmachem::get_charge(spec_id) != 0)
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real mu = specMob(spec_id,phi(cell_int,ETEMP_ID), ndens,
                                      efieldmag,
@@ -164,20 +165,20 @@ namespace plasmachem_transport
             //if driftvel is pointing towards the wall
             //then flux=v n - D dndx = v n
             //else  flux = v n - D dndx = 0
-            bc_arr(ghost_cell)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
+            bc_arr(ghost_cell,bcspec_id)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
         }
         // Neutral species fluxes determined by thermal velocity
         else
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
 
             amrex::Real cbar=sqrt(8.0*K_B*Tg/PI/(mw(spec_id)*M_AMU));
             amrex::Real flx = phi(i,j,k,spec_id)*cbar/4.0*Real(sgn);
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
     }
 
@@ -243,9 +244,9 @@ namespace plasmachem_transport
                             ProbParm const& prob_parm,
                             amrex::Real Tg,amrex::Real Pg)
     {
-        amrex::Real efieldmag=std::sqrt( std::pow(phi(cellid,EFX_ID),2.0)+
-                                        std::pow(phi(cellid,EFY_ID),2.0)+
-                                        std::pow(phi(cellid,EFZ_ID),2.0) );
+        amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cellid,EFX_ID))+
+                                        amrex::Math::powi<2>(phi(cellid,EFY_ID))+
+                                        amrex::Math::powi<2>(phi(cellid,EFZ_ID)));
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cellid,sp);

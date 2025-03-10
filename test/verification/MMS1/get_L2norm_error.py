@@ -37,10 +37,10 @@ axialdir_char=chr(ord('x')+axialdir)
 covgrid_lev=maxlev
 res=np.array([ncells[0]* (2**covgrid_lev),ncells[1]* (2**covgrid_lev),ncells[2]* (2**covgrid_lev)])
 dx_frb=lengths/res
-fields_load=["AR","Potential"]
+fields_load=["NI","Potential"]
 ad = ds.covering_grid(level=covgrid_lev, left_edge=prob_lo, dims=res, fields=fields_load)
 pot=np.array(ad["Potential"])
-s1=np.array(ad["AR"])
+s1=np.array(ad["NI"])
 
 pot_1d=get_oned_data(pot,axialdir)
 s1_1d=get_oned_data(s1,axialdir)
@@ -67,7 +67,7 @@ ax[1].plot(x,pot_1d,'k*',label="Computed",markersize=2)
 ax[1].legend(loc="best")
 
 dir_char=axialdir_char
-#fig.suptitle("AR and potential solution along "+dir_char+" direction ")
+#fig.suptitle("NI and potential solution along "+dir_char+" direction ")
 plt.tight_layout()
 plt.savefig("err_"+dir_char+".png")
 #=======================================

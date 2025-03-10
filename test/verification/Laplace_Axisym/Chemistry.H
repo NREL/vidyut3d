@@ -16,7 +16,10 @@
 
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 3
-#define NUM_IONS 1
+#define FIRST_ION 0
+#define NUM_IONS 0
+#define FIRST_NEUTRAL 1
+#define NUM_NEUTRALS 2
 #define NUM_REACTIONS 1
 
 #define NUM_FIT 4

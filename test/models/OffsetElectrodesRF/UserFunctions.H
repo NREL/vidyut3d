@@ -188,7 +188,8 @@ namespace user_transport
     
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bc_arr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -219,10 +220,10 @@ namespace user_transport
         amrex::Real y=prob_lo[1]+(cell_int[1]+0.5)*dx[1];
         
         //default
-        robin_a(ghost_cell) = 0.0;
-        robin_b(ghost_cell) = 1.0;
-        robin_f(ghost_cell) = 0.0;
-        bc_arr(ghost_cell) = 0.0;
+        robin_a(ghost_cell,bcspec_id) = 0.0;
+        robin_b(ghost_cell,bcspec_id) = 1.0;
+        robin_f(ghost_cell,bcspec_id) = 0.0;
+        bc_arr(ghost_cell,bcspec_id) = 0.0;
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cell_int,sp);
@@ -230,9 +231,9 @@ namespace user_transport
         if(spec_id==E_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
 
@@ -243,14 +244,14 @@ namespace user_transport
             //why -flx/D?
             //because diffusive flux -D dc/dx = flx
             //so dc/dx = -flx/D
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
         if(spec_id==HEp_ID)
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real mu = specMob(spec_id,phi(cell_int,ETEMP_ID),
                                      ndens, efieldmag,
@@ -267,29 +268,29 @@ namespace user_transport
             //if driftvel is pointing towards the wall
             //then flux=v n - D dndx = v n
             //else  flux = v n - D dndx = 0 
-            bc_arr(ghost_cell)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
+            bc_arr(ghost_cell,bcspec_id)=(ion_drift_flux_dotn >= 0.0)?(-ion_drift_flux/D):0.0;
         }
 
         if(spec_id==HEm_ID || spec_id==HE2m_ID)
         {
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
 
             amrex::Real D=specDiff(spec_id, phi(cell_int,ETEMP_ID), ndens, efieldmag, Tg);
 
             amrex::Real cbar=sqrt(8.0*K_B*Tg/PI*imw(spec_id));
             amrex::Real flx = phi(i,j,k,spec_id)*cbar/4.0*outward_normal[dir];
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
         if(spec_id==EEN_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);
-            amrex::Real efieldmag=std::sqrt(std::pow(phi(cell_int,EFX_ID),2.0)+
-                                            std::pow(phi(cell_int,EFY_ID),2.0)+
-                                            std::pow(phi(cell_int,EFZ_ID),2.0));
+            amrex::Real efieldmag=std::sqrt(amrex::Math::powi<2>(phi(cell_int,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cell_int,EFZ_ID)));
 
             amrex::Real Te=phi(cell_int,ETEMP_ID);
 
@@ -298,7 +299,7 @@ namespace user_transport
             amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
 
             amrex::Real flx = (2.0*K_B*Te)*ne*cbar/4.0*outward_normal[dir];
-            bc_arr(ghost_cell)=(-flx/D);
+            bc_arr(ghost_cell,bcspec_id)=(-flx/D);
         }
 
     }
@@ -312,9 +313,9 @@ namespace user_transport
                             ProbParm const& prob_parm,
                             amrex::Real Tg,amrex::Real Pg)
     {
-        amrex::Real efieldmag=std::sqrt( std::pow(phi(iv,EFX_ID),2.0)+
-                                        std::pow(phi(iv,EFY_ID),2.0)+
-                                        std::pow(phi(iv,EFZ_ID),2.0) );
+        amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(iv,EFX_ID))+
+                                        amrex::Math::powi<2>(phi(iv,EFY_ID))+
+                                        amrex::Math::powi<2>(phi(iv,EFZ_ID)) );
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(iv,sp);
 

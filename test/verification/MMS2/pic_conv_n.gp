@@ -16,5 +16,5 @@ set xrange [0.005:0.3]
 plot 'err1' u 1:2 w lp  lw 2 ps 1 pt 5 lc 6 title "hyporder=1",\
     'err2' u 1:2 w lp  lw 3 pt 6 lc 7 title "hyporder=2",\
     'err5' u 1:2 w lp  lw 3 pt 7 lc 5 title "hyporder=5",\
-    'err1' u 1:($1*1e6) w l  lw 3 lc 6 title "",\
+    'err1' u 1:($1*1e7) w l  lw 3 lc 6 title "",\
     'err1' u 1:($1*$1*1e6) w l  lw 3 lc 7 title ""

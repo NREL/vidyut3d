@@ -55,14 +55,14 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
             for (int i = lo.x; i <= hi.x; ++i) 
             {
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
-                phi(i,j,k,1)  = 0.0;
+                phi(i,j,k,NI_ID)  = 0.0;
                 
                 phi(i,j,k,POT_ID) = 0.0;
                 phi(i,j,k,EFX_ID) = 0.0;
                 phi(i,j,k,EFY_ID) = 0.0;
                 phi(i,j,k,EFZ_ID) = 0.0;
                 phi(i,j,k,EEN_ID) = 0.0;
-                phi(i,j,k,0) = 0.0;
+                phi(i,j,k,E_ID) = 0.0;
                 phi(i,j,k,ETEMP_ID) = 0.5*eV;
             }
         }

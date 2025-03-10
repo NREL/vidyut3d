@@ -89,6 +89,7 @@ void CKSYMS_STR(amrex::Vector<std::string> &kname);
 void GET_RMAP(int *_rmap);
 void CKINU(const int i, int &nspec, int *ki, int *nu);
 
+
 // A few mechanism parameters
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKINDX(int &mm, int &kk, int &ii,
                                                      int &nfit) {
@@ -409,6 +410,65 @@ CKRP(amrex::Real &ru, amrex::Real &ruc, amrex::Real &pa) {
   ru = 8.31446261815324e+07;
   ruc = 1.98721558317399615845;
   pa = 1.01325e+06;
+}
+
+//  species unit charge number
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRG(int kcharge[]) {
+  kcharge[0] = -1;  // E
+  kcharge[1] = 0;   // H
+  kcharge[2] = -1;  // H-
+  kcharge[3] = 0;   // H2
+  kcharge[4] = 0;   // H2v
+  kcharge[5] = 1;   // H2+
+  kcharge[6] = 1;   // H3+
+  kcharge[7] = 0;   // O
+  kcharge[8] = -1;  // O-
+  kcharge[9] = 0;   // O2
+  kcharge[10] = -1; // O2-
+  kcharge[11] = 0;  // CO
+  kcharge[12] = 0;  // CO2
+  kcharge[13] = 0;  // CO2v1
+  kcharge[14] = 0;  // CO2v2
+  kcharge[15] = 0;  // CO2v3
+  kcharge[16] = 0;  // CO2v4
+  kcharge[17] = 1;  // CO2+
+  kcharge[18] = 1;  // C2O3+
+  kcharge[19] = 1;  // C2O4+
+  kcharge[20] = -1; // CO3-
+  kcharge[21] = 0;  // C
+  kcharge[22] = 0;  // OH
+  kcharge[23] = 1;  // OH+
+  kcharge[24] = 0;  // H2O
+  kcharge[25] = 1;  // H2O+
+  kcharge[26] = 1;  // H3O+
+  kcharge[27] = 0;  // HCO
+  kcharge[28] = 1;  // CH+
+  kcharge[29] = 0;  // CH2
+  kcharge[30] = 1;  // CH2+
+  kcharge[31] = 0;  // CH3
+  kcharge[32] = 1;  // CH3+
+  kcharge[33] = 0;  // CH4
+  kcharge[34] = 0;  // CH2O
+  kcharge[35] = 0;  // CH3O
+  kcharge[36] = 0;  // CH3OH
+  kcharge[37] = 0;  // CH2OH
+  kcharge[38] = 0;  // AR
+  kcharge[39] = 0;  // ARe
+  kcharge[40] = 1;  // AR+
+  kcharge[41] = 1;  // ARH+
+  kcharge[42] = 0;  // AR2e
+  kcharge[43] = 1;  // AR2+
+}
+
+//  species charge per unit mass
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRGMASS(amrex::Real zk[]) {
+
+  int kchrg[44];
+  CKCHRG(kchrg);
+
+  for (int id = 0; id < 44; ++id) {
+    zk[id] = 6.02214076e+23 * 1.60217663e-19 * kchrg[id] * imw(id);
+  }
 }
 
 // compute the g/(RT) at the given temperature
@@ -891,12 +951,30 @@ specMob(const int specid, const amrex::Real Te, const amrex::Real ndens,
     amrex::Real E_cs = 40e-20; //A^2 (cross section)
     amrex::Real nu_elec = std::sqrt(8.0*K_B*Te/PI/ME)*ndens*E_cs;
     amrex::Real elecmob = -ECHARGE/ME/nu_elec;
+   
+    amrex::Real nu_Arp=std::sqrt(8.0*K_B*T/PI/(39.948*M_AMU))*ndens*Arp_cs;
+    amrex::Real Arpmob=ECHARGE/(39.948*M_AMU)/nu_Arp;
+    int spec_chrg[NUM_SPECIES];
+    amrex::Real mwt[NUM_SPECIES];
+    get_mw(mwt);
+    CKCHRG(spec_chrg);
 
 
     amrex::Real mob=0.0;
     if(specid==E_ID)
     {
         mob=elecmob;
+    }
+    else if(specid==NUM_SPECIES)
+    {
+        mob=fivebythree*elecmob;
+    }
+    else
+    {
+        if(amrex::Math::abs(spec_chrg[specid]) > 0)
+        {
+            mob=Arpmob*mwt[ARp_ID]/mwt[specid]*spec_chrg[specid];
+        }
     }
 
     return(mob);
@@ -905,96 +983,122 @@ specMob(const int specid, const amrex::Real Te, const amrex::Real ndens,
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
 specDiff(const int specid, const amrex::Real Te, const amrex::Real ndens,
          const amrex::Real emag, const amrex::Real T) {
-  amrex::Real diff = 0.0;
-  return (diff);
+
+    amrex::Real diff = 0.0;
+    amrex::Real Te_in_eV=Te/eV;
+
+    amrex::Real Arp_cs = 120e-20; //A^2 (cross section)
+    amrex::Real E_cs = 40e-20; //A^2 (cross section)
+    amrex::Real nu_elec = std::sqrt(8.0*K_B*Te/PI/ME)*ndens*E_cs;
+    amrex::Real elecdiff = K_B*Te/ME/nu_elec;
+
+    amrex::Real nu_Arp=std::sqrt(8.0*K_B*T/PI/(39.948*M_AMU))*ndens*Arp_cs;
+    amrex::Real Arpdiff=K_B*T/(39.948*M_AMU)/nu_Arp;
+    
+    amrex::Real mwt[NUM_SPECIES];
+    get_mw(mwt);
+
+    if(specid==E_ID)
+    {
+        diff=elecdiff;
+    }
+    else if(specid==NUM_SPECIES)
+    {
+        diff=fivebythree*elecdiff;
+    }
+    else
+    {
+        diff=Arpdiff*mwt[ARp_ID]/mwt[specid];
+    }
+    return (diff);
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
 productionRate(amrex::Real *wdot, const amrex::Real *sc, const amrex::Real T,
                const amrex::Real Te, amrex::Real EN, amrex::Real *enerExch) {
 
-  amrex::Real tc[5] = {log(T), T, T * T, T * T * T,
-                             T * T * T * T}; // temperature cache
-  const amrex::Real invT = 1.0 / tc[1];
-  const amrex::Real logT = log(T/300.0);
+    amrex::Real tc[5] = {log(T), T, T * T, T * T * T,
+        T * T * T * T}; // temperature cache
+    const amrex::Real invT = 1.0 / tc[1];
+    const amrex::Real logT = log(T/300.0);
 
-  // reference concentration: P_atm / (RT) in inverse mol/m^3
-  const amrex::Real refC = 101325 / 8.31446 * invT;
-  const amrex::Real refCinv = 1 / refC;
+    // reference concentration: P_atm / (RT) in inverse mol/m^3
+    const amrex::Real refC = 101325 / 8.31446 * invT;
+    const amrex::Real refCinv = 1 / refC;
 
-  for (int i = 0; i < 44; ++i) {
-    wdot[i] = 0.0;
-  }
+    for (int i = 0; i < 44; ++i) {
+        wdot[i] = 0.0;
+    }
 
-  // compute the mixture concentration
-  amrex::Real mixture = 0.0;
-  for (int i = 0; i < 44; ++i) {
-    mixture += sc[i];
-  }
+    // compute the mixture concentration
+    amrex::Real mixture = 0.0;
+    for (int i = 0; i < 44; ++i) {
+        mixture += sc[i];
+    }
 
-  // compute the Gibbs free energy
-  amrex::Real g_RT[44];
-  gibbs(g_RT, T);
+    // compute the Gibbs free energy
+    amrex::Real g_RT[44];
+    gibbs(g_RT, T);
 
-  // Precalculating values for electron energy exchange evaluation
-  amrex::Real ne = sc[E_ID] * 6.02214085774e23;
-  amrex::Real Ue = 1.5 * Te * ne * 1.380649e-23;
+    // Precalculating values for electron energy exchange evaluation
+    amrex::Real ne = sc[E_ID] * 6.02214085774e23;
+    amrex::Real Ue = 1.5 * Te * ne * 1.380649e-23;
 
-  // NOTE: units of JANEV fits for electron impact rxns are cm3/s and must be convered to m3/mol-s
-  // Precalculating values
-  double Janev_sum;
-  double invTe =  (Te == 0) ? 1.0 : 1.0/Te;
-  double TeeV = Te / 11595.0;
-  double logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
-  double invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
-  double Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
-      amrex::Math::powi<4>(logTe), amrex::Math::powi<5>(logTe), amrex::Math::powi<6>(logTe), amrex::Math::powi<7>(logTe), 
-      amrex::Math::powi<8>(logTe)};
-  double invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
+    // NOTE: units of JANEV fits for electron impact rxns are cm3/s and must be convered to m3/mol-s
+    // Precalculating values
+    double Janev_sum;
+    double invTe =  (Te == 0) ? 1.0 : 1.0/Te;
+    double TeeV = Te / 11595.0;
+    double logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
+    double invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
+    double Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
+        amrex::Math::powi<4>(logTe), amrex::Math::powi<5>(logTe), amrex::Math::powi<6>(logTe), amrex::Math::powi<7>(logTe), 
+        amrex::Math::powi<8>(logTe)};
+    double invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
 
-  tc[0] = log(T/300.0);   // temperature factors use (T/300)^beta
-  std::vector<double> Jfit_coefs = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  std::vector<double> Ffit_coefs = {0.0, 0.0, 0.0, 0.0};
+    tc[0] = log(T/300.0);   // temperature factors use (T/300)^beta
+    std::vector<double> Jfit_coefs = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::vector<double> Ffit_coefs = {0.0, 0.0, 0.0, 0.0};
 
-  {
-    // reaction 12:  CO2 + E => CO + O + E
-    Janev_sum = 0.0;
-    amrex::Real k_f;
-    Ffit_coefs = {28.3950215483559, -119.510009432235, 160.437496467960, -74.1425574458809};
-    double Ffit_A = 1.50741518933862e-16;
-    for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
-    k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
-    const amrex::Real qf = k_f * (sc[E_ID] * sc[CO2_ID]);
-    const amrex::Real qr = 0.0;
-    const amrex::Real qdot = qf - qr;
-    wdot[O_ID] += qdot;
-    wdot[CO_ID] += qdot;
-    wdot[CO2_ID] -= qdot;
-  }
+    {
+        // reaction 12:  CO2 + E => CO + O + E
+        Janev_sum = 0.0;
+        amrex::Real k_f;
+        Ffit_coefs = {28.3950215483559, -119.510009432235, 160.437496467960, -74.1425574458809};
+        double Ffit_A = 1.50741518933862e-16;
+        for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
+        k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
+        const amrex::Real qf = k_f * (sc[E_ID] * sc[CO2_ID]);
+        const amrex::Real qr = 0.0;
+        const amrex::Real qdot = qf - qr;
+        wdot[O_ID] += qdot;
+        wdot[CO_ID] += qdot;
+        wdot[CO2_ID] -= qdot;
+    }
 
-  {
-    // reaction 13:  CO2 + E => CO2+ + E + E
-    Janev_sum = 0.0;
-    amrex::Real k_f;
-    Ffit_coefs = {65.5733184943082, -511.020275942352, 911.053057794656, -540.822599138513};
-    double Ffit_A = 1.12781185638050e-15;
-    for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
-    k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
-    const amrex::Real qf = k_f * (sc[E_ID] * sc[CO2_ID]);
-    const amrex::Real qr = 0.0;
-    const amrex::Real qdot = qf - qr;
-    wdot[E_ID] += qdot;
-    wdot[CO2_ID] -= qdot;
-    wdot[CO2p_ID] += qdot;
-    int rxntype = 2;
-    amrex::Real eexci = 13.8;
-    int elidx = 0;
-    comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, tc[1], Te);
-  }
+    {
+        // reaction 13:  CO2 + E => CO2+ + E + E
+        Janev_sum = 0.0;
+        amrex::Real k_f;
+        Ffit_coefs = {65.5733184943082, -511.020275942352, 911.053057794656, -540.822599138513};
+        double Ffit_A = 1.12781185638050e-15;
+        for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
+        k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
+        const amrex::Real qf = k_f * (sc[E_ID] * sc[CO2_ID]);
+        const amrex::Real qr = 0.0;
+        const amrex::Real qdot = qf - qr;
+        wdot[E_ID] += qdot;
+        wdot[CO2_ID] -= qdot;
+        wdot[CO2p_ID] += qdot;
+        int rxntype = 2;
+        amrex::Real eexci = 13.8;
+        int elidx = 0;
+        comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, tc[1], Te);
+    }
 
-  {
-    // reaction 18:  CO + E => C + O + E
-    Janev_sum = 0.0;
+    {
+        // reaction 18:  CO + E => C + O + E
+        Janev_sum = 0.0;
     amrex::Real k_f;
     Ffit_coefs = {16.3541660916144, -220.870249708484, 433.102467731706, -274.716891876346};
     double Ffit_A = 7.39606286753756e-15;
@@ -6538,63 +6642,5 @@ CKWXR(const amrex::Real rho, const amrex::Real T, const amrex::Real x[],
   }
 }
 
-//  species unit charge number
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRG(int kcharge[]) {
-  kcharge[0] = -1;  // E
-  kcharge[1] = 0;   // H
-  kcharge[2] = -1;  // H-
-  kcharge[3] = 0;   // H2
-  kcharge[4] = 0;   // H2v
-  kcharge[5] = 1;   // H2+
-  kcharge[6] = 1;   // H3+
-  kcharge[7] = 0;   // O
-  kcharge[8] = -1;  // O-
-  kcharge[9] = 0;   // O2
-  kcharge[10] = -1; // O2-
-  kcharge[11] = 0;  // CO
-  kcharge[12] = 0;  // CO2
-  kcharge[13] = 0;  // CO2v1
-  kcharge[14] = 0;  // CO2v2
-  kcharge[15] = 0;  // CO2v3
-  kcharge[16] = 0;  // CO2v4
-  kcharge[17] = 1;  // CO2+
-  kcharge[18] = 1;  // C2O3+
-  kcharge[19] = 1;  // C2O4+
-  kcharge[20] = -1; // CO3-
-  kcharge[21] = 0;  // C
-  kcharge[22] = 0;  // OH
-  kcharge[23] = 1;  // OH+
-  kcharge[24] = 0;  // H2O
-  kcharge[25] = 1;  // H2O+
-  kcharge[26] = 1;  // H3O+
-  kcharge[27] = 0;  // HCO
-  kcharge[28] = 1;  // CH+
-  kcharge[29] = 0;  // CH2
-  kcharge[30] = 1;  // CH2+
-  kcharge[31] = 0;  // CH3
-  kcharge[32] = 1;  // CH3+
-  kcharge[33] = 0;  // CH4
-  kcharge[34] = 0;  // CH2O
-  kcharge[35] = 0;  // CH3O
-  kcharge[36] = 0;  // CH3OH
-  kcharge[37] = 0;  // CH2OH
-  kcharge[38] = 0;  // AR
-  kcharge[39] = 0;  // ARe
-  kcharge[40] = 1;  // AR+
-  kcharge[41] = 1;  // ARH+
-  kcharge[42] = 0;  // AR2e
-  kcharge[43] = 1;  // AR2+
-}
-
-//  species charge per unit mass
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRGMASS(amrex::Real zk[]) {
-
-  int kchrg[44];
-  CKCHRG(kchrg);
-
-  for (int id = 0; id < 44; ++id) {
-    zk[id] = 6.02214076e+23 * 1.60217663e-19 * kchrg[id] * imw(id);
-  }
-}
 
 #endif

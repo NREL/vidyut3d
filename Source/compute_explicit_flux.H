@@ -39,14 +39,14 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     amrex::Real phi_iphalf_2 = -(1.0/6.0)*phi_im1 + (5.0/6.0)*phi_i + (1.0/3.0)*phi_ip1;
     amrex::Real phi_iphalf_3 = (1.0/3.0)*phi_i + (5.0/6.0)*phi_ip1 - (1.0/6.0)*phi_ip2;
 
-    amrex::Real beta_1 = (13.0/12.0)*std::pow((phi_im2-2.0*phi_im1+phi_i),2.0) + 
-    (1.0/4.0)*std::pow((phi_im2-4.0*phi_im1+3.0*phi_i),2.0);
+    amrex::Real beta_1 = (13.0/12.0)*amrex::Math::powi<2>(phi_im2-2.0*phi_im1+phi_i) + 
+    (1.0/4.0)*amrex::Math::powi<2>(phi_im2-4.0*phi_im1+3.0*phi_i);
 
-    amrex::Real beta_2 = (13.0/12.0)*std::pow((phi_im1-2.0*phi_i+phi_ip1),2.0) 
-    + (1.0/4.0)*std::pow((phi_im1-phi_ip1),2.0);
+    amrex::Real beta_2 = (13.0/12.0)*amrex::Math::powi<2>(phi_im1-2.0*phi_i+phi_ip1) 
+    + (1.0/4.0)*amrex::Math::powi<2>(phi_im1-phi_ip1);
 
-    amrex::Real beta_3 = (13.0/12.0)*std::pow((phi_i-2.0*phi_ip1+phi_ip2),2.0) 
-    + (1.0/4.0)*std::pow((3.0*phi_i-4.0*phi_ip1+phi_ip2),2.0);
+    amrex::Real beta_3 = (13.0/12.0)*amrex::Math::powi<2>(phi_i-2.0*phi_ip1+phi_ip2) 
+    + (1.0/4.0)*amrex::Math::powi<2>(3.0*phi_i-4.0*phi_ip1+phi_ip2);
 
     amrex::Real gama_1 = (1.0/10.0);
     amrex::Real gama_2 = (6.0/10.0);
@@ -63,17 +63,17 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     //WENO JS   
     if(scheme==1)
     { 
-        alpha_1 = gama_1/std::pow((beta_1+eps),2.0);
-        alpha_2 = gama_2/std::pow((beta_2+eps),2.0);
-        alpha_3 = gama_3/std::pow((beta_3+eps),2.0);
+        alpha_1 = gama_1/amrex::Math::powi<2>(beta_1+eps);
+        alpha_2 = gama_2/amrex::Math::powi<2>(beta_2+eps);
+        alpha_3 = gama_3/amrex::Math::powi<2>(beta_3+eps);
     }
     //WENO M
     else if(scheme==2)
     {
         //do JS stuff
-        alpha_1 = gama_1/std::pow((beta_1+eps),2.0);
-        alpha_2 = gama_2/std::pow((beta_2+eps),2.0);
-        alpha_3 = gama_3/std::pow((beta_3+eps),2.0);
+        alpha_1 = gama_1/amrex::Math::powi<2>(beta_1+eps);
+        alpha_2 = gama_2/amrex::Math::powi<2>(beta_2+eps);
+        alpha_3 = gama_3/amrex::Math::powi<2>(beta_3+eps);
 
         amrex::Real sum_alpha=(alpha_1+alpha_2+alpha_3);
 
@@ -90,9 +90,9 @@ amrex::Real weno(amrex::Real phi_im2,amrex::Real phi_im1,amrex::Real phi_i,
     else if(scheme==3)
     {
         amrex::Real tau = std::abs(beta_1 - beta_3);
-        alpha_1=gama_1*(1.0+std::pow(tau/(beta_1+eps),2.0));
-        alpha_2=gama_2*(1.0+std::pow(tau/(beta_2+eps),2.0));
-        alpha_3=gama_3*(1.0+std::pow(tau/(beta_3+eps),2.0));
+        alpha_1=gama_1*(1.0+amrex::Math::powi<2>(tau/(beta_1+eps)));
+        alpha_2=gama_2*(1.0+amrex::Math::powi<2>(tau/(beta_2+eps)));
+        alpha_3=gama_3*(1.0+amrex::Math::powi<2>(tau/(beta_3+eps)));
 
     }
     else
@@ -123,7 +123,7 @@ void weno_reconstruct(amrex::Real uim2,
                       amrex::Real &uphalf,
                       int weno_scheme)
 {
-    uphalf=weno(uim2,uim1,ui,uip1,uip2,weno_scheme);
+    uphalf = weno(uim2,uim1,ui,uip1,uip2,weno_scheme);
     umhalf = weno(uip3,uip2,uip1,ui,uim1,weno_scheme);
 }
 //====================================================================
@@ -205,6 +205,7 @@ void compute_flux(
     int k,
     int sweepdir,
     int specid,
+    int fluxid,
     Array4<Real> const& phi, // state variable
     const GpuArray<int, AMREX_SPACEDIM> bclo,
     const GpuArray<int, AMREX_SPACEDIM> bchi,
@@ -225,8 +226,8 @@ void compute_flux(
     //remember: face i separates (i-1) and i cells
 
     IntVect face{AMREX_D_DECL(i,j,k)};
-    IntVect left{AMREX_D_DECL(i, j, k)};
-    IntVect right{AMREX_D_DECL(i, j, k)};
+    IntVect left{AMREX_D_DECL(i,j,k)};
+    IntVect right{AMREX_D_DECL(i,j,k)};
     left[sweepdir] -= 1;
 
     Real phi_L = phi(left, specid);
@@ -244,27 +245,27 @@ void compute_flux(
 
     if(hyp_order==1)
     {
-        fx(face)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
+        fx(face,fluxid)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
     }
     else if(hyp_order==2)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
+        IntVect left1{AMREX_D_DECL(i,j,k)};
+        IntVect right1{AMREX_D_DECL(i,j,k)};
         left1[sweepdir] -= 2;
         right1[sweepdir] += 1;
         amrex::Real phi_Lm1 = phi(left1, specid);
         amrex::Real phi_Rp1 = phi(right1, specid);
         amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
 
-        fx(face)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
+        fx(face,fluxid)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
                                           phi_R,phi_Rp1,dxmin,dt);
     }
     else if(hyp_order==5)
     {
-        IntVect left1{AMREX_D_DECL(i, j, k)};
-        IntVect right1{AMREX_D_DECL(i, j, k)};
-        IntVect left2{AMREX_D_DECL(i, j, k)};
-        IntVect right2{AMREX_D_DECL(i, j, k)};
+        IntVect left1{AMREX_D_DECL(i,j,k)};
+        IntVect right1{AMREX_D_DECL(i,j,k)};
+        IntVect left2{AMREX_D_DECL(i,j,k)};
+        IntVect right2{AMREX_D_DECL(i,j,k)};
         left1[sweepdir] -= 2;
         right1[sweepdir] += 1;
         left2[sweepdir] -= 3;
@@ -307,7 +308,7 @@ void compute_flux(
         weno_reconstruct(flm2,flm1,fl,fr,frp1,frp2,fmhalf,fphalf,weno_scheme);
         weno_reconstruct(ulm2,ulm1,ul,ur,urp1,urp2,umhalf,uphalf,weno_scheme);
 
-        fx(face)=0.5*(fphalf+lambda_max*uphalf) +
+        fx(face,fluxid)=0.5*(fphalf+lambda_max*uphalf) +
         0.5*(fmhalf-lambda_max*umhalf);
     }
     else
@@ -319,14 +320,14 @@ void compute_flux(
     {
         if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) )
         {
-            fx(face)=0.0;
+            fx(face,fluxid)=0.0;
         }
     }
     if(face[sweepdir]==domhi[sweepdir]+1) 
     {
         if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) )
         {
-            fx(face)=0.0;
+            fx(face,fluxid)=0.0;
         }
     }
 }

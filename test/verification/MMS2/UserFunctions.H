@@ -124,7 +124,8 @@ namespace user_transport
 
     AMREX_GPU_DEVICE AMREX_INLINE
     void species_bc(int i,int j,int k, int dir, int sgn, 
-                    int spec_id, Array4<Real> const &phi, 
+                    int spec_id, int bcspec_id,
+                    Array4<Real> const &phi, 
                     Array4<Real> const& bcarr,
                     Array4<Real> const& robin_a,
                     Array4<Real> const& robin_b,
@@ -157,37 +158,37 @@ namespace user_transport
         { 
             // lo sides
             // default homogenous Neumann
-            robin_a(ghost_cell) = 0.0;
-            robin_b(ghost_cell) = 1.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 0.0;
+            robin_b(ghost_cell,bcspec_id) = 1.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
 
             if(spec_id==E_ID || spec_id==HEp_ID || spec_id==EEN_ID)
             {
-                bcarr(ghost_cell)=0.0+prob_parm.n0;
+                bcarr(ghost_cell,bcspec_id)=0.0+prob_parm.n0;
             }
 
         }
         else
         {
-            robin_a(ghost_cell) = 0.0;
-            robin_b(ghost_cell) = 1.0;
-            robin_f(ghost_cell) = 0.0;
+            robin_a(ghost_cell,bcspec_id) = 0.0;
+            robin_b(ghost_cell,bcspec_id) = 1.0;
+            robin_f(ghost_cell,bcspec_id) = 0.0;
 
             amrex::Real alpha=ECHARGE/EPS0;
 
             if(spec_id==E_ID)
             {
-                bcarr(ghost_cell)=1.0/alpha+prob_parm.n0;
+                bcarr(ghost_cell,bcspec_id)=1.0/alpha+prob_parm.n0;
             }
 
             if(spec_id==HEp_ID)
             {
-                bcarr(ghost_cell)=1.0/(2.0*alpha)+prob_parm.n0;
+                bcarr(ghost_cell,bcspec_id)=1.0/(2.0*alpha)+prob_parm.n0;
             }
 
             if(spec_id==EEN_ID)
             {
-                bcarr(ghost_cell)=1.0/alpha+prob_parm.n0;
+                bcarr(ghost_cell,bcspec_id)=1.0/alpha+prob_parm.n0;
             }
         } 
 
@@ -205,9 +206,9 @@ namespace user_transport
         amrex::Real vel=0.0;
         if(dir==prob_parm.axdir)
         {
-            Real efieldmag = std::sqrt(std::pow(phi(cellid,EFX_ID),2.0) +
-                                       std::pow(phi(cellid,EFY_ID),2.0) +
-                                       std::pow(phi(cellid,EFZ_ID),2.0) );
+            amrex::Real efieldmag=std::sqrt( amrex::Math::powi<2>(phi(cellid,EFX_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFY_ID))+
+                                            amrex::Math::powi<2>(phi(cellid,EFZ_ID)));
 
             amrex::Real ndens=1.0; //dummy
             amrex::Real mu = specMob(specid,phi(cellid,ETEMP_ID), ndens,
