@@ -396,10 +396,6 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     info.setAgglomeration(true);
     info.setConsolidation(true);
     info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info, 
-                                           {}, numspec));
 
 #ifdef AMREX_USE_HYPRE
     if(use_hypre)
@@ -482,6 +478,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     Vector<MultiFab> robin_a(finest_level+1);
     Vector<MultiFab> robin_b(finest_level+1);
     Vector<MultiFab> robin_f(finest_level+1);
+    Vector<iMultiFab> solvemask(finest_level+1);
 
     const int num_grow = 1;
 
@@ -502,6 +499,28 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         robin_a[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
         robin_b[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
         robin_f[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
+        
+        if(using_ib)
+        {
+            solvemask[ilev].define(grids[ilev],dmap[ilev],0,0);
+            solvemask.setVal(1);
+        }
+    }
+    
+    if(using_ib)
+    {
+        set_solver_mask(solvemask,Sborder);
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), info, 
+                                               amrex::GetArrOfConstPtrs(solvemask),numspec)); 
+    }  
+    else
+    { 
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), info, 
+                                               {}, numspec));
     }
 
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
@@ -705,6 +724,16 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                         });
                     }
                 }
+            }
+        }
+        
+        if(using_ib)
+        {
+            null_bcoeff_at_ib(face_bcoeff,Sborder,numspec);
+            //FIXME: may be can be inverted for performance
+            for(int specid=startspec;specid<(startspec+numspec);specid++)
+            {
+                set_explicit_fluxes_at_ib(rhs,Sborder,current_time,specid,specid-startspec);
             }
         }
 

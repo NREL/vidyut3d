@@ -260,6 +260,19 @@ public:
     void update_surf_charge(Vector<MultiFab>& Sborder,
                             Real current_time, Real dt);
 
+    //IB functions
+    void set_solve_mask(Vector<MultiFab>& solvermask,
+        Vector<MultiFab>& Sborder);
+
+    void set_explicit_fluxes_at_ib(Vector<MultiFab>& rhs,
+        Vector<MultiFab>& Sborder,
+        Real time,
+        int compid,
+        int rhscompid);
+
+    void :null_bcoeff_at_ib(Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
+                                                Vector<MultiFab>& Sborder,
+                                                int numcomps);
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)
@@ -286,8 +299,11 @@ public:
     int E_IDX = 0;
     int efield_limiter=0;
 
+    int using_ib=0;
+
     // Monitor file options
     int monitor_file_int = -1;
+
 
 private:
     ////////////////

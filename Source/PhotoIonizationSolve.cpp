@@ -35,9 +35,6 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     info.setAgglomeration(true);
     info.setConsolidation(true);
     info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info)); 
 
     //==================================================
     // amrex solves
@@ -162,6 +159,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     Vector<MultiFab> robin_a(finest_level+1);
     Vector<MultiFab> robin_b(finest_level+1);
     Vector<MultiFab> robin_f(finest_level+1);
+    Vector<iMultiFab> solvemask(finest_level+1);
 
     const int num_grow = 1;
 
@@ -175,6 +173,27 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         robin_a[ilev].define(grids[ilev], dmap[ilev], 1, 1);
         robin_b[ilev].define(grids[ilev], dmap[ilev], 1, 1);
         robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        
+        if(using_ib)
+        {
+            solvemask[ilev].define(grids[ilev],dmap[ilev],0,0);
+            solvemask.setVal(1);
+        }
+    }
+
+    if(using_ib)
+    {
+        set_solver_mask(solvemask,Sborder);
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), 
+                                               amrex::GetArrOfConstPtrs(solvemask),info)); 
+    }
+    else
+    {
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level),info)); 
     }
 
     linsolve_ptr->setMaxOrder(2);
@@ -330,6 +349,12 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                     });                    
                 }
             }
+        }
+        
+        if(using_ib)
+        {
+            null_bcoeff_at_ib(face_bcoeff,Sborder,1);
+            set_explicit_fluxes_at_ib(rhs,Sborder,current_time,PHOTO_ION_SRC_ID,0);
         }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);

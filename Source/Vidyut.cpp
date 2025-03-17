@@ -42,6 +42,7 @@ Vidyut::Vidyut()
     plasma_param_names[9]="ReducedEF";
     plasma_param_names[10]="SurfaceCharge";
     plasma_param_names[11]="PhotoIon_Src";
+    plasma_param_names[12]="cellmask";
     
 
     allvarnames.resize(NVAR);
@@ -439,6 +440,7 @@ void Vidyut::ReadParameters()
 #ifdef AMREX_USE_HYPRE
         pp.query("use_hypre",use_hypre);
 #endif
+        pp.query("using_ib",using_ib);
 
     }
 }
@@ -466,5 +468,155 @@ void Vidyut::GetData(int lev, Real time, Vector<MultiFab*>& data, Vector<Real>& 
         data.push_back(&phi_new[lev]);
         datatime.push_back(t_old[lev]);
         datatime.push_back(t_new[lev]);
+    }
+}
+
+//IB functions
+void Vidyut::null_bcoeff_at_ib(Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
+                                                Vector<MultiFab>& Sborder,
+                                                int numcomps)
+{
+    int captured_ncomps=numcomps;
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            Array<Box,AMREX_SPACEDIM> face_boxes;
+            face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+#if AMREX_SPACEDIM > 1
+            face_boxes[1] = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+#if AMREX_SPACEDIM == 3
+            face_boxes[2] = convert(bx, {0, 0, 1});
+#endif
+#endif
+
+            Array4<Real> sb_arr = Sborder[ilev].array(mfi);
+            GpuArray<Array4<Real>, AMREX_SPACEDIM> 
+            face_bcoeff_arr{AMREX_D_DECL(face_bcoeff[0].array(mfi), 
+                                         face_bcoeff[1].array(mfi), face_bcoeff[2].array(mfi))};
+
+            for(int idim=0;idim<AMREX_SPACEDIM;idim++)
+            {
+                amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept 
+                {
+
+                    IntVect face(i,j,k);
+                    IntVect lcell(i,j,k);
+                    IntVect rcell(i,j,k);
+
+                    lcell[idim]-=1;
+
+                    int and_gate=int(sb_arr(lcell,CMASK_ID))*int(sb_arr(rcell,CMASK_ID));
+                    int or_gate=int(sb_arr(lcell,CMASK_ID))+int(sb_arr(rcell,CMASK_ID));
+                    if(!and_gate) //1*0 0*1 and 0*0 cases
+                    {
+                        for(int sp=0;sp<captured_ncomps;sp++)
+                        {
+                            face_bcoeff_arr[idim](face,sp)=0.0;
+                        }
+                        if(!or_gate) //0*0 case
+                        {
+                            //keeping bcoeff non zero in dead cells just in case
+                            for(int sp=0;sp<captured_ncomps;sp++)
+                            {
+                                face_bcoeff_arr[idim](face,sp)=1.0;
+                            }
+                        }
+                    }
+                });
+            }
+
+        }
+    }
+}
+
+void Vidyut::set_explicit_fluxes_at_ib(Vector<MultiFab>& rhs,
+        Vector<MultiFab>& Sborder,
+        Real time,
+        int compid,
+        int rhscompid)
+{
+    Real captured_time=time;
+    int solved_comp=compid;
+    int rhs_comp=rhscompid;
+    ProbParm const* localprobparm = d_prob_parm;
+
+    // set boundary conditions
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            const auto dx = geom[ilev].CellSizeArray();
+            auto prob_lo = geom[ilev].ProbLoArray();
+            auto prob_hi = geom[ilev].ProbHiArray();
+            const Box& domain = geom[ilev].Domain();
+            const int* domlo_arr = geom[lev].Domain().loVect();
+            const int* domhi_arr = geom[lev].Domain().hiVect();
+
+            GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
+            GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
+
+            Array4<Real> sb_arr = Sborder[ilev].array(mfi);
+            Array4<Real> rhs_arr = rhs[ilev].array(mfi);
+
+            Array<Box,AMREX_SPACEDIM> face_boxes;
+            face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+#if AMREX_SPACEDIM > 1
+            face_boxes[1] = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+#if AMREX_SPACEDIM == 3
+            face_boxes[2] = convert(bx, {0, 0, 1});
+#endif
+#endif
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                    if(sb_arr(i,j,k,CMASK_ID)==0.0)
+                    {
+                    rhs_arr(i,j,k,rhscompid)=0.0;
+                    }
+                    });
+
+            for(int idim=0;idim<AMREX_SPACEDIM;idim++)
+            {
+
+                amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                        IntVect face(i,j,k);
+                        IntVect lcell(i,j,k);
+                        IntVect rcell(i,j,k);
+
+                        int xor_gate=int(sb_arr(lcell,CMASK_ID))*(1-int(sb_arr(rcell,CMASK_ID)))+
+                        (1-int(sb_arr(lcell,CMASK_ID)))*int(sb_arr(rcell,CMASK_ID));
+
+
+                        if(xor_gate) //1*0 0*1
+                        {
+                        int sgn=(int(sb_arr(lcell,CMASK_ID))==1)?1:-1;
+                        IntVect intcell=(sgn==1)?lcell:rcell;
+                        flx=bc_ib(face,sb_arr,idim,sgn,solved_comp,domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm);
+
+                        rhs(intcell,rhscompid)-=flx/dx[idim];
+                        }
+                        });
+            }
+        }
+    }
+}
+
+void Vidyut::set_solve_mask(Vector<MultiFab>& solvermask,
+        Vector<MultiFab>& Sborder)
+{
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Array4<Real> sb_arr = Sborder[ilev].array(mfi);
+            Array4<int> smask_arr = solvermask[ilev].array(mfi);
+            const Box& bx = mfi.tilebox();
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+
+                    smask_arr(i,j,k)=int(sb_arr(i,j,k,CMASK_ID);
+           });
+        }
     }
 }
