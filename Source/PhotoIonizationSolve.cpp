@@ -166,18 +166,18 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         photoionization_src[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
-        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, 0);
-        solution[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        rhs[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        solution[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        rhs[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
 
-        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
         
         if(using_ib)
         {
-            solvemask[ilev].define(grids[ilev],dmap[ilev],0,0);
-            solvemask.setVal(1);
+            solvemask[ilev].define(grids[ilev],dmap[ilev], 1, 0);
+            solvemask[ilev].setVal(1);
         }
     }
 
@@ -187,7 +187,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
                                                boxArray(0,finest_level), 
                                                DistributionMap(0,finest_level), 
-                                               amrex::GetArrOfConstPtrs(solvemask),info)); 
+                                               GetVecOfConstPtrs(solvemask),info)); 
     }
     else
     {
@@ -353,8 +353,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         
         if(using_ib)
         {
-            null_bcoeff_at_ib(face_bcoeff,Sborder,1);
-            set_explicit_fluxes_at_ib(rhs,Sborder,current_time,PHOTO_ION_SRC_ID,0);
+            null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
+            set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],Sborder[ilev],
+                                      current_time,PHOTO_ION_SRC_ID,0);
         }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);

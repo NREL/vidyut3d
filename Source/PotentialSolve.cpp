@@ -18,7 +18,7 @@
 
 void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                              amrex::Vector<int>& bc_lo,amrex::Vector<int>& bc_hi,
-                             amrex::Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec)
+                             amrex::Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_fc)
 {
     BL_PROFILE("Vidyut::solve_potential()");
 
@@ -149,18 +149,18 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         potential[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
-        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, 0);
-        solution[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        rhs[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        solution[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        rhs[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
 
-        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
 
         if(using_ib)
         {
-            solvemask[ilev].define(grids[ilev],dmap[ilev],0,0);
-            solvemask.setVal(1);
+            solvemask[ilev].define(grids[ilev],dmap[ilev], 1, 0);
+            solvemask[ilev].setVal(1);
         }
     }
     
@@ -170,7 +170,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
                                                boxArray(0,finest_level), 
                                                DistributionMap(0,finest_level), 
-                                               amrex::GetArrOfConstPtrs(solvemask),info)); 
+                                               GetVecOfConstPtrs(solvemask),info)); 
     }
     else
     {
@@ -329,8 +329,9 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
 
         if(using_ib)
         {
-            null_bcoeff_at_ib(face_bcoeff,Sborder,1);
-            set_explicit_fluxes_at_ib(rhs,Sborder,current_time,POT_ID,0);
+            null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
+            set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],
+                    Sborder[ilev],current_time,POT_ID,0);
         }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
@@ -373,21 +374,22 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     }
 
     // Use standard AMReX routines to get cell and edge-centered efields if not using charge technique
-    if(!cs_technique){
-        mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_ec));
+    if(!cs_technique)
+    {
+        mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_fc));
     
         for (int ilev = 0; ilev <= finest_level; ilev++)
         {
-            efield_ec[ilev][0].mult(-1.0,0,1);
+            efield_fc[ilev][0].mult(-1.0,0,1);
 #if AMREX_SPACEDIM > 1
-            efield_ec[ilev][1].mult(-1.0,0,1);
+            efield_fc[ilev][1].mult(-1.0,0,1);
 #if AMREX_SPACEDIM == 3
-            efield_ec[ilev][2].mult(-1.0,0,1);
+            efield_fc[ilev][2].mult(-1.0,0,1);
 #endif
 #endif   
 
-            const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(&efield_ec[ilev][0], 
-                &efield_ec[ilev][1], &efield_ec[ilev][2])};
+            const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(&efield_fc[ilev][0], 
+                &efield_fc[ilev][1], &efield_fc[ilev][2])};
             average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
 
             // Calculate the reduced electric field
@@ -405,7 +407,6 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         }
     }
     
-
     //clean-up
     potential.clear();
     acoeff.clear();

@@ -261,18 +261,26 @@ public:
                             Real current_time, Real dt);
 
     //IB functions
-    void set_solve_mask(Vector<MultiFab>& solvermask,
+    void set_solver_mask(Vector<iMultiFab>& solvermask,
         Vector<MultiFab>& Sborder);
 
-    void set_explicit_fluxes_at_ib(Vector<MultiFab>& rhs,
-        Vector<MultiFab>& Sborder,
+    void set_explicit_fluxes_at_ib(int lev,MultiFab& rhs,
+        MultiFab& acoeff,
+        MultiFab& Sborder,
         Real time,
         int compid,
         int rhscompid);
 
-    void :null_bcoeff_at_ib(Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
-                                                Vector<MultiFab>& Sborder,
+    void null_bcoeff_at_ib(int lev,Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
+                                                MultiFab& Sborder,
                                                 int numcomps);
+
+    void correct_efields_ib(Vector<MultiFab>& Sborder,
+        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc);
+
+    void null_field_in_covered_cells(Vector<MultiFab>& fld,
+        Vector<MultiFab>& Sborder,int startcomp,int numcomp);
+
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)

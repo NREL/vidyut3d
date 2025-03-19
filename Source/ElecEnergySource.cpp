@@ -32,7 +32,9 @@ void Vidyut::compute_elecenergy_source(int lev,
     int ncomp = Sborder.nComp();
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
-    int captured_cs_technique=cs_technique;
+    int cs_technique_enabled=cs_technique;
+    int efield_limiter_enabled=efield_limiter;
+    int ib_enabled=using_ib;
     int eidx = E_IDX;
     
     const int* domlo_arr = geom[lev].Domain().loVect();
@@ -132,8 +134,52 @@ void Vidyut::compute_elecenergy_source(int lev,
                           + sborder_arr(rcell,eidx));
 
                 //efield_face=ef_arr[idim](face);
-                efield_face = (captured_cs_technique) ? efieldvec_face[idim] : ef_arr[idim](face);
-                gradne_face=gradne_arr[idim](face);
+                efield_face = (cs_technique_enabled || efield_limiter_enabled) 
+                ? efieldvec_face[idim] : ef_arr[idim](face);
+
+                if(!ib_enabled)
+                {
+                   gradne_face=gradne_arr[idim](face);
+                }
+                else
+                {
+                    int mask_L=int(sborder_arr(lcell,CMASK_ID));
+                    int mask_R=int(sborder_arr(rcell,CMASK_ID));
+
+                    //1 when both mask_L and mask_R are 0
+                    int covered_interface=(!mask_L)*(!mask_R);
+
+                    //1-0 or 0-1 interface
+                    int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
+
+                    if(covered_interface)
+                    {
+                        gradne_face=0.0;
+                    }
+                    else if(cov_uncov_interface)
+                    {
+                        //FIXME/WARNING: this logic will work if there 
+                        //sufficient number of valid cells between two 
+                        //immersed boundaries. situation like covered|valid|covered
+                        //will cause problems
+                        if(mask_L==1) //left cell is internal
+                        {
+                           IntVect lcellm1=lcell;
+                           lcellm1[idim]-=1;
+                           gradne_face=(sborder_arr(lcell,E_IDX)-sborder_arr(lcellm1,E_IDX))/dx[idim];
+                        }
+                        else
+                        {
+                           IntVect rcellp1=rcell;
+                           rcellp1[idim]+=1;
+                           gradne_face=(sborder_arr(rcellp1,E_IDX)-sborder_arr(rcell,E_IDX))/dx[idim];
+                        }
+                    }
+                    else
+                    {
+                        gradne_face=gradne_arr[idim](face);
+                    }
+                }
 
                 amrex::Real ndens = 0.0;
                 for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
@@ -156,7 +202,7 @@ void Vidyut::compute_elecenergy_source(int lev,
         //"Discretization of the Joule heating term for plasma discharge 
         //fluid models in unstructured meshes." 
         //Journal of computational physics 228.12 (2009): 4435-4443.
-
+        
         elec_jheat*=0.5;
 
         //a switch to make sure joule heating is 
