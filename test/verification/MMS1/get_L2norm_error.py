@@ -5,48 +5,34 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
-def get_oned_data(arr3d,axialdir):
-    res=np.array(arr3d.shape)
-    mid=res/2
-    mid=mid.astype(int)
-    linedata=np.zeros(res[axialdir])
-    trans1dir=(axialdir+1)%3
-    trans2dir=(axialdir+2)%3
-    
-    if(axialdir==0):
-        linedata=arr3d[:,mid[trans1dir],mid[trans2dir]]
-    if(axialdir==1):
-        linedata=arr3d[mid[trans2dir],:,mid[trans1dir]]
-    if(axialdir==2):
-        linedata=arr3d[mid[trans1dir],mid[trans2dir],:]
-
-    return(linedata)
-    
-
 plt.rcParams['font.size'] = 16
 ds=yt.load(argv[1])
+axialdir=int(argv[2])
 prob_lo=ds.domain_left_edge.d
 prob_hi=ds.domain_right_edge.d
-
-minlev=0
 maxlev=ds.index.max_level
 lengths=prob_hi-prob_lo
+mids=0.5*(prob_lo+prob_hi)
 ncells=ds.domain_dimensions
-axialdir=np.argmax(lengths)
 axialdir_char=chr(ord('x')+axialdir)
-covgrid_lev=maxlev
-res=np.array([ncells[0]* (2**covgrid_lev),ncells[1]* (2**covgrid_lev),ncells[2]* (2**covgrid_lev)])
+res=np.array([ncells[0]* (2**maxlev),ncells[1]* (2**maxlev),ncells[2]* (2**maxlev)])
+
 dx_frb=lengths/res
-fields_load=["NI","Potential"]
-ad = ds.covering_grid(level=covgrid_lev, left_edge=prob_lo, dims=res, fields=fields_load)
-pot=np.array(ad["Potential"])
-s1=np.array(ad["NI"])
+low_end=[mids[0],mids[1],mids[2]]
+high_end=[mids[0],mids[1],mids[2]]
+low_end[axialdir]=prob_lo[axialdir]+0.5*dx_frb[axialdir]
+high_end[axialdir]=prob_hi[axialdir]-0.5*dx_frb[axialdir]
 
-pot_1d=get_oned_data(pot,axialdir)
-s1_1d=get_oned_data(s1,axialdir)
+lb = yt.LineBuffer(ds, tuple(low_end), \
+        tuple(high_end), res[axialdir])
 
-x=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
+xarr=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
         prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
+
+pot_1d=lb["Potential"].value[xarr<1.0]
+s1_1d=lb["NI"].value[xarr<1.0]
+x=xarr[xarr<1.0]
+
 exactsoln_s1=x**2
 exactsoln_pot=(x**4-x)/12.0
 err_s1=np.sqrt(np.mean((s1_1d-exactsoln_s1)**2))

@@ -56,7 +56,7 @@ namespace user_transport
             amrex::Real s1_dirc=0.0;
             
             amrex::Real ndens = 0.0;
-            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(intcell,solved_comp);
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(intcell,sp);
             
             amrex::Real emag=std::sqrt(amrex::Math::powi<2>(sb_arr(intcell,EFX_ID))+
                     amrex::Math::powi<2>(sb_arr(intcell,EFY_ID))+
@@ -69,11 +69,6 @@ namespace user_transport
             rhs(intcell,rhs_comp)   += Dcoeff*s1_dirc/(0.5*dx2);
             
             amrex::Real vel=sb_arr(intcell,EFX_ID+dir);
-            //amrex::Real vel=0.0;
-            //if(dir==0)
-            //{
-            //    vel=1.0;
-            //}
 
             if(sgn==1) //left cell is internal
             {

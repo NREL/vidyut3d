@@ -27,7 +27,67 @@ namespace user_transport
                ProbParm const& prob_parm,
                Real Tg, Real Pg)
     {
-    
+        IntVect lcell=face;
+        IntVect rcell=face;
+        lcell[dir]-=1;
+        
+        //interior cell
+        IntVect intcell=(sgn==1)?lcell:rcell;
+        
+        amrex::Real outward_normal[AMREX_SPACEDIM]={0.0};
+        outward_normal[dir]=sgn;
+        amrex::Real dx2=dx[dir]*dx[dir];
+
+
+        if(solved_comp==POT_ID)
+        {
+            //We are solving del^2 (phi)=source
+            //in vidyut
+            //so del(phi)|i+1/2 - del(phi)|i-1/2 = source
+            
+            //for both left or right being the interior cell 
+            //Dirichlet condition works out to the same sign
+            amrex::Real phi_dirc=0.0;
+            acoeff(intcell)-= 1.0/(0.5*dx2);
+            rhs(intcell,rhs_comp)   -= phi_dirc/(0.5*dx2);
+        }
+        else if(solved_comp==NI_ID)
+        {
+            amrex::Real dircval=1.0;
+            
+            amrex::Real ndens = 0.0;
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(intcell,sp);
+            
+            amrex::Real emag=std::sqrt(amrex::Math::powi<2>(sb_arr(intcell,EFX_ID))+
+                    amrex::Math::powi<2>(sb_arr(intcell,EFY_ID))+
+                    amrex::Math::powi<2>(sb_arr(intcell,EFZ_ID)));
+        
+            amrex::Real Dcoeff=specDiff(solved_comp,sb_arr(intcell,ETEMP_ID),
+                    ndens, emag, Tg);
+
+            acoeff(intcell) += Dcoeff/(0.5*dx2);
+            rhs(intcell,rhs_comp)   += Dcoeff*dircval/(0.5*dx2);
+            
+            amrex::Real mu = specMob(solved_comp,sb_arr(intcell,ETEMP_ID), ndens,
+                                           emag,
+                                           Tg);
+            amrex::Real vel=mu*sb_arr(intcell,EFX_ID+dir);
+            
+            if(sgn==1) //left cell is internal
+            {
+                amrex::Real upwindval=(vel>0.0)?sb_arr(intcell,solved_comp):dircval;
+                rhs(intcell,rhs_comp) -= upwindval*vel/dx[dir];
+            }
+            else //right cell is internal
+            {
+                amrex::Real upwindval=(vel>0.0)?dircval:sb_arr(intcell,solved_comp);
+                rhs(intcell,rhs_comp) += upwindval*vel/dx[dir];
+            }
+        }
+        else
+        {
+
+        }
     }
 
     AMREX_GPU_HOST_DEVICE
