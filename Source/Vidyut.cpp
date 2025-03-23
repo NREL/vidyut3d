@@ -514,9 +514,9 @@ void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab,
             amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept 
             {
 
-                IntVect face(i,j,k);
-                IntVect lcell(i,j,k);
-                IntVect rcell(i,j,k);
+                IntVect face{AMREX_D_DECL(i,j,k)};
+                IntVect lcell{AMREX_D_DECL(i,j,k)};
+                IntVect rcell{AMREX_D_DECL(i,j,k)};
 
                 lcell[idim]-=1;
 
@@ -595,9 +595,9 @@ void Vidyut::set_explicit_fluxes_at_ib(int ilev, MultiFab& rhs,
 
             amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) 
             {
-                IntVect face(i,j,k);
-                IntVect lcell(i,j,k);
-                IntVect rcell(i,j,k);
+                IntVect face{AMREX_D_DECL(i,j,k)};
+                IntVect lcell{AMREX_D_DECL(i,j,k)};
+                IntVect rcell{AMREX_D_DECL(i,j,k)};
                 lcell[idim]-=1;
 
                 int xor_gate=int(sb_arr(lcell,CMASK_ID))*(1-int(sb_arr(rcell,CMASK_ID)))+
@@ -663,9 +663,9 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             {
                 amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) 
                 {
-                    IntVect face(i,j,k);
-                    IntVect lcell(i,j,k);
-                    IntVect rcell(i,j,k);
+                    IntVect face{AMREX_D_DECL(i,j,k)};
+                    IntVect lcell{AMREX_D_DECL(i,j,k)};
+                    IntVect rcell{AMREX_D_DECL(i,j,k)};
                     lcell[idim]-=1;
 
                     int mask_L=int(sb_arr(lcell,CMASK_ID));
