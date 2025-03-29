@@ -20,6 +20,7 @@ void amrex_probinit (ProbParm & h_prob_parm, ProbParm & d_prob_parm)
     pp.query("V1", h_prob_parm.V1 );
     pp.query("V2", h_prob_parm.V2 );
     pp.query("f", h_prob_parm.f );
+    pp.query("gap",h_prob_parm.gap);
     
     amrex::ParmParse pp_solver("vidyut");
     amrex::Real Pg,Tg;
@@ -59,6 +60,20 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real z = prob_lo[2] + (0.5+k) * dx[2];
                 Real y = prob_lo[1] + (0.5+j) * dx[1];
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
+                
+                for(int c=0;c<NVAR;c++)
+                {
+                   phi(i,j,k,c)=1e-12;
+                }
+
+                if(x>=0.0 && x<=prob_parm->gap)
+                {
+                   phi(i,j,k,CMASK_ID)=1.0;
+                }
+                else
+                {
+                   phi(i,j,k,CMASK_ID)=0.0;
+                }
 
                 phi(i,j,k,HE_ID)   = prob_parm->bg_gasden; 
                 phi(i,j,k,HEp_ID)  = 3.8e14; 
