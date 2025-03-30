@@ -64,9 +64,10 @@ for i, fn in enumerate(fn_list):
     etempl=lb["Electron_Temp"].value[xvalid<0.0]
     eenrgl=lb["Electron_energy"].value[xvalid<0.0]
     iondenl=lb["HEp"].value[xvalid<0.0]
+    metadenl=lb["HEm"].value[xvalid<0.0]
     ejl=lb["Electron_Jheat"].value[xvalid<0.0]
     inelhl=lb["Electron_inelasticHeat"].value[xvalid<0.0]
     elhl=lb["Electron_elasticHeat"].value[xvalid<0.0]
 
     np.savetxt("linedata_"+axialdir_char+"%4.4d.dat"%(i),\
-            np.transpose(np.vstack((x,potl,efieldl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")
+            np.transpose(np.vstack((x,potl,efieldl,edenl,iondenl,metadenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")

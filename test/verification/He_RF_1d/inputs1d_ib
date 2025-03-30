@@ -55,7 +55,7 @@ vidyut.neutral_bc_hi = 3 0 0
 
 vidyut.voltage_profile = 1
 vidyut.voltage_amp_lo = 120.0 0.0 0.0
--vidyut.voltage_amp_hi = 0.0 0.0 0.0
+vidyut.voltage_amp_hi = 0.0 0.0 0.0
 vidyut.voltage_freq = 13.56e6
 
 # PLOTFILES
