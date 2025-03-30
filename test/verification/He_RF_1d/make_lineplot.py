@@ -53,17 +53,20 @@ for i, fn in enumerate(fn_list):
     lb = yt.LineBuffer(ds, tuple(low_end), \
         tuple(high_end), res[axialdir])
 
-    potl=lb["Potential"].value
-    efieldl=lb["Efieldx"].value
-    edenl=lb["E"].value
-    etempl=lb["Electron_Temp"].value
-    eenrgl=lb["Electron_energy"].value
-    iondenl=lb["HEp"].value
-    ejl=lb["Electron_Jheat"].value
-    inelhl=lb["Electron_inelasticHeat"].value
-    elhl=lb["Electron_elasticHeat"].value
     xarr=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
             prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
+    xvalid=xarr*(xarr-0.067)
+    x=xarr[xvalid<0.0]
+
+    potl=lb["Potential"].value[xvalid<0.0]
+    efieldl=lb["Efieldx"].value[xvalid<0.0]
+    edenl=lb["E"].value[xvalid<0.0]
+    etempl=lb["Electron_Temp"].value[xvalid<0.0]
+    eenrgl=lb["Electron_energy"].value[xvalid<0.0]
+    iondenl=lb["HEp"].value[xvalid<0.0]
+    ejl=lb["Electron_Jheat"].value[xvalid<0.0]
+    inelhl=lb["Electron_inelasticHeat"].value[xvalid<0.0]
+    elhl=lb["Electron_elasticHeat"].value[xvalid<0.0]
 
     np.savetxt("linedata_"+axialdir_char+"%4.4d.dat"%(i),\
-            np.transpose(np.vstack((xarr,potl,efieldl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")
+            np.transpose(np.vstack((x,potl,efieldl,edenl,iondenl,etempl,eenrgl,ejl,elhl,inelhl))),delimiter="  ")
