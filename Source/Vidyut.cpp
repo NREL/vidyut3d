@@ -453,7 +453,7 @@ void Vidyut::ReadParameters()
 
         if(using_ib)
         {
-           ngrow_for_fillpatch=2;
+           ngrow_for_fillpatch=3;
         }
 
     }
@@ -691,14 +691,36 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
                         if(mask_L==1) //left cell is internal
                         {
                            IntVect lcellm1=lcell;
+                           IntVect lcellm2=lcell;
                            lcellm1[idim]-=1;
-                           efield_fc_arr[idim](face)=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
+                           lcellm2[idim]-=2;
+                          
+                           //first order 
+                           //efield_fc_arr[idim](face)=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
+                           //second order
+                           //efield_fc_arr[idim](face)=-0.5*(sb_arr(lcellm2,POT_ID)
+                            //                         - 4.0*sb_arr(lcellm1,POT_ID)
+                            //                         + 3.0*sb_arr(lcell,POT_ID) )/dx[idim];
+                           
+                           //also second order but looks nice
+                           amrex::Real efield_l_lm1=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
+                           amrex::Real efield_lm1_lm2=-(sb_arr(lcellm1,POT_ID)-sb_arr(lcellm2,POT_ID))/dx[idim];
+                           efield_fc_arr[idim](face)=2.0*efield_l_lm1-efield_lm1_lm2;
                         }
                         else
                         {
                            IntVect rcellp1=rcell;
+                           IntVect rcellp2=rcell;
                            rcellp1[idim]+=1;
-                           efield_fc_arr[idim](face)=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
+                           rcellp2[idim]+=2;
+
+                           //first order
+                           //efield_fc_arr[idim](face)=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
+                           
+                           //also second order but looks nice
+                           amrex::Real efield_r_rp1=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
+                           amrex::Real efield_rp1_rp2=-(sb_arr(rcellp2,POT_ID)-sb_arr(rcellp1,POT_ID))/dx[idim];
+                           efield_fc_arr[idim](face)=2.0*efield_r_rp1-efield_rp1_rp2;
                         }
                     }
                     else

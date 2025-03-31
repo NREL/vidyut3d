@@ -97,7 +97,7 @@ namespace user_transport
         }
         else
         {
-            //homogenous Neumann
+            //zero flux
         }
     }
     AMREX_GPU_HOST_DEVICE
