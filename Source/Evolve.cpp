@@ -220,7 +220,7 @@ void Vidyut::Evolve()
 
             if(using_ib)
             {
-                correct_efields_ib(Sborder,efield_fc);
+                correct_efields_ib(Sborder,efield_fc,cur_time);
                 //fillpatching here to get the latest efields 
                 //in sborder so that it can be used in drift vel calcs
                 //may be there is a clever way to improve performance 

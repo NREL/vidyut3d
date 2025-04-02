@@ -637,8 +637,13 @@ void Vidyut::set_solver_mask(Vector<iMultiFab>& solvermask,
 }
 
 void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
-        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc)
+        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time)
 {
+    Real captured_time=time;
+    ProbParm const* localprobparm = d_prob_parm;
+    Real captured_gastemp=gas_temperature;
+    Real captured_gaspres=gas_pressure;
+    
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -646,6 +651,14 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             Array4<Real> sb_arr = Sborder[ilev].array(mfi);
             const Box& bx = mfi.tilebox();
             const auto dx = geom[ilev].CellSizeArray();
+            auto prob_lo = geom[ilev].ProbLoArray();
+            auto prob_hi = geom[ilev].ProbHiArray();
+            const Box& domain = geom[ilev].Domain();
+            const int* domlo_arr = geom[ilev].Domain().loVect();
+            const int* domhi_arr = geom[ilev].Domain().hiVect();
+        
+            GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
+            GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
             Array<Box,AMREX_SPACEDIM> face_boxes;
             face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
@@ -694,33 +707,59 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
                            IntVect lcellm2=lcell;
                            lcellm1[idim]-=1;
                            lcellm2[idim]-=2;
-                          
-                           //first order 
-                           //efield_fc_arr[idim](face)=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
-                           //second order
-                           //efield_fc_arr[idim](face)=-0.5*(sb_arr(lcellm2,POT_ID)
-                            //                         - 4.0*sb_arr(lcellm1,POT_ID)
-                            //                         + 3.0*sb_arr(lcell,POT_ID) )/dx[idim];
-                           
-                           //also second order but looks nice
-                           amrex::Real efield_l_lm1=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
-                           amrex::Real efield_lm1_lm2=-(sb_arr(lcellm1,POT_ID)-sb_arr(lcellm2,POT_ID))/dx[idim];
-                           efield_fc_arr[idim](face)=2.0*efield_l_lm1-efield_lm1_lm2;
+                           int is_dirc=0;
+                           amrex::Real dircval=0;
+                    
+                            user_transport::get_dirc_ib_potential(face,idim,+1,sb_arr,
+                            domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
+                            captured_gaspres,is_dirc,dircval);
+                         
+                            if(!is_dirc)
+                            { 
+                                //first order 
+                                //efield_fc_arr[idim](face)=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
+                                //second order
+                                //efield_fc_arr[idim](face)=-0.5*(sb_arr(lcellm2,POT_ID)
+                                //                         - 4.0*sb_arr(lcellm1,POT_ID)
+                                //                         + 3.0*sb_arr(lcell,POT_ID) )/dx[idim];
+
+                                //also second order but looks nice
+                                amrex::Real efield_l_lm1=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
+                                amrex::Real efield_lm1_lm2=-(sb_arr(lcellm1,POT_ID)-sb_arr(lcellm2,POT_ID))/dx[idim];
+                                efield_fc_arr[idim](face)=2.0*efield_l_lm1-efield_lm1_lm2;
+                            }
+                            else
+                            {
+                                efield_fc_arr[idim](face)=-(dircval-sb_arr(lcell,POT_ID))/(0.5*dx[idim]);
+                            }
                         }
                         else
                         {
-                           IntVect rcellp1=rcell;
-                           IntVect rcellp2=rcell;
-                           rcellp1[idim]+=1;
-                           rcellp2[idim]+=2;
+                            IntVect rcellp1=rcell;
+                            IntVect rcellp2=rcell;
+                            rcellp1[idim]+=1;
+                            rcellp2[idim]+=2;
+                            int is_dirc=0;
+                            amrex::Real dircval=0;
+                            
+                            user_transport::get_dirc_ib_potential(face,idim,-1,sb_arr,
+                            domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
+                            captured_gaspres,is_dirc,dircval);
 
-                           //first order
-                           //efield_fc_arr[idim](face)=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
-                           
-                           //also second order but looks nice
-                           amrex::Real efield_r_rp1=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
-                           amrex::Real efield_rp1_rp2=-(sb_arr(rcellp2,POT_ID)-sb_arr(rcellp1,POT_ID))/dx[idim];
-                           efield_fc_arr[idim](face)=2.0*efield_r_rp1-efield_rp1_rp2;
+                            if(!is_dirc)
+                            { 
+                            //first order
+                            //efield_fc_arr[idim](face)=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
+
+                            //also second order but looks nice
+                            amrex::Real efield_r_rp1=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
+                            amrex::Real efield_rp1_rp2=-(sb_arr(rcellp2,POT_ID)-sb_arr(rcellp1,POT_ID))/dx[idim];
+                            efield_fc_arr[idim](face)=2.0*efield_r_rp1-efield_rp1_rp2;
+                            }
+                            else
+                            {
+                                efield_fc_arr[idim](face)=-(sb_arr(rcell,POT_ID)-dircval)/(0.5*dx[idim]);
+                            }
                         }
                     }
                     else
@@ -732,14 +771,14 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             }
         }
     }
-    
+
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         const Array<const MultiFab*, AMREX_SPACEDIM> allefieldcomps = {AMREX_D_DECL(&efield_fc[ilev][0], 
-                &efield_fc[ilev][1], &efield_fc[ilev][2])};
+                                                            &efield_fc[ilev][1], &efield_fc[ilev][2])};
 
         average_face_to_cellcenter(phi_new[ilev], EFX_ID, allefieldcomps);
-        
+
         // Calculate the reduced electric field
         auto phi_arrays = phi_new[ilev].arrays();
         amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
@@ -747,10 +786,10 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
             Real Esum = 0.0;
             amrex::Real ndens = 0.0;
-            
+
             for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
             ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
-            
+
             for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
             s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
         });
@@ -758,7 +797,7 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
 }
 
 void Vidyut::null_field_in_covered_cells(Vector<MultiFab>& fld,
-        Vector<MultiFab>& Sborder,int startcomp,int numcomp)
+                                         Vector<MultiFab>& Sborder,int startcomp,int numcomp)
 {
 
     //multiply syntax

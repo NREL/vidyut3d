@@ -276,7 +276,7 @@ public:
                                                 int numcomps);
 
     void correct_efields_ib(Vector<MultiFab>& Sborder,
-        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc);
+        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time);
 
     void null_field_in_covered_cells(Vector<MultiFab>& fld,
         Vector<MultiFab>& Sborder,int startcomp,int numcomp);

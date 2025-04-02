@@ -8,7 +8,8 @@ geometry.coord_sys   =  0       # 0 => cart
 #geometry.prob_hi     =  0.067  1.046875e-3  1.046875e-3
 geometry.prob_lo     =  -2.09375e-3   0.0     0.0 
 geometry.prob_hi     =  0.06909375 1.046875e-3  1.046875e-3
-amr.n_cell           =   408  4  4
+amr.n_cell           =   272  4  4
+#amr.n_cell           =   264  4  4
 
 # VERBOSITY
 amr.v              = 1       # verbosity in Amr

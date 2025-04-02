@@ -10,20 +10,22 @@
 #include <Vidyut.H>
 #include <Chemistry.H>
 #include <UserFunctions.H>
+#include <HelperFuncs.H>
 #include <compute_explicit_flux.H>
 #include <AMReX_MLABecLaplacian.H>
 
 void Vidyut::compute_elecenergy_source(int lev, 
-                            MultiFab& Sborder, 
-                            MultiFab& rxnsrc, 
-                            Array<MultiFab,AMREX_SPACEDIM>& efield, 
-                            Array<MultiFab,AMREX_SPACEDIM>& gradne, 
-                            MultiFab& dsdt,
-                            Real time, Real dt, int floor_jh)
+                                       MultiFab& Sborder, 
+                                       MultiFab& rxnsrc, 
+                                       Array<MultiFab,AMREX_SPACEDIM>& efield, 
+                                       Array<MultiFab,AMREX_SPACEDIM>& gradne, 
+                                       MultiFab& dsdt,
+                                       Real time, Real dt, int floor_jh)
 {
 
     BL_PROFILE("vidyut::compute_elecenergy_source()");
 
+    Real captured_time=time;
     const auto dx = geom[lev].CellSizeArray();
     auto prob_lo = geom[lev].ProbLoArray();
     auto prob_hi = geom[lev].ProbHiArray();
@@ -36,14 +38,14 @@ void Vidyut::compute_elecenergy_source(int lev,
     int efield_limiter_enabled=efield_limiter;
     int ib_enabled=using_ib;
     int eidx = E_IDX;
-    
+
     const int* domlo_arr = geom[lev].Domain().loVect();
     const int* domhi_arr = geom[lev].Domain().hiVect();
-        
+
     GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
     GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
-    auto sborder_arrays = Sborder.const_arrays();
+    auto sborder_arrays = Sborder.arrays();
     auto rxn_arrays = rxnsrc.const_arrays();
     auto phi_arrays = phi_new[lev].arrays();
     auto dsdt_arrays = dsdt.arrays();
@@ -92,104 +94,119 @@ void Vidyut::compute_elecenergy_source(int lev,
                 IntVect face{AMREX_D_DECL(i,j,k)};
                 face[idim]+=f;
 
-                if(face[idim]==domlo[idim])
-                {
-                   //do the interior face
-                   face[idim]+=1;
-                }
-                
-                if(face[idim]==(domhi[idim]+1))
-                {
-                   //do the interior face
-                    face[idim]-=1;
-                }
-                
                 IntVect lcell{AMREX_D_DECL(face[0],face[1],face[2])};
                 IntVect rcell{AMREX_D_DECL(face[0],face[1],face[2])};
                 lcell[idim]-=1;
-                
-                etemp=0.5*(sborder_arr(lcell,ETEMP_ID) 
-                           + sborder_arr(rcell,ETEMP_ID));
 
-                //FIXME:use face centered updated efields here?
-                Real Esum = 0.0;
-                Real efieldvec_face[AMREX_SPACEDIM];
-                efieldvec_face[0]=0.5*(sborder_arr(lcell,EFX_ID) 
-                              + sborder_arr(rcell,EFX_ID));
-                Esum += amrex::Math::powi<2>(efieldvec_face[0]);
+                int mask_L=int(sborder_arr(lcell,CMASK_ID));
+                int mask_R=int(sborder_arr(rcell,CMASK_ID));
+
+                //1 when both mask_L and mask_R are 0
+                int covered_interface=(!mask_L)*(!mask_R);
+                //1 when both mask_L and mask_R are 1
+                int regular_interface=(mask_L)*(mask_R);
+                //1-0 or 0-1 interface
+                int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
+                amrex::Real mask_tot=amrex::Real(mask_L+mask_R);
+
+                if(!covered_interface)
+                {
+                    //by 2 for regular and 1 for cov/uncov
+                    etemp=(sborder_arr(lcell,ETEMP_ID)*mask_L
+                           + sborder_arr(rcell,ETEMP_ID)*mask_R)/mask_tot;
+
+                    //FIXME:use face centered updated efields here?
+                    Real Esum = 0.0;
+                    Real efieldvec_face[AMREX_SPACEDIM];
+                    efieldvec_face[0]=(sborder_arr(lcell,EFX_ID)*mask_L 
+                                       + sborder_arr(rcell,EFX_ID)*mask_R)/mask_tot;
+
+                    Esum += amrex::Math::powi<2>(efieldvec_face[0]);
 #if AMREX_SPACEDIM > 1
-                efieldvec_face[1]=0.5*(sborder_arr(lcell,EFY_ID) 
-                              + sborder_arr(rcell,EFY_ID));
-                Esum += amrex::Math::powi<2>(efieldvec_face[1]);
+                    efieldvec_face[1]=(sborder_arr(lcell,EFY_ID)*mask_L 
+                                       + sborder_arr(rcell,EFY_ID)*mask_R)/mask_tot;
+
+                    Esum += amrex::Math::powi<2>(efieldvec_face[1]);
 #if AMREX_SPACEDIM == 3
-                efieldvec_face[2]=0.5*(sborder_arr(lcell,EFZ_ID) 
-                              + sborder_arr(rcell,EFZ_ID));
-                Esum += amrex::Math::powi<2>(efieldvec_face[2]);
+                    efieldvec_face[2]=(sborder_arr(lcell,EFZ_ID)*mask_L 
+                                       + sborder_arr(rcell,EFZ_ID)*mask_R)/mask_tot;
+
+                    Esum += amrex::Math::powi<2>(efieldvec_face[2]);
 #endif
 #endif
-        
-                amrex::Real efield_mag=std::sqrt(Esum);
+                    amrex::Real efield_mag=std::sqrt(Esum);
 
-                ne = 0.5*(sborder_arr(lcell,eidx) 
-                          + sborder_arr(rcell,eidx));
+                    ne = (sborder_arr(lcell,eidx)*mask_L 
+                          + sborder_arr(rcell,eidx)*mask_R)/mask_tot;
 
-                //efield_face=ef_arr[idim](face);
-                efield_face = (cs_technique_enabled || efield_limiter_enabled) 
-                ? efieldvec_face[idim] : ef_arr[idim](face);
+                    //efield_face=ef_arr[idim](face);
+                    efield_face = (cs_technique_enabled || efield_limiter_enabled) 
+                    ? efieldvec_face[idim] : ef_arr[idim](face);
 
-                if(!ib_enabled)
-                {
-                   gradne_face=gradne_arr[idim](face);
-                }
-                else
-                {
-                    int mask_L=int(sborder_arr(lcell,CMASK_ID));
-                    int mask_R=int(sborder_arr(rcell,CMASK_ID));
-
-                    //1 when both mask_L and mask_R are 0
-                    int covered_interface=(!mask_L)*(!mask_R);
-
-                    //1-0 or 0-1 interface
-                    int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
-
-                    if(covered_interface)
+                    amrex::Real ndens = 0.0;
+                    for(int sp=0; sp<NUM_SPECIES; sp++)
                     {
-                        gradne_face=0.0;
+                        ndens += (sborder_arr(lcell,sp)*mask_L+sborder_arr(rcell,sp)*mask_R)/mask_tot;
                     }
-                    else if(cov_uncov_interface)
+                    mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
+                    dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
+
+                    if(regular_interface)
+                    {
+                        if(face[idim]==domlo[idim] || face[idim]==domhi[idim]+1) 
+                        {
+                            int is_fluxbc=0;
+                            amrex::Real outfluxval=0;
+                            int sgn=(face[idim]==domlo[idim])?-1:1;
+
+                            user_transport::get_boundary_electron_flux(face,idim,sgn,sborder_arr,
+                                                         domlo,domhi,prob_lo,prob_hi,dx,captured_time,
+                                                         *localprobparm,captured_gastemp,
+                                                         captured_gaspres,is_fluxbc,outfluxval);
+                            if(is_fluxbc)
+                            {
+                                current_density=charge*outfluxval*sgn;
+                            }
+                            else
+                            {
+                                gradne_face=get_onesided_grad(face,sgn,idim,eidx,dx,sborder_arr);
+                                current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
+                            }
+                        }
+                        else
+                        {
+                            gradne_face=gradne_arr[idim](face);
+                            current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
+                        }
+                    }
+                    else //cov-uncov interface
                     {
                         //FIXME/WARNING: this logic will work if there 
                         //sufficient number of valid cells between two 
                         //immersed boundaries. situation like covered|valid|covered
                         //will cause problems
-                        if(mask_L==1) //left cell is internal
+                        int sgn=(mask_L==1)?1:-1;
+                        int is_fluxbc=0;
+                        amrex::Real outfluxval=0;
+
+                        user_transport::get_boundary_electron_flux(face,idim,sgn,sborder_arr,
+                                                     domlo,domhi,prob_lo,prob_hi,dx,captured_time,
+                                                     *localprobparm,captured_gastemp,
+                                                     captured_gaspres,is_fluxbc,outfluxval);
+
+                        if(is_fluxbc)
                         {
-                           IntVect lcellm1=lcell;
-                           lcellm1[idim]-=1;
-                           gradne_face=(sborder_arr(lcell,E_IDX)-sborder_arr(lcellm1,E_IDX))/dx[idim];
+                            current_density=charge*outfluxval*sgn;
                         }
                         else
                         {
-                           IntVect rcellp1=rcell;
-                           rcellp1[idim]+=1;
-                           gradne_face=(sborder_arr(rcellp1,E_IDX)-sborder_arr(rcell,E_IDX))/dx[idim];
+                            gradne_face=get_onesided_grad(face,sgn,idim,eidx,dx,sborder_arr);
+                            current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
                         }
                     }
-                    else
-                    {
-                        gradne_face=gradne_arr[idim](face);
-                    }
+
+                    elec_jheat += current_density*efield_face;
                 }
-
-                amrex::Real ndens = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += 0.5 * (sborder_arr(lcell,sp) + sborder_arr(rcell,sp));
-
-                mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
-
-                dcoeff = specDiff(eidx, etemp, ndens, efield_mag,captured_gastemp);
-
-                current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
-                elec_jheat += current_density*efield_face;
             }
         }
 
@@ -202,24 +219,24 @@ void Vidyut::compute_elecenergy_source(int lev,
         //"Discretization of the Joule heating term for plasma discharge 
         //fluid models in unstructured meshes." 
         //Journal of computational physics 228.12 (2009): 4435-4443.
-        
+
         elec_jheat*=0.5;
 
         //a switch to make sure joule heating is 
         //heating the electrons and not cooling them
         if(floor_jh)
         {
-           if(elec_jheat < 0.0)
-           {
-              elec_jheat=0.0;
-           }
+            if(elec_jheat < 0.0)
+            {
+                elec_jheat=0.0;
+            }
         }
-        
+
         //inelastic term already added through reaction source
         dsdt_arr(i, j, k, NUM_SPECIES) += (elec_jheat);
         phi_arr(i,j,k,EJH_ID)=elec_jheat;
         phi_arr(i,j,k,EIH_ID)=rxn_arr(i,j,k,EEN_ID); //EEN_ID is same as NUM_SPECIES
-        
+
         // TODO: Adjust reactive source calculations to split into elastic/inelastic
         // phi_arr(i,j,k,EEH_ID)=elec_elastic_coll_term;
     });

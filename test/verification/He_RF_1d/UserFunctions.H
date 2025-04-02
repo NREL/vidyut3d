@@ -10,6 +10,63 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
+    void get_boundary_electron_flux(IntVect face,
+               int dir, int sgn,
+               Array4<Real> const sb_arr,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+               GpuArray<Real, AMREX_SPACEDIM> dx,
+               const Real time,
+               ProbParm const& prob_parm,
+               Real Tg, Real Pg,int &is_fluxbc,amrex::Real &outfluxval)
+    {
+        IntVect intcell=face;
+        int cell_adjust = (sgn==1)?-1:0;
+        intcell[dir]+=cell_adjust;
+        is_fluxbc=1;
+        
+        amrex::Real ne=sb_arr(intcell,E_ID);
+        amrex::Real Te=sb_arr(intcell,ETEMP_ID);
+        amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
+        outfluxval=ne*cbar/4.0;
+    }
+    AMREX_GPU_DEVICE AMREX_INLINE
+    void get_dirc_ib_potential(IntVect face,
+               int dir, int sgn,
+               Array4<Real> const& sb_arr,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+               GpuArray<Real, AMREX_SPACEDIM> dx,
+               const Real time,
+               ProbParm const& prob_parm,
+               Real Tg, Real Pg,int &is_dirc,amrex::Real &dircval)
+    {
+        IntVect intcell=face;
+        int cell_adjust = (sgn==1)?-1:0;
+        intcell[dir]+=cell_adjust;
+        
+        amrex::Real x[AMREX_SPACEDIM];
+        for(int d=0;d<AMREX_SPACEDIM;d++)
+        {
+           x[d]=prob_lo[d]+(intcell[d]+0.5)*dx[d];
+        }
+        x[dir]+=sgn*0.5*dx[dir];
+
+        int axdir=0;
+        amrex::Real midx=0.5*(prob_lo[axdir]+prob_hi[axdir]);
+
+        is_dirc=1;
+        
+        int left_side=(x[axdir]<midx)?1:0;
+        dircval=(left_side)?
+        prob_parm.V1*std::sin(2.0*PI*prob_parm.f*time):prob_parm.V2;
+    }
+
+    AMREX_GPU_DEVICE AMREX_INLINE
     void bc_ib(IntVect face,
                int dir, int sgn,
                int solved_comp,
@@ -26,15 +83,21 @@ namespace user_transport
                ProbParm const& prob_parm,
                Real Tg, Real Pg)
     {
-        IntVect lcell=face;
-        IntVect rcell=face;
-        lcell[dir]-=1;
+        IntVect intcell=face;
+        int cell_adjust = (sgn==1)?-1:0;
+        intcell[dir]+=cell_adjust;
+        
+        amrex::Real x[AMREX_SPACEDIM];
+        for(int d=0;d<AMREX_SPACEDIM;d++)
+        {
+           x[d]=prob_lo[d]+(intcell[d]+0.5)*dx[d];
+        }
+        x[dir]+=sgn*0.5*dx[dir];
+        
         int axdir=0;
-        amrex::Real xloc=prob_lo[axdir]+face[axdir]*dx[axdir];
+        amrex::Real xloc=x[axdir];
         amrex::Real midx=0.5*(prob_lo[axdir]+prob_hi[axdir]);
         
-        //interior cell
-        IntVect intcell=(sgn==1)?lcell:rcell;
         amrex::Real outward_normal[AMREX_SPACEDIM]={0.0};
         outward_normal[dir]=sgn;
         amrex::Real dx2=dx[dir]*dx[dir];
@@ -72,6 +135,12 @@ namespace user_transport
                 flx*=(2.0*K_B*Te);
             }
             rhs(intcell,rhs_comp)   -= flx/dx[dir];
+            
+            if(solved_comp==E_ID)
+            {
+                amrex::Print()<<"bcib: sgn,ne,Te,fluxn,xloc:"<<sgn<<"\t"<<
+                ne<<"\t"<<Te<<"\t"<<flx<<"\t"<<xloc<<"\n";
+            }
         }
         else if(solved_comp==HEp_ID)
         {
@@ -80,14 +149,17 @@ namespace user_transport
                                             amrex::Math::powi<2>(sb_arr(intcell,EFZ_ID)));
 
             amrex::Real mu = specMob(solved_comp,sb_arr(intcell,ETEMP_ID),
-                                           ndens, efieldmag,
-                                           Tg);
+                                     ndens, efieldmag,
+                                     Tg);
             amrex::Real efield=sb_arr(intcell,EFX_ID+dir);
             amrex::Real ion_drift_flux = mu*sb_arr(intcell,solved_comp)*efield;
             amrex::Real ion_drift_flux_dotn = ion_drift_flux*outward_normal[dir];
             amrex::Real flx = (ion_drift_flux_dotn >= 0.0)?ion_drift_flux_dotn:0.0;
 
             rhs(intcell,rhs_comp) -= flx/dx[dir];
+            amrex::Print()<<"bcib: sgn,mu,ni,efield,fluxn,xloc:"<<sgn<<"\t"<<mu<<"\t"
+            <<sb_arr(intcell,solved_comp)
+            <<"\t"<<efield<<"\t"<<flx<<"\t"<<xloc<<"\n";
         }
         else if(solved_comp==HEm_ID || solved_comp==HE2m_ID)
         {
@@ -111,7 +183,7 @@ namespace user_transport
     {
         return(0);
     } 
-    
+
     AMREX_GPU_DEVICE AMREX_INLINE
     void potential_bc(int i, int j, int k,
                       int dir, int sgn,
@@ -131,7 +203,7 @@ namespace user_transport
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
         amrex::Real outward_normal[AMREX_SPACEDIM]={0.0};
         outward_normal[dir]=sgn;
-        
+
         int gcell_adjust,cell_adjust;
 
         //ghost_cell is one behind
@@ -278,6 +350,13 @@ namespace user_transport
             //because diffusive flux -D dc/dx = flx
             //so dc/dx = -flx/D
             bc_arr(ghost_cell,bcspec_id)=(-flx/D);
+            
+            if(spec_id==E_ID)
+            {
+                amrex::Print()<<"sgn,ne,Te,fluxn,xloc:"<<sgn<<"\t"<<
+                ne<<"\t"<<Te<<"\t"<<amrex::Math::abs(flx)<<"\t"
+                <<prob_lo[0]+(cell_int[0]+0.5)*dx[0]<<"\n";
+            }
         }
 
         if(spec_id==HEp_ID)
@@ -297,6 +376,10 @@ namespace user_transport
             amrex::Real efield=phi(cell_int,EFX_ID+dir);
             amrex::Real ion_drift_flux = mu*phi(cell_int,spec_id)*efield;
             amrex::Real ion_drift_flux_dotn = ion_drift_flux*outward_normal[dir];
+            
+            amrex::Print()<<"usual bc sgn,mu,ni,efield,fluxn:"<<sgn<<"\t"<<mu<<"\t"
+            <<phi(cell_int,spec_id)
+            <<"\t"<<efield<<"\t"<<ion_drift_flux_dotn<<"\t"<<prob_lo[0]+(cell_int[0]+0.5)*dx[0]<<"\n";
             
             //if driftvel is pointing towards the wall
             //then flux=v n - D dndx = v n

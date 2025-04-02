@@ -330,6 +330,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         if(using_ib)
         {
             null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
+            amrex::Print()<<"calling explicit fluxes\n";
             set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],
                     Sborder[ilev],current_time,POT_ID,0);
         }
