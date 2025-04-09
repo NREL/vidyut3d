@@ -198,8 +198,8 @@ public:
     amrex::Real min_electron_density=1e12;
     amrex::Real min_electron_temp=300.0;
 
-    amrex::Real gas_pressure=101325.0;
-    amrex::Real gas_temperature=300.0;
+    amrex::Real gas_pressure=P_NTP;
+    amrex::Real gas_temperature=T_NTP;
 
     amrex::Vector<std::string> plasma_param_names;
     amrex::Vector<std::string> allvarnames;

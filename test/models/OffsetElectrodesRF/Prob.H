@@ -18,13 +18,15 @@ void amrex_probinit (ProbParm & h_prob_parm, ProbParm & d_prob_parm)
 {
     // read problem specific parmparse parameters here
     amrex::ParmParse pp("prob");
-    pp.query("pres", h_prob_parm.pres );
-    pp.query("temp", h_prob_parm.temp );
     pp.query("len1", h_prob_parm.len1 );
     pp.query("len2", h_prob_parm.len2 );
     pp.query("rfvoltage", h_prob_parm.rfvoltage );
     pp.query("dielectric_thickness", h_prob_parm.dielthick );
     pp.query("dielectric_constant", h_prob_parm.Kdiel );
+    
+    amrex::ParmParse pp_solver("vidyut");
+    pp_solver.query("gas_pressure",h_prob_parm.pres); 
+    pp_solver.query("gas_temperature",h_prob_parm.temp); 
 
 #ifdef AMREX_USE_GPU
     amrex::Gpu::htod_memcpy(&d_prob_parm, &h_prob_parm, sizeof(ProbParm));

@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <VarDefines.H>
 #include <UserFunctions.H>
+#include <HelperFuncs.H>
 
 using namespace amrex;
 
@@ -519,23 +520,34 @@ void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab,
                 IntVect rcell{AMREX_D_DECL(i,j,k)};
 
                 lcell[idim]-=1;
+                int mask_L=int(sb_arr(lcell,CMASK_ID));
+                int mask_R=int(sb_arr(rcell,CMASK_ID));
 
-                int and_gate=int(sb_arr(lcell,CMASK_ID))*int(sb_arr(rcell,CMASK_ID));
-                int or_gate=int(sb_arr(lcell,CMASK_ID))+int(sb_arr(rcell,CMASK_ID));
-                if(!and_gate) //1*0 0*1 and 0*0 cases
+                //1 when both mask_L and mask_R are 0
+                int covered_interface=(!mask_L)*(!mask_R);
+                //1 when both mask_L and mask_R are 1
+                int regular_interface=(mask_L)*(mask_R);
+                //1-0 or 0-1 interface
+                int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
+
+                if(cov_uncov_interface) //1*0 0*1 cases
                 {
                     for(int sp=0;sp<captured_ncomps;sp++)
                     {
                         face_bcoeff_arr[idim](face,sp)=0.0;
                     }
-                    if(!or_gate) //0*0 case
+                }
+                else if(covered_interface) //0*0 case
+                {
+                    //keeping bcoeff non zero in dead cells just in case
+                    for(int sp=0;sp<captured_ncomps;sp++)
                     {
-                        //keeping bcoeff non zero in dead cells just in case
-                        for(int sp=0;sp<captured_ncomps;sp++)
-                        {
-                            face_bcoeff_arr[idim](face,sp)=1.0;
-                        }
+                        face_bcoeff_arr[idim](face,sp)=1.0;
                     }
+                }
+                else
+                {
+                    //do nothing
                 }
             });
         }
@@ -544,11 +556,11 @@ void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab,
 }
 
 void Vidyut::set_explicit_fluxes_at_ib(int ilev, MultiFab& rhs,
-        MultiFab& acoeff,
-        MultiFab& Sborder,
-        Real time,
-        int compid,
-        int rhscompid)
+                                       MultiFab& acoeff,
+                                       MultiFab& Sborder,
+                                       Real time,
+                                       int compid,
+                                       int rhscompid)
 {
     Real captured_gastemp=gas_temperature;
     Real captured_gaspres=gas_pressure;
@@ -600,17 +612,19 @@ void Vidyut::set_explicit_fluxes_at_ib(int ilev, MultiFab& rhs,
                 IntVect rcell{AMREX_D_DECL(i,j,k)};
                 lcell[idim]-=1;
 
-                int xor_gate=int(sb_arr(lcell,CMASK_ID))*(1-int(sb_arr(rcell,CMASK_ID)))+
-                    (1-int(sb_arr(lcell,CMASK_ID)))*int(sb_arr(rcell,CMASK_ID));
+                int mask_L=int(sb_arr(lcell,CMASK_ID));
+                int mask_R=int(sb_arr(rcell,CMASK_ID));
 
-                if(xor_gate) //1-0 or 0-1 interface
+                int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
+
+                if(cov_uncov_interface) //1-0 or 0-1 interface
                 {
                     int sgn=(int(sb_arr(lcell,CMASK_ID))==1)?1:-1;
                     IntVect intcell=(sgn==1)?lcell:rcell;
 
                     user_transport::bc_ib(face,idim,sgn,solved_comp,rhs_comp,sb_arr,acoeff_arr,rhs_arr,
-                            domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
-                            captured_gaspres);
+                                          domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
+                                          captured_gaspres);
                 }
             });
         }
@@ -618,7 +632,7 @@ void Vidyut::set_explicit_fluxes_at_ib(int ilev, MultiFab& rhs,
 }
 
 void Vidyut::set_solver_mask(Vector<iMultiFab>& solvermask,
-        Vector<MultiFab>& Sborder)
+                             Vector<MultiFab>& Sborder)
 {
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
@@ -637,13 +651,13 @@ void Vidyut::set_solver_mask(Vector<iMultiFab>& solvermask,
 }
 
 void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
-        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time)
+                                Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time)
 {
     Real captured_time=time;
     ProbParm const* localprobparm = d_prob_parm;
     Real captured_gastemp=gas_temperature;
     Real captured_gaspres=gas_pressure;
-    
+
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         for (MFIter mfi(Sborder[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -656,7 +670,7 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             const Box& domain = geom[ilev].Domain();
             const int* domlo_arr = geom[ilev].Domain().loVect();
             const int* domhi_arr = geom[ilev].Domain().hiVect();
-        
+
             GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
             GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
@@ -669,8 +683,8 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
 #endif
 #endif
             GpuArray<Array4<Real>, AMREX_SPACEDIM> 
-                efield_fc_arr{AMREX_D_DECL(efield_fc[ilev][0].array(mfi), 
-                        efield_fc[ilev][1].array(mfi), efield_fc[ilev][2].array(mfi))};
+            efield_fc_arr{AMREX_D_DECL(efield_fc[ilev][0].array(mfi), 
+                                       efield_fc[ilev][1].array(mfi), efield_fc[ilev][2].array(mfi))};
 
             for(int idim=0;idim<AMREX_SPACEDIM;idim++)
             {
@@ -701,66 +715,9 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
                         //immersed boundaries. situation like covered|valid|covered
                         //will cause problems
 
-                        if(mask_L==1) //left cell is internal
-                        {
-                           IntVect lcellm1=lcell;
-                           IntVect lcellm2=lcell;
-                           lcellm1[idim]-=1;
-                           lcellm2[idim]-=2;
-                           int is_dirc=0;
-                           amrex::Real dircval=0;
-                    
-                            user_transport::get_dirc_ib_potential(face,idim,+1,sb_arr,
-                            domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
-                            captured_gaspres,is_dirc,dircval);
-                         
-                            if(!is_dirc)
-                            { 
-                                //first order 
-                                //efield_fc_arr[idim](face)=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
-                                //second order
-                                //efield_fc_arr[idim](face)=-0.5*(sb_arr(lcellm2,POT_ID)
-                                //                         - 4.0*sb_arr(lcellm1,POT_ID)
-                                //                         + 3.0*sb_arr(lcell,POT_ID) )/dx[idim];
-
-                                //also second order but looks nice
-                                amrex::Real efield_l_lm1=-(sb_arr(lcell,POT_ID)-sb_arr(lcellm1,POT_ID))/dx[idim];
-                                amrex::Real efield_lm1_lm2=-(sb_arr(lcellm1,POT_ID)-sb_arr(lcellm2,POT_ID))/dx[idim];
-                                efield_fc_arr[idim](face)=2.0*efield_l_lm1-efield_lm1_lm2;
-                            }
-                            else
-                            {
-                                efield_fc_arr[idim](face)=-(dircval-sb_arr(lcell,POT_ID))/(0.5*dx[idim]);
-                            }
-                        }
-                        else
-                        {
-                            IntVect rcellp1=rcell;
-                            IntVect rcellp2=rcell;
-                            rcellp1[idim]+=1;
-                            rcellp2[idim]+=2;
-                            int is_dirc=0;
-                            amrex::Real dircval=0;
-                            
-                            user_transport::get_dirc_ib_potential(face,idim,-1,sb_arr,
-                            domlo,domhi,prob_lo,prob_hi,dx,captured_time,*localprobparm,captured_gastemp,
-                            captured_gaspres,is_dirc,dircval);
-
-                            if(!is_dirc)
-                            { 
-                            //first order
-                            //efield_fc_arr[idim](face)=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
-
-                            //also second order but looks nice
-                            amrex::Real efield_r_rp1=-(sb_arr(rcellp1,POT_ID)-sb_arr(rcell,POT_ID))/dx[idim];
-                            amrex::Real efield_rp1_rp2=-(sb_arr(rcellp2,POT_ID)-sb_arr(rcellp1,POT_ID))/dx[idim];
-                            efield_fc_arr[idim](face)=2.0*efield_r_rp1-efield_rp1_rp2;
-                            }
-                            else
-                            {
-                                efield_fc_arr[idim](face)=-(sb_arr(rcell,POT_ID)-dircval)/(0.5*dx[idim]);
-                            }
-                        }
+                        int sgn=(mask_L==1)?1:-1;
+                        amrex::Real pot_grad=get_onesided_grad(face,sgn,idim,POT_ID,dx,sb_arr);
+                        efield_fc_arr[idim](face)=-pot_grad;
                     }
                     else
                     {
@@ -775,7 +732,7 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         const Array<const MultiFab*, AMREX_SPACEDIM> allefieldcomps = {AMREX_D_DECL(&efield_fc[ilev][0], 
-                                                            &efield_fc[ilev][1], &efield_fc[ilev][2])};
+                                                                                    &efield_fc[ilev][1], &efield_fc[ilev][2])};
 
         average_face_to_cellcenter(phi_new[ilev], EFX_ID, allefieldcomps);
 

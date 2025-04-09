@@ -153,25 +153,12 @@ void Vidyut::compute_elecenergy_source(int lev,
 
                     if(regular_interface)
                     {
+                        int sgn=(face[idim]==domlo[idim])?-1:1;
+
                         if(face[idim]==domlo[idim] || face[idim]==domhi[idim]+1) 
                         {
-                            int is_fluxbc=0;
-                            amrex::Real outfluxval=0;
-                            int sgn=(face[idim]==domlo[idim])?-1:1;
-
-                            user_transport::get_boundary_electron_flux(face,idim,sgn,sborder_arr,
-                                                         domlo,domhi,prob_lo,prob_hi,dx,captured_time,
-                                                         *localprobparm,captured_gastemp,
-                                                         captured_gaspres,is_fluxbc,outfluxval);
-                            if(is_fluxbc)
-                            {
-                                current_density=charge*outfluxval*sgn;
-                            }
-                            else
-                            {
                                 gradne_face=get_onesided_grad(face,sgn,idim,eidx,dx,sborder_arr);
                                 current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
-                            }
                         }
                         else
                         {
@@ -186,23 +173,8 @@ void Vidyut::compute_elecenergy_source(int lev,
                         //immersed boundaries. situation like covered|valid|covered
                         //will cause problems
                         int sgn=(mask_L==1)?1:-1;
-                        int is_fluxbc=0;
-                        amrex::Real outfluxval=0;
-
-                        user_transport::get_boundary_electron_flux(face,idim,sgn,sborder_arr,
-                                                     domlo,domhi,prob_lo,prob_hi,dx,captured_time,
-                                                     *localprobparm,captured_gastemp,
-                                                     captured_gaspres,is_fluxbc,outfluxval);
-
-                        if(is_fluxbc)
-                        {
-                            current_density=charge*outfluxval*sgn;
-                        }
-                        else
-                        {
-                            gradne_face=get_onesided_grad(face,sgn,idim,eidx,dx,sborder_arr);
-                            current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
-                        }
+                        gradne_face=get_onesided_grad(face,sgn,idim,eidx,dx,sborder_arr);
+                        current_density = charge*(mu*ne*efield_face-dcoeff*gradne_face);
                     }
 
                     elec_jheat += current_density*efield_face;
