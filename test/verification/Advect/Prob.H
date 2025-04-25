@@ -61,6 +61,12 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
             {
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
                 
+                for(int c=0;c<NVAR;c++)
+                {
+                   phi(i,j,k,c)=0.0;
+                }
+                phi(i,j,k,CMASK_ID)=1.0;
+                
                 if(prob_parm->one_dim)
                 {
                     //using same conditions as

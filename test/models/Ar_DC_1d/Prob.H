@@ -58,6 +58,12 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real z = prob_lo[2] + (0.5+k) * dx[2];
                 Real y = prob_lo[1] + (0.5+j) * dx[1];
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
+                
+                for(int c=0;c<NVAR;c++)
+                {
+                   phi(i,j,k,c)=0.0;
+                }
+                phi(i,j,k,CMASK_ID)=1.0;
 
                 phi(i,j,k,AR_ID)   = prob_parm->bg_gasden; 
                 phi(i,j,k,ARp_ID)  = 1e14; 
@@ -65,10 +71,6 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 phi(i,j,k,E_ID)  = 1e14;
                 phi(i,j,k,ETEMP_ID) = 0.5e4;
                 phi(i,j,k,EEN_ID) = 1.5*phi(i,j,k,E_ID)*K_B*phi(i,j,k,ETEMP_ID);
-                phi(i,j,k,EFX_ID) = 0.0;
-                phi(i,j,k,EFY_ID) = 0.0;
-                phi(i,j,k,EFZ_ID) = 0.0;
-                phi(i,j,k,POT_ID) = 0.0;
             }
         }
     }

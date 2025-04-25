@@ -29,6 +29,12 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     Real bscalar = 1.0;
     ProbParm const* localprobparm = d_prob_parm;
     int linsolve_verbose=1;
+    
+    // First initialization of MLMG solver
+    LPInfo info;
+    info.setAgglomeration(true);
+    info.setConsolidation(true);
+    info.setMaxCoarseningLevel(max_coarsening_level);
 
     //==================================================
     // amrex solves
@@ -112,7 +118,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         if (bc_lo[idim] == AXISBC)
         {
             bc_photoionizationsolve_lo[idim] = LinOpBCType::Neumann;
-        }        
+        }   
 
         //higher side bcs
         if (bc_hi[idim] == PERBC)
@@ -150,28 +156,42 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     Vector<MultiFab> robin_a(finest_level+1);
     Vector<MultiFab> robin_b(finest_level+1);
     Vector<MultiFab> robin_f(finest_level+1);
+    Vector<iMultiFab> solvemask(finest_level+1);
 
     const int num_grow = 1;
 
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         photoionization_src[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
-        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, 0);
-        solution[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        rhs[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        solution[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        rhs[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
 
-        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        
+        if(using_ib)
+        {
+            solvemask[ilev].define(grids[ilev],dmap[ilev], 1, 0);
+            solvemask[ilev].setVal(1);
+        }
     }
 
-    LPInfo info;
-    info.setAgglomeration(true);
-    info.setConsolidation(true);
-    info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info));
+    if(using_ib)
+    {
+        set_solver_mask(solvemask,Sborder);
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), 
+                                               GetVecOfConstPtrs(solvemask),info)); 
+    }
+    else
+    {
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level),info)); 
+    }
 
     linsolve_ptr->setMaxOrder(2);
     linsolve_ptr->setDomainBC(bc_photoionizationsolve_lo, bc_photoionizationsolve_hi);
@@ -186,12 +206,11 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         amrex::Copy(photoionization_src[ilev], Sborder[ilev], PHOTO_ION_SRC_ID, 0, 1, 0);
 
         solution[ilev].setVal(0.0);
-        
+
         rhs[ilev].setVal(0.0);
-        // TST - Ideally want to access this at each grid point.
         acoeff[ilev].setVal(amrex::Math::powi<2>(lambda_j[sph_id]*pO2));
 
-        //default to homogenous Nuemann //Dirichlet
+        //default to homogenous Neumann // Dirichlet
         robin_a[ilev].setVal(0.0);
         robin_b[ilev].setVal(1.0);
         robin_f[ilev].setVal(0.0);
@@ -204,25 +223,25 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
         GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
         // calculate and fill rhs 
-        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            const Box& gbx = amrex::grow(bx, 1);
-            const auto dx = geom[ilev].CellSizeArray();
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const Box& domain = geom[ilev].Domain();
+        const auto dx = geom[ilev].CellSizeArray();
+        auto prob_lo = geom[ilev].ProbLoArray();
+        auto prob_hi = geom[ilev].ProbHiArray();
+        const Box& domain = geom[ilev].Domain();
 
-            Real time = current_time; // for GPU capture
+        Real time = current_time; // for GPU capture
 
-            Array4<Real> phi_arr = Sborder[ilev].array(mfi); // species data is in num density (#/m^3) here
-            Array4<Real> rhs_arr = rhs[ilev].array(mfi);
+        auto phi_arrays = Sborder[ilev].const_arrays();
+        auto rhs_arrays = rhs[ilev].arrays();
+        amrex::ParallelFor(rhs[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+            auto phi_arr = phi_arrays[nbx];
+            auto rhs_arr = rhs_arrays[nbx];
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                
+            rhs_arr(i,j,k)=0.0;
+            
+            #if defined(O2_ID) && defined(N2_ID)
                 amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
-                // amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
-                // amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
+                //amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
+                //amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
                 amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
                 amrex::Real EN = phi_arr(i,j,k,REF_ID);
                 amrex::Real efield_mag = EN * N2_num_density * 1e-21;
@@ -230,12 +249,12 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 amrex::Real mu_e = 2.3987 * std::pow(efield_mag,-0.26);
                 amrex::Real rate_N2_ion = alpha*mu_e*efield_mag*e_num_density;
 
-                rhs_arr(i,j,k)=0.0;
+                
                 //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
                 // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
                 rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*1.0*rate_N2_ion);
-            });
-        }
+            #endif
+        });
 
         // average cell coefficients to faces, this includes boundary faces
         Array<MultiFab, AMREX_SPACEDIM> face_bcoeff;
@@ -316,13 +335,20 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 }
             }
         }
+        
+        if(using_ib)
+        {
+            null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
+            set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],Sborder[ilev],
+                                      current_time,PHOTO_ION_SRC_ID,0);
+        }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
 
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
-        // bc's are stored in the ghost cells of photoion_src
+        // bc's are stored in the ghost cells of potential
         if(mixedbc)
         {
             linsolve_ptr->setLevelBC(ilev, &photoionization_src[ilev], &(robin_a[ilev]), 
@@ -355,9 +381,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     {
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
     }
-    
+
     //clean-up
-    //photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
+    // photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
     acoeff.clear();
     solution.clear();
     rhs.clear();
@@ -366,3 +392,4 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     robin_b.clear();
     robin_f.clear();
 }
+
