@@ -166,7 +166,7 @@ Vidyut::Vidyut()
     if(using_ib && track_surf_charge)
     {
         amrex::Print()<<"**Surface charge on IB not implemented***\n";
-        amrex::Print()<<"coming soon.."
+        amrex::Print()<<"coming soon..";
     }
 
     //Check inputs for axisymmetric geometry
