@@ -29,9 +29,11 @@ vidyut.user_defined_vel = 1
 vidyut.using_ib=1
 
 # Tagging
-vidyut.tagged_vars = NI
+vidyut.tagged_vars = NI cellmask 
 vidyut.NI_refine = 0.5
 vidyut.NI_refinegrad = 1e20
+vidyut.cellmask_refine = 1e20
+vidyut.cellmask_refinegrad = 0.1
 
 #0 - periodic
 #1 - Dirichlet

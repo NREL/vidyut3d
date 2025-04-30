@@ -238,7 +238,6 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
 
             rhs_arr(i,j,k)=0.0;
             
-            #if defined(O2_ID) && defined(N2_ID)
                 amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
                 //amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
                 //amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
@@ -249,11 +248,10 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 amrex::Real mu_e = 2.3987 * std::pow(efield_mag,-0.26);
                 amrex::Real rate_N2_ion = alpha*mu_e*efield_mag*e_num_density;
 
-                
+                rhs_arr(i,j,k)=0.0;
                 //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
                 // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
                 rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*1.0*rate_N2_ion);
-            #endif
         });
 
         // average cell coefficients to faces, this includes boundary faces
