@@ -162,6 +162,12 @@ Vidyut::Vidyut()
             comp_neutral_chunks=1;
         }
     }
+    
+    if(using_ib && track_surf_charge)
+    {
+        amrex::Print()<<"**Surface charge on IB not implemented***\n";
+        amrex::Print()<<"coming soon.."
+    }
 
     //Check inputs for axisymmetric geometry
     //only needed if one boundary is at r=0 and 
