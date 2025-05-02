@@ -867,6 +867,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     bcoeff.clear();
     solution.clear();
     rhs.clear();
+    solvemask.clear();
 
     robin_a.clear();
     robin_b.clear();

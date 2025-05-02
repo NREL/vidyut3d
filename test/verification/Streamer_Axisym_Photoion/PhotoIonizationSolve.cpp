@@ -385,6 +385,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     acoeff.clear();
     solution.clear();
     rhs.clear();
+    solvemask.clear();
 
     robin_a.clear();
     robin_b.clear();
