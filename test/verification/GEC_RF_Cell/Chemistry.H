@@ -321,6 +321,13 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
     //impurities on atmospheric-pressure surface streamer 
     //discharge in argon for large gap arc breakdown, Phys. Plasmas 
     //23, 103501 (2016)
+    //
+    //Also, it looks like the paper wrongly used Te instead of 
+    //mean energy (1.5*Te) for ionization and excitation
+    //The fits Dima had were off
+    //probably because the fit was done with BOLSIG data
+    //which gives rate constants as function of mean energy (1.5*Te) 
+    //rather than Te
 
 
     {

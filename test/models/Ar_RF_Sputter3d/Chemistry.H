@@ -128,37 +128,50 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(const int specid, c
                                                              const amrex::Real ndens, 
                                                              const amrex::Real emag, const amrex::Real T)
 {
-
     amrex::Real N0=2.686763e25;
-    //see page 131, Transport properties of gaseous ions III
-    amrex::Real Arpmob = 1.85e-4*N0/ndens; 
-    //see page 133, Transport properties of gaseous ions III
-    amrex::Real Ar2pmob = 1.835e-4*N0/ndens; 
     amrex::Real EbyN=emag/ndens/1e-21;
     amrex::Real meanE = 1.5*Te/eV;
+    amrex::Real cm2_to_m2=1e-4;
+    amrex::Real cm_to_m=1e-2;
+    int use_boeuf_pitchford_model=0;
+    amrex::Real elecmob,Arpmob,Ar2pmob;
+    amrex::Real pres_in_torr=ndens*K_B*T/133.3223;
     
-    //fit from bolsig run
-    amrex::Real elecmob=(-1.1296602970297028e25*std::exp(0.12562012487329025*0.4347714833797336
-                                                        -2.911157190192704*std::tanh(0.2885129277383643*
-                                                                                     std::log(EbyN)
-                                                                                     +0.5430100185063174)))/ndens;
+    //from Boeuf and Pitchford paper
+    //Boeuf, J. P., and L. C. Pitchford. "Two-dimensional model of a capacitively 
+    //coupled rf discharge and comparisons with experiments in 
+    //the Gaseous Electronics Conference reference reactor." 
+    //Physical Review E 51.2 (1995): 1376.
+    if(use_boeuf_pitchford_model)
+    {
+        elecmob=-3e5/pres_in_torr*cm2_to_m2;
+        amrex::Real Ebyp=emag/pres_in_torr*cm_to_m; //units of V/(cm torr)
+        if(Ebyp < 60.0)
+        {
+            Arpmob=1e3*(1.0-2.22e-3*Ebyp)/pres_in_torr*cm2_to_m2;
+            Ar2pmob=Arpmob;
+        }
+        else
+        {
+            Arpmob=8.25e3/std::sqrt(Ebyp)*(1-86.52/std::pow(Ebyp,1.5))/pres_in_torr*cm2_to_m2;
+            Ar2pmob=Arpmob;
+        }
+    }
+    else
+    {
+        //fit from bolsig run
+        elecmob=(-1.1296602970297028e25*std::exp(0.12562012487329025*0.4347714833797336
+                                                 -2.911157190192704*std::tanh(0.2885129277383643*
+                                                                              std::log(EbyN)
+                                                                              +0.5430100185063174)))/ndens;
 
-    //amrex::Print()<<"elecmob,ionmob:"<<elecmob<<"\t"<<Arpmob<<"\t"<<Ar2pmob<<"\n";
+        //see page 131, Transport properties of gaseous ions III
+        Arpmob = 1.85e-4*N0/ndens; 
+        //see page 133, Transport properties of gaseous ions III
+        Ar2pmob = 1.835e-4*N0/ndens; 
+    }
 
-    //amrex::Real elecmob = (-1.0)*std::exp(55.0 + 0.3942*std::log(meanE) + 2.134/meanE
-    //           -0.6433/amrex::Math::powi<2>(meanE) + (0.7112e-1)/amrex::Math::powi<3>(meanE)) / ndens;
-    
-    //scaling He (mol wt=4) to Ar (mol wt=40)
-    //so the factor 4/40
-    //amrex::Real Arpmob=(4.0/40.0)*2.69*std::pow((1.0+1.2e-3*amrex::Math::powi<2>(EbyN)
-    //                                             +4.2e-8*amrex::Math::powi<4>(EbyN)),-0.125);
-    
-    //amrex::Real E_cs = 40e-20; //A^2 (cross section)
-    //amrex::Real nu_elec = std::sqrt(8.0*K_B*Te/PI/ME)*ndens*E_cs;
-    //amrex::Real elecmob = -ECHARGE/ME/nu_elec;
-    
     amrex::Real mob = 0.0;
-
     if(specid==E_ID)
     {
         mob=elecmob;
@@ -216,9 +229,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specDiff(const int specid, 
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void comp_ener_exch(amrex::Real qf, amrex::Real qr, 
-              const amrex::Real * sc, amrex::Real kf, int rxntype, amrex::Real eexci, 
-              int elidx, amrex::Real * enerExch, amrex::Real Ue, 
-              amrex::Real T, const amrex::Real Te)
+                                                             const amrex::Real * sc, amrex::Real kf, int rxntype, amrex::Real eexci, 
+                                                             int elidx, amrex::Real * enerExch, amrex::Real Ue, 
+                                                             amrex::Real T, const amrex::Real Te)
 {
     // (0)='no electron'
     // (1)='excitation/de-excitation'
@@ -280,6 +293,21 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
     amrex::Real TeCache1[4]={std::log(Te_eV), 1.0/Te_eV, 1.0/(Te_eV*Te_eV), 1.0/(Te_eV*Te_eV*Te_eV)};
     amrex::Real TeCache2[6]={1.0/Te, 1.0/(Te*Te), 1.0/(Te*Te*Te), 
         1.0/(Te*Te*Te*Te), 1.0/(Te*Te*Te*Te*Te), 1.0/(Te*Te*Te*Te*Te*Te)};
+    
+    // NOTE: units of JANEV fits for electron impact rxns are cm3/s and must be convered to m3/mol-s
+    // Precalculating values
+    double Janev_sum;
+    double invTe =  (Te == 0) ? 1.0 : 1.0/Te;
+    double TeeV = Te / 11595.0;
+    double logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
+    double invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
+    double Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
+        amrex::Math::powi<4>(logTe), amrex::Math::powi<5>(logTe), amrex::Math::powi<6>(logTe), amrex::Math::powi<7>(logTe), 
+        amrex::Math::powi<8>(logTe)};
+    double invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
+
+    std::vector<double> Jfit_coefs = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::vector<double> Ffit_coefs = {0.0, 0.0, 0.0, 0.0};
 
     //reaction rates taken from
     //1) Levko and Raja, Self-pulsing of direct-current discharge 
@@ -293,12 +321,20 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
     //impurities on atmospheric-pressure surface streamer 
     //discharge in argon for large gap arc breakdown, Phys. Plasmas 
     //23, 103501 (2016)
+    //
+    //Also, it looks like the paper wrongly used Te instead of 
+    //mean energy (1.5*Te) for ionization and excitation
+    //The fits Dima had were off
+    //probably because the fit was done with BOLSIG data
+    //which gives rate constants as function of mean energy (1.5*Te) 
+    //rather than Te
 
 
     {
         // reaction 1:  AR + E => ARm + E
-        const amrex::Real k_f = std::exp(-37.44+1.407*TeCache1[0]+50.34*TeCache1[1]
-                                         -348.6*TeCache1[2]-230.5*TeCache1[3])*N_A;
+        amrex::Real meanE=1.5*Te_eV;
+        const amrex::Real k_f = std::exp(-37.44+1.407*std::log(meanE)+50.34/meanE
+                                         -348.6/(meanE*meanE)-230.5/(meanE*meanE*meanE))*N_A;
         //const amrex::Real k_f = 7074811070*std::pow(Te,0.046639)*std::exp(-1.3856e5/Te);
         const amrex::Real qf = k_f * (sc[AR_ID]*sc[E_ID]); //second order
         const amrex::Real qr = 0.0;
@@ -313,10 +349,30 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
 
     {
         // reaction 2:  AR + E => AR+ + 2E
-        const amrex::Real k_f = std::exp(14.37-8.641*TeCache1[0]-622.9*TeCache1[1]+
-                                         5341.0*TeCache1[2]
-                                         - 0.1862e5*TeCache1[3])*N_A;
+        amrex::Real k_f;
+        amrex::Real meanE=1.5*Te_eV;
+        k_f = std::exp(14.37-8.641*std::log(meanE)-622.9/meanE+
+                                         5341.0/(meanE*meanE)
+                                         - 0.1862e5/(meanE*meanE*meanE))*N_A;
         //const amrex::Real k_f = 42581353.6*std::pow(Te,0.60983)*std::exp(-1.8712e5/Te);
+        /*amrex::Real Janev_sum=0.0;
+        if(TeeV < 8.0)
+        {
+            Jfit_coefs = {-1951.40116682516, 9125.28938191463, -19064.2751720459, 22763.7019090326, 
+                -16855.4371729404, 7904.47881474249, -2291.72587558317, 375.740475221758, -26.6926001068518};
+            double Jfit_A = 1.42900000000000e-14;
+            for(int j = 0; j<9; j++) Janev_sum += Jfit_coefs[j] * Te_pow[j];
+            k_f = Jfit_A * exp(Janev_sum) * 6.02214085774e23;
+        } 
+        else 
+        {
+            Ffit_coefs = {-77.9510931269820, 533.060249822779, -2091.33857389100, 1893.83145115372};
+            double Ffit_A = 1.13390537981533e-12;
+            for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
+            k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
+        }*/
+        //k_f=1.5e-14*std::exp(-5.0/Te_eV-100.0/(Te_eV*Te_eV)-325.0/(Te_eV*Te_eV*Te_eV))*std::pow(Te_eV,0.75)*N_A;
+        //k_f=1.2e-13*std::exp(-5.0/Te_eV-125.0/(Te_eV*Te_eV)-500.0/(Te_eV*Te_eV*Te_eV))*N_A;
         const amrex::Real qf = k_f * (sc[AR_ID]*sc[E_ID]); //second order
         const amrex::Real qr = 0.0;
         const amrex::Real qdot = qf - qr;
@@ -328,7 +384,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 3:  ARm + E => AR+ + E + E
         const amrex::Real k_f = std::exp(-5.5e28*TeCache2[5]
@@ -365,7 +421,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 5:  ARm + E => AR + E
         const amrex::Real k_f = std::exp((-4.82e4/Te)-32.46)*N_A;
@@ -379,7 +435,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 6:  AR2m + E => AR2+ + 2E
         const amrex::Real k_f = 1.29e-16*std::pow(Te,0.7)*std::exp(-0.42456e5/Te)*N_A;
@@ -394,7 +450,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 7:  AR2m + E => AR + AR + E
         const amrex::Real k_f = 1e-13*N_A;
@@ -408,7 +464,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 8:  ARm + 2Ar => AR2m + Ar
         const amrex::Real k_f = 1.14e-44*N_A*N_A;
@@ -423,7 +479,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 9:  AR+ + 2Ar => AR2+ + Ar
         const amrex::Real k_f = 2.5e-43*N_A*N_A;
@@ -438,7 +494,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 10:  AR2m => 2Ar
         const amrex::Real k_f = 6e7;
@@ -452,7 +508,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 11:  2Ar2m => AR2+ + 2Ar + E
         const amrex::Real k_f = 5e-16*N_A;
@@ -468,7 +524,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 12:  AR+ + e => ARm
         const amrex::Real k_f = 43e-18*std::pow(Te,-0.5)*N_A;
@@ -483,7 +539,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 13:  AR+ + 2e => ARm + e
         const amrex::Real k_f = 9.75e-21*std::pow(Te,-4.5)*N_A*N_A;
@@ -498,7 +554,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     {
         // reaction 14:  AR2+ + e => ARm + Ar
         const amrex::Real k_f = 25.9e-12*std::pow(Te,-0.66)*N_A;
@@ -514,7 +570,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         int elidx = 0;
         comp_ener_exch(qf, qr, sc, k_f, rxntype, eexci, elidx, enerExch, Ue, T, Te);
     }
-    
+
     // Calculate electron energy loss via elastic collisions
     amrex::Real emag = 0.0;
     amrex::Real ndens = 0.0;
