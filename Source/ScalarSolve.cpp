@@ -249,11 +249,11 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
         for (MFIter mfi(Sborder, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             const Box& bx = mfi.tilebox();
-            Box bx_x = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+            Box bx_x = mfi.nodaltilebox(0);
 #if AMREX_SPACEDIM > 1
-            Box bx_y = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+            Box bx_y = mfi.nodaltilebox(1);
 #if AMREX_SPACEDIM == 3
-            Box bx_z = convert(bx, {0, 0, 1});
+            Box bx_z = mfi.nodaltilebox(2);
 #endif
 #endif
 

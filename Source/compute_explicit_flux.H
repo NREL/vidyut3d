@@ -272,9 +272,11 @@ void compute_flux(
             //reduce to 1st order near IB
             amrex::Real phi_Lm1 = (mask_L1==1)?phi(left1,specid):phi(left,specid);
             amrex::Real phi_Rp1 = (mask_R1==1)?phi(right1,specid):phi(right,specid);
-            
-            amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
 
+            amrex::Real dxmin=dx[0];            
+#if AMREX_SPACEDIM > 1
+            amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
+#endif
             fx(face,fluxid)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
                                                      phi_R,phi_Rp1,dxmin,dt);
         }
