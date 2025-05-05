@@ -467,6 +467,8 @@ void Vidyut::Evolve()
         chktime += dt_common;
         Real run_time = amrex::second() - strt_time;
 
+        prev_voltage = curr_voltage;
+
         amrex::Print() << "Coarse STEP " << step + 1 << " ends."
         << " TIME = " << cur_time << " DT = " << dt_common << std::endl;
         amrex::Print()<<"Time step wall clock time:"<<run_time<<"\n";

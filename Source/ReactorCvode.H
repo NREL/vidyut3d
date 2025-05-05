@@ -149,8 +149,8 @@ private:
   ) const;
   static void freeUserData(CVODEUserData* data_wk);
 
-  amrex::Real relTol{1e-6};
-  amrex::Real absTol{1e-10};
+  amrex::Real relTol{1e-5};
+  amrex::Real absTol{1e4};
   utils::FlattenOps<Ordering> flatten_ops;
   int m_reactor_type{0};
 #if defined(AMREX_USE_HIP)

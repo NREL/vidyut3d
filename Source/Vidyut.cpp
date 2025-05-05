@@ -309,7 +309,7 @@ void Vidyut::ReadParameters()
             pp.query("advective_cfl", advective_cfl);
             pp.query("diffusive_cfl", diffusive_cfl);
             pp.query("dielectric_cfl", dielectric_cfl);
-            pp.query("dt_min", dt_min);
+            pp.query("dt_pulse", dt_pulse);
             pp.query("dt_max", dt_max);
             pp.query("adaptive_dt_delay", adaptive_dt_delay);
             pp.query("dt_stretch", dt_stretch);
@@ -371,15 +371,32 @@ void Vidyut::ReadParameters()
         }
 
         // Voltage options
-        pp.query("voltage_profile", voltage_profile);
-        pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
-        pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
-        if(voltage_profile == 1){
-            pp.get("voltage_freq", voltage_freq);
-        } else if (voltage_profile == 2) {
-            pp.get("voltage_dur", voltage_dur);
-            pp.get("voltage_center", voltage_center);
-        } 
+        pp.query("experimental_voltage", experimental_voltage);
+        if(experimental_voltage == 0){
+            pp.query("voltage_profile", voltage_profile);
+            pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
+            pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
+            if(voltage_profile >= 1){
+                pp.get("pulse_freq", pulse_freq);
+            } 
+            if (voltage_profile >= 2) {
+                pp.get("voltage_dur", voltage_dur);
+                pp.get("voltage_center", voltage_center);
+                pp.get("num_pulse", num_pulse);
+            } 
+        } else {
+            pp.get("num_pulse", num_pulse);
+            pp.get("pulse_freq", pulse_freq);
+            pp.get("exp_volt_name", exp_volt_name);
+            pp.get("exp_volt_dir", exp_volt_dir);
+            pp.get("diel_thickness", diel_thickness);
+            pp.get("eps_r", eps_r);
+            if(exp_volt_name == "yang_2022"){
+                voltage_dur = 25.0e-9;
+            } else {
+                amrex::Abort("A valid experimental voltage profile must be specified!\n");
+            }
+        }
 
         pp.query("monitor_file_int", monitor_file_int);
         pp.query("num_timestep_correctors",num_timestep_correctors);

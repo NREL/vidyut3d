@@ -52,9 +52,12 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real captured_gaspres=gas_pressure;
     int userdefpot = user_defined_potential;
     int vprof = voltage_profile;
-    amrex::Real vfreq = voltage_freq;
+    amrex::Real pfreq = pulse_freq;
     amrex::Real vdur = voltage_dur;
     amrex::Real vcen = voltage_center;
+    int np = num_pulse;
+    int eidx = E_IDX;
+    amrex::Real ele_charge=plasmachem::get_charge(eidx)*ECHARGE;
 
 #ifdef AMREX_USE_HYPRE
     if(use_hypre)
@@ -256,7 +259,27 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = -1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
+                        amrex::Real app_voltage = 0.0;
+                        if(!experimental_voltage){
+                            app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], pfreq, vdur, vcen, np);
+                        } else if (experimental_voltage && idim == exp_volt_dir) {
+                            amrex::Real L_gap = (prob_hi[idim] - prob_lo[idim]) - 2.0*diel_thickness;
+
+                            // Approximate current density using (cell-centered) electron current density
+                            // NOTE: this functionality should only be used for 0D simulations, so dne/dx term is omitted
+                            // and efield is assumed to only have nonzero magnitude in exp_volt_dir direction
+                            amrex::Real etemp = phi_arr(i,j,k,ETEMP_ID);
+                            amrex::Real ne = phi_arr(i,j,k,eidx);
+                            amrex::Real ndens = 0.0;
+                            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi_arr(i,j,k,sp);
+                            amrex::Real efield_mag = pow(phi_arr(i,j,k,EFX_ID+exp_volt_dir) * phi_arr(i,j,k,EFX_ID+exp_volt_dir), 0.5);
+
+                            amrex::Real mu = specMob(eidx, etemp, ndens, efield_mag,captured_gastemp);
+                            amrex::Real curr_dens = ele_charge*(mu*ne*phi_arr(i,j,k,EFX_ID+idim));
+
+                            app_voltage = get_experimental_potential(time, dt[0], prev_voltage, exp_volt_name, diel_thickness, eps_r, L_gap, vdur, pfreq, np, curr_dens);
+                            curr_voltage = app_voltage;
+                        }
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, -1, 
                                                          phi_arr, bc_arr, robin_a_arr, 
@@ -278,7 +301,15 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryHi(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = 1;
-                        amrex::Real app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], vfreq, vdur, vcen);
+                        amrex::Real app_voltage = 0.0;
+                        if(!experimental_voltage){
+                            app_voltage = get_applied_potential(time, domend, vprof, amplo[idim], amphi[idim], pfreq, vdur, vcen, np);
+                        }
+                        // } else if (experimental_voltage && idim == exp_volt_dir) {
+                        //     amrex::Real L_gap = prob_hi[idim] - prob_lo[idim];
+                        //     app_voltage = get_experimental_potential(time, dt[0], prev_voltage, exp_volt_name, diel_thickness, eps_r, L_gap, vdur, pfreq, np);
+                        //     curr_voltage = app_voltage;
+                        // }
                         if(userdefpot == 1){
                             user_transport::potential_bc(i, j, k, idim, +1, 
                                                          phi_arr, bc_arr, robin_a_arr, 

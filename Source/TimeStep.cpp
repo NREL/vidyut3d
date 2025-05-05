@@ -18,12 +18,34 @@ void Vidyut::ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real d
     {
         amrex::Real old_dt = dt[0];
         amrex::Real trans_min_dt = std::numeric_limits<Real>::max();
+        amrex::Real diel_min_dt = std::numeric_limits<Real>::max();
         amrex::Real adp_dt = std::numeric_limits<Real>::max();
+
+        // If we are using triangular or gaussian pulses, drop the time step around pulses, try to increase to dt_max between pulses
+        if(voltage_profile >= 2 || experimental_voltage){
+            amrex::Real pulse_sigma = voltage_dur / (2.0 * sqrt(2.0*log(2.0))); 
+            amrex::Real dfact = 10.0;
+            amrex::Real sfact = 1.0;
+            amrex::Real pulse_dist=1.0e10;
+            amrex::Real pulse_timing_tmp = 0.0;
+            for(int i=0; i<num_pulse; i++){
+              pulse_timing_tmp = voltage_center + (i)*(1.0/pulse_freq);
+              pulse_dist = amrex::min<amrex::Real>(amrex::Math::abs(cur_time - pulse_timing_tmp), pulse_dist);
+            }
+            adp_dt = dt_pulse + (dt_max - dt_pulse) * 0.5 * (1.0 + tanh((pulse_dist - dfact*pulse_sigma) / (sfact*pulse_sigma)));
+        }
+
+        // Modify adp_dt if transport/dielectric dt constraints dominate
         if(do_transport) trans_min_dt = std::min(dt_edrift*advective_cfl, dt_ediff*diffusive_cfl);
-        adp_dt = std::min(trans_min_dt, dt_diel_relax*dielectric_cfl);
+        if(do_spacechrg) diel_min_dt = dt_diel_relax*dielectric_cfl;
+        adp_dt = std::min(adp_dt, std::min(trans_min_dt, diel_min_dt));
+
+        // Ceiling/floor dt based on user-specified values
         if(adp_dt > dt_max) adp_dt = dt_max;
-        if(adp_dt < dt_min) adp_dt = dt_min;
-        dt[0] = std::min(old_dt*dt_stretch, adp_dt);
+        if(adp_dt < dt_pulse) adp_dt = dt_pulse;
+
+        // Increase/decrease the time step size based on user-specified stretch rate
+        dt[0] = (adp_dt > old_dt) ? std::min(old_dt*dt_stretch, adp_dt):std::max(adp_dt, old_dt/dt_stretch);
     }
     else
     {

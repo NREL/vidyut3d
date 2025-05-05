@@ -73,17 +73,30 @@ amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
 
 AMREX_GPU_HOST_DEVICE 
 AMREX_FORCE_INLINE
-amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, Real v1, Real v2, Real vfreq, Real vdur, Real vcen)
+amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, Real v1, Real v2, Real vfreq, Real vdur, Real vcen, int np)
 {
     Real voltage;
     Real voltage_amp = (domain_end == -1) ? v1:v2;
     if(vprof == 1) {  // Sinusoidal pulse shape
         voltage = sin(2.0*PI*vfreq*current_time)*voltage_amp;
-    } else if (vprof == 2) {    // Single triangular pulse
-        if(current_time <= vcen) {
-            voltage = (vcen - current_time < vdur/2.0) ? (1.0 - (vcen - current_time)/(vdur/2.0))*voltage_amp:0.0;
-        } else {
-            voltage = (current_time - vcen < vdur/2.0) ? (1.0 - (current_time - vcen)/(vdur/2.0))*voltage_amp:0.0;
+    } else if (vprof == 2) {    // Triangular pulses
+        voltage = 0.0;
+        amrex::Real pulse_time_tmp;
+        for(int i=0; i<np; i++){
+            pulse_time_tmp = vcen + (i)*(1.0/vfreq);
+            if(current_time <= pulse_time_tmp) {
+                voltage += (pulse_time_tmp - current_time < vdur/2.0) ? (1.0 - (pulse_time_tmp - current_time)/(vdur/2.0))*voltage_amp:0.0;
+            } else {
+                voltage += (current_time - pulse_time_tmp < vdur/2.0) ? (1.0 - (current_time - pulse_time_tmp)/(vdur/2.0))*voltage_amp:0.0;
+            }
+        }
+    } else if (vprof == 3) {    // Gaussian profile pulses
+        voltage = 0.0;
+        amrex::Real pulse_time_tmp;
+        amrex::Real pulse_sigma = vdur / (2.0 * sqrt(2.0*log(2.0)));
+        for(int i=0; i<np; i++){
+            pulse_time_tmp = vcen + (i)*(1.0/vfreq);
+            voltage += voltage_amp * exp(-0.5 * pow( (current_time - pulse_time_tmp) / pulse_sigma, 2) );
         }
     } else {
         voltage = voltage_amp;
@@ -91,6 +104,46 @@ amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, 
 
     return voltage;
 }
+
+AMREX_GPU_HOST_DEVICE 
+AMREX_FORCE_INLINE
+amrex::Real get_experimental_potential(Real cur_time, Real dt, Real prev_voltage, std::string exp_volt_name, Real diel_thickness, Real eps_r, Real L_gap, Real vdur, Real pfreq, int np, Real curr_dens)
+{
+  
+  amrex::Real voltage = 0.0;
+
+  // First, figure out if we are in the middle of a pulse
+  bool in_pulse = false;
+  amrex::Real pulse_gap = 1.0 / pfreq;
+  amrex::Real time_tmp = fmod(cur_time, pulse_gap);
+  amrex::Real final_time = (np-1)*pulse_gap + vdur;
+  if(time_tmp < vdur && cur_time <= final_time) in_pulse = true;
+
+  // Exit if we are between pulses
+  if(!in_pulse || time_tmp == 0.0) return voltage;
+
+  // Find where to index into the voltage array 
+  int ind_lo = 0;
+  int ind_hi = 0;
+  if(exp_volt_name == "yang_2022"){
+    while(voltages::yang_2022[ind_hi][0] <= time_tmp){
+        ind_hi++;
+    } 
+    ind_lo = ind_hi - 1;
+
+    // Calculate first-order dU_app/dt
+    amrex::Real dUappdt = (voltages::yang_2022[ind_hi][1] - voltages::yang_2022[ind_lo][1]) / (voltages::yang_2022[ind_hi][0] - voltages::yang_2022[ind_lo][0]);
+
+    // Calculate dUgap/dt
+    amrex::Real dUgapdt = 1.0/(1.0 + 2.0*diel_thickness / (eps_r*L_gap)) * (dUappdt - 2.0*diel_thickness/(eps_r*EPS0)*curr_dens);
+    voltage = prev_voltage + dt*(dUgapdt);
+    // voltage = prev_voltage + dt*(dUappdt);
+  }
+
+  return voltage;
+}
+
+
 AMREX_GPU_DEVICE
     AMREX_FORCE_INLINE
 amrex::Real minmod_limiter(amrex::Real left_difference,amrex::Real right_difference)

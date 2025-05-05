@@ -14,6 +14,7 @@
 #include <AMReX_AmrCore.H>
 #include <AMReX_BCRec.H>
 #include <ProbParm.H>
+#include <AppliedVoltages.H>
 
 #include <AMReX_MLABecLaplacian.H>
 #include <UnivConstants.H>
@@ -190,7 +191,7 @@ public:
 
     amrex::Real fixed_dt=1e-12;
     int adaptive_dt = 0;
-    amrex::Real dt_min=1e-14;
+    amrex::Real dt_pulse=1e-12;
     amrex::Real dt_max=1e-9;
     amrex::Real adaptive_dt_delay = 0.0;
     amrex::Real dt_stretch = std::numeric_limits<amrex::Real>::max();
@@ -237,12 +238,21 @@ public:
     int multicompsolves=0;
 
     // Voltage options
-    int voltage_profile=0;
-    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};
+    int voltage_profile=0;    // (0): const voltage, (1): sinusoidal, (2): traingular pulses, (3): gaussian pulses
+    int num_pulse = 1;        // Number of pulses (only for triangular and gaussian pulses)
+    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};   
     amrex::Vector<amrex::Real> voltage_amp_hi{0.0, 0.0, 0.0};
-    amrex::Real voltage_freq=1.0; 
-    amrex::Real voltage_dur=0.0; 
-    amrex::Real voltage_center=0.0; 
+    amrex::Real pulse_freq=1.0;     // Pulse frequency (Hz, only for sinusoidal, triangular and gaussian pulses)
+    amrex::Real voltage_dur=0.0;      // Total pulse duration (triangular pulse) or pulse full-width at half max (gaussian pulse)
+    amrex::Real voltage_center=0.0;   // Timing of the peak for the first pulse (triangular and gaussian profiles) 
+
+    int experimental_voltage = 0;      // Turn on if you wish to use one of the experimentally measured profiles in AppliedVoltages.H
+    std::string exp_volt_name = "";      // Name of the profile  
+    int exp_volt_dir = 0;             // Direction across which experimental voltage is applied (other directions have no applied potential)
+    amrex::Real diel_thickness = 0.0;   // dielectric thickness (used to modify the measured applied voltage)
+    amrex::Real eps_r = 1.0;          // relative dielectric constant
+    amrex::Real curr_voltage = 0.0;     // Track current voltage if needed for calculating temporal deriv.
+    amrex::Real prev_voltage = 0.0;     // Track previous voltage if needed for calculating temporal deriv.
 
     int cs_technique=0;
     int cs_ncharges=0;
