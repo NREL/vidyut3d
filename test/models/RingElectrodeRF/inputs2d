@@ -83,8 +83,8 @@ vidyut.elecenergy_solve=1
 vidyut.track_surf_charge=0
 
 # PROB SPECIFIC
-prob.pres=133.0
-prob.temp=300.0
+vidyut.gas_pressure=133.0
+vidyut.gas_temperature=300.0
 prob.y1=0.01
 prob.l1=0.005
 prob.y2=0.025

@@ -218,7 +218,7 @@ void compute_flux(
     const GpuArray<Real, AMREX_SPACEDIM>& dx,
     amrex::Real dt,
     ProbParm const& prob_parm,int hyp_order,
-    int user_defined_vel,int weno_scheme)
+    int user_defined_vel,int weno_scheme,int using_ib)
 {
 
     //|--left1--|--left--|--right--|--right1--|
@@ -235,85 +235,112 @@ void compute_flux(
     Real vel_L;
     Real vel_R;
 
-    if(user_defined_vel == 1){
-        vel_L = user_transport::compute_vel(left,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-        vel_R = user_transport::compute_vel(right,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-    } else {
-        vel_L = plasmachem_transport::compute_vel(left,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-        vel_R = plasmachem_transport::compute_vel(right,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-    }
+    int mask_L=(using_ib==1)?int(phi(left,CMASK_ID)):1;
+    int mask_R=(using_ib==1)?int(phi(right,CMASK_ID)):1;
 
-    if(hyp_order==1)
+    int valid_left_and_right_cells=mask_L*mask_R;
+
+    //default value if face involves covered cells
+    fx(face,fluxid)=0.0;
+
+    if(valid_left_and_right_cells)
     {
-        fx(face,fluxid)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
-    }
-    else if(hyp_order==2)
-    {
-        IntVect left1{AMREX_D_DECL(i,j,k)};
-        IntVect right1{AMREX_D_DECL(i,j,k)};
-        left1[sweepdir] -= 2;
-        right1[sweepdir] += 1;
-        amrex::Real phi_Lm1 = phi(left1, specid);
-        amrex::Real phi_Rp1 = phi(right1, specid);
-        amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
-
-        fx(face,fluxid)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
-                                          phi_R,phi_Rp1,dxmin,dt);
-    }
-    else if(hyp_order==5)
-    {
-        IntVect left1{AMREX_D_DECL(i,j,k)};
-        IntVect right1{AMREX_D_DECL(i,j,k)};
-        IntVect left2{AMREX_D_DECL(i,j,k)};
-        IntVect right2{AMREX_D_DECL(i,j,k)};
-        left1[sweepdir] -= 2;
-        right1[sweepdir] += 1;
-        left2[sweepdir] -= 3;
-        right2[sweepdir] += 2;
-
-        amrex::Real vel_Lm1, vel_Lm2, vel_Rp1, vel_Rp2;
-
-        if(user_defined_vel == 1){
-            vel_Lm1 = user_transport::compute_vel(left1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Lm2 = user_transport::compute_vel(left2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Rp1 = user_transport::compute_vel(right1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Rp2 = user_transport::compute_vel(right2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-        } else {
-            vel_Lm1 = plasmachem_transport::compute_vel(left1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Lm2 = plasmachem_transport::compute_vel(left2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Rp1 = plasmachem_transport::compute_vel(right1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
-            vel_Rp2 = plasmachem_transport::compute_vel(right2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
+        if(user_defined_vel == 1)
+        {
+            vel_L = user_transport::compute_vel(left,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
+            vel_R = user_transport::compute_vel(right,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
+        } 
+        else 
+        {
+            vel_L = plasmachem_transport::compute_vel(left,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
+            vel_R = plasmachem_transport::compute_vel(right,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg);
         }
+        if(hyp_order==1)
+        {
+            fx(face,fluxid)=get_firstorder_upwind_flux(vel_L,vel_R,phi_L,phi_R);
+        }
+        else if(hyp_order==2)
+        {
+            IntVect left1{AMREX_D_DECL(i,j,k)};
+            IntVect right1{AMREX_D_DECL(i,j,k)};
+            left1[sweepdir] -= 2;
+            right1[sweepdir] += 1;
 
-        amrex::Real ulm2=phi(left2,specid);
-        amrex::Real ulm1=phi(left1,specid);
-        amrex::Real ul=phi(left,specid);
-        amrex::Real ur=phi(right,specid);
-        amrex::Real urp1=phi(right1,specid);
-        amrex::Real urp2=phi(right2,specid);
+            int mask_L1=(using_ib==1)?int(phi(left1,CMASK_ID)):1;
+            int mask_R1=(using_ib==1)?int(phi(right1,CMASK_ID)):1;
 
-        amrex::Real flm2=ulm2*vel_Lm2;
-        amrex::Real flm1=ulm1*vel_Lm1;
-        amrex::Real fl=ul*vel_L;
-        amrex::Real fr=ur*vel_R;
-        amrex::Real frp1=urp1*vel_Rp1;
-        amrex::Real frp2=urp2*vel_Rp2;
+            //reduce to 1st order near IB
+            amrex::Real phi_Lm1 = (mask_L1==1)?phi(left1,specid):phi(left,specid);
+            amrex::Real phi_Rp1 = (mask_R1==1)?phi(right1,specid):phi(right,specid);
+            
+            amrex::Real dxmin=amrex::min(AMREX_D_DECL(dx[0],dx[1],dx[2]));
 
-        amrex::Real fmhalf=0.0;
-        amrex::Real fphalf=0.0;
-        amrex::Real umhalf=0.0;
-        amrex::Real uphalf=0.0;
-        amrex::Real lambda_max=amrex::Math::abs(0.5*(vel_L+vel_R));
+            fx(face,fluxid)=get_secondorder_WAF_flux(vel_L,vel_R,phi_Lm1,phi_L,
+                                                     phi_R,phi_Rp1,dxmin,dt);
+        }
+        else if(hyp_order==5)
+        {
+            IntVect left1{AMREX_D_DECL(i,j,k)};
+            IntVect right1{AMREX_D_DECL(i,j,k)};
+            IntVect left2{AMREX_D_DECL(i,j,k)};
+            IntVect right2{AMREX_D_DECL(i,j,k)};
+            left1[sweepdir] -= 2;
+            right1[sweepdir] += 1;
+            left2[sweepdir] -= 3;
+            right2[sweepdir] += 2;
+            
+            int mask_L1=(using_ib==1)?int(phi(left1,CMASK_ID)):1;
+            int mask_L2=(using_ib==1)?int(phi(left2,CMASK_ID)):1;
 
-        weno_reconstruct(flm2,flm1,fl,fr,frp1,frp2,fmhalf,fphalf,weno_scheme);
-        weno_reconstruct(ulm2,ulm1,ul,ur,urp1,urp2,umhalf,uphalf,weno_scheme);
+            int mask_R1=(using_ib==1)?int(phi(right1,CMASK_ID)):1;
+            int mask_R2=(using_ib==1)?int(phi(right2,CMASK_ID)):1;
 
-        fx(face,fluxid)=0.5*(fphalf+lambda_max*uphalf) +
-        0.5*(fmhalf-lambda_max*umhalf);
-    }
-    else
-    {
-        amrex::Abort("hyp_order not implemented yet\n");
+            amrex::Real vel_Lm1, vel_Lm2, vel_Rp1, vel_Rp2;
+
+            if(user_defined_vel == 1)
+            {
+                vel_Lm1 = (mask_L1==1)?user_transport::compute_vel(left1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_L;
+                vel_Lm2 = (mask_L2==1)?user_transport::compute_vel(left2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_L;
+                vel_Rp1 = (mask_R1==1)?user_transport::compute_vel(right1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_R;
+                vel_Rp2 = (mask_R2==1)?user_transport::compute_vel(right2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_R;
+            } else 
+            {
+                vel_Lm1 = (mask_L1==1)?plasmachem_transport::compute_vel(left1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_L;
+                vel_Lm2 = (mask_L2==1)?plasmachem_transport::compute_vel(left2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_L;
+                vel_Rp1 = (mask_R1==1)?plasmachem_transport::compute_vel(right1,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_R;
+                vel_Rp2 = (mask_R2==1)?plasmachem_transport::compute_vel(right2,sweepdir,specid,phi,dx,time,prob_parm,Tg,Pg):vel_R;
+            }
+
+            amrex::Real ulm2=(mask_L2==1)?phi(left2,specid):phi(left,specid);
+            amrex::Real ulm1=(mask_L1==1)?phi(left1,specid):phi(left,specid);
+            amrex::Real ul=phi(left,specid);
+            amrex::Real ur=phi(right,specid);
+            amrex::Real urp1=(mask_R1==1)?phi(right1,specid):phi(right,specid);
+            amrex::Real urp2=(mask_R2==1)?phi(right2,specid):phi(right,specid);
+
+            amrex::Real flm2=ulm2*vel_Lm2;
+            amrex::Real flm1=ulm1*vel_Lm1;
+            amrex::Real fl=ul*vel_L;
+            amrex::Real fr=ur*vel_R;
+            amrex::Real frp1=urp1*vel_Rp1;
+            amrex::Real frp2=urp2*vel_Rp2;
+
+            amrex::Real fmhalf=0.0;
+            amrex::Real fphalf=0.0;
+            amrex::Real umhalf=0.0;
+            amrex::Real uphalf=0.0;
+            amrex::Real lambda_max=amrex::Math::abs(0.5*(vel_L+vel_R));
+
+            weno_reconstruct(flm2,flm1,fl,fr,frp1,frp2,fmhalf,fphalf,weno_scheme);
+            weno_reconstruct(ulm2,ulm1,ul,ur,urp1,urp2,umhalf,uphalf,weno_scheme);
+
+            fx(face,fluxid)=0.5*(fphalf+lambda_max*uphalf) +
+            0.5*(fmhalf-lambda_max*umhalf);
+        }
+        else
+        {
+            amrex::Abort("hyp_order not implemented yet\n");
+        }
     }
 
     if(face[sweepdir]==domlo[sweepdir])

@@ -54,6 +54,12 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 IntVect iv(AMREX_D_DECL(i,j,k));
                 Real lenx=prob_hi[prob_parm->axdir]-prob_lo[prob_parm->axdir];
                 
+                for(int c=0;c<NVAR;c++)
+                {
+                   phi(i,j,k,c)=0.0;
+                }
+                phi(i,j,k,CMASK_ID)=1.0;
+                
                 Real x = prob_lo[prob_parm->axdir] 
                 + (0.5+iv[prob_parm->axdir]) * dx[prob_parm->axdir];
 
@@ -61,11 +67,6 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 phi(i,j,k,E_ID)    = prob_parm->n0*(1+sin(PI*x/lenx));
                 phi(i,j,k,HE_ID)   = 1.0; 
                 phi(i,j,k,HEp_ID)  = prob_parm->n0*(1+sin(PI*x/lenx));
-                
-                phi(i,j,k,POT_ID) = 0.0;
-                phi(i,j,k,EFX_ID) = 0.0;
-                phi(i,j,k,EFY_ID) = 0.0;
-                phi(i,j,k,EFZ_ID) = 0.0;
                 phi(i,j,k,EEN_ID) = prob_parm->n0*(1+sin(PI*x/lenx));
                 phi(i,j,k,ETEMP_ID) = 0.666;
             }

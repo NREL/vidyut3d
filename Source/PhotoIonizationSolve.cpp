@@ -35,9 +35,6 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     info.setAgglomeration(true);
     info.setConsolidation(true);
     info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info)); 
 
     //==================================================
     // amrex solves
@@ -162,19 +159,41 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     Vector<MultiFab> robin_a(finest_level+1);
     Vector<MultiFab> robin_b(finest_level+1);
     Vector<MultiFab> robin_f(finest_level+1);
+    Vector<iMultiFab> solvemask(finest_level+1);
 
     const int num_grow = 1;
 
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         photoionization_src[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
-        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, 0);
-        solution[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        rhs[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        acoeff[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        solution[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        rhs[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
 
-        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, 1);
-        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        robin_a[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_b[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        robin_f[ilev].define(grids[ilev], dmap[ilev], 1, num_grow);
+        
+        if(using_ib)
+        {
+            solvemask[ilev].define(grids[ilev],dmap[ilev], 1, 0);
+            solvemask[ilev].setVal(1);
+        }
+    }
+
+    if(using_ib)
+    {
+        set_solver_mask(solvemask,Sborder);
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), 
+                                               GetVecOfConstPtrs(solvemask),info)); 
+    }
+    else
+    {
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level),info)); 
     }
 
     linsolve_ptr->setMaxOrder(2);
@@ -331,6 +350,13 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 }
             }
         }
+        
+        if(using_ib)
+        {
+            null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
+            set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],Sborder[ilev],
+                                      current_time,PHOTO_ION_SRC_ID,0);
+        }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
 
@@ -376,6 +402,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     acoeff.clear();
     solution.clear();
     rhs.clear();
+    solvemask.clear();
 
     robin_a.clear();
     robin_b.clear();

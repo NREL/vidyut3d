@@ -10,6 +10,102 @@
 using namespace amrex;
 namespace user_transport
 {
+    AMREX_GPU_DEVICE AMREX_INLINE
+    void bc_ib(IntVect face,
+               int dir, int sgn,
+               int solved_comp,
+               int rhs_comp,
+               Array4<Real> const& sb_arr,
+               Array4<Real> const& acoeff,
+               Array4<Real> const& rhs,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+               GpuArray<Real, AMREX_SPACEDIM> dx,
+               const Real time,
+               ProbParm const& prob_parm,
+               Real Tg, Real Pg)
+    {
+        IntVect lcell=face;
+        IntVect rcell=face;
+        lcell[dir]-=1;
+        amrex::Real xloc;
+        xloc=prob_lo[prob_parm.axdir]+face[prob_parm.axdir]*dx[prob_parm.axdir];
+        
+        //interior cell
+        IntVect intcell=(sgn==1)?lcell:rcell;
+        
+        amrex::Real outward_normal[AMREX_SPACEDIM]={0.0};
+        outward_normal[dir]=sgn;
+        amrex::Real dx2=dx[dir]*dx[dir];
+
+
+        if(solved_comp==POT_ID)
+        {
+            //We are solving del^2 (phi)=source
+            //in vidyut
+            //so del(phi)|i+1/2 - del(phi)|i-1/2 = source
+            
+            //for both left or right being the interior cell 
+            //Dirichlet condition works out to the same sign
+            amrex::Real phi_dirc=0.0;
+            acoeff(intcell)-= 1.0/(0.5*dx2);
+            rhs(intcell,rhs_comp)   -= phi_dirc/(0.5*dx2);
+        }
+        else if(solved_comp==E_ID || solved_comp==HEp_ID || 
+                solved_comp==EEN_ID)
+        {
+            amrex::Real dircval_left=prob_parm.n0;
+            amrex::Real alpha=ECHARGE/EPS0;
+            amrex::Real dircval_right=1.0/alpha+prob_parm.n0;
+            int left_side=(xloc<0.5)?1:0;
+            if(solved_comp==HEp_ID)
+            {
+                dircval_right=1.0/(2.0*alpha)+prob_parm.n0;
+            }
+            
+            amrex::Real ndens = 0.0;
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += sb_arr(intcell,sp);
+            
+            amrex::Real emag=std::sqrt(amrex::Math::powi<2>(sb_arr(intcell,EFX_ID))+
+                    amrex::Math::powi<2>(sb_arr(intcell,EFY_ID))+
+                    amrex::Math::powi<2>(sb_arr(intcell,EFZ_ID)));
+        
+            amrex::Real Dcoeff=specDiff(solved_comp,sb_arr(intcell,ETEMP_ID),
+                    ndens, emag, Tg);
+
+            amrex::Real mu = specMob(solved_comp,sb_arr(intcell,ETEMP_ID), ndens,
+                                           emag,
+                                           Tg);
+            amrex::Real vel=mu*sb_arr(intcell,EFX_ID+dir);
+            
+            acoeff(intcell) += Dcoeff/(0.5*dx2);
+
+            amrex::Real dircval=(left_side)?dircval_left:dircval_right;
+
+            rhs(intcell,rhs_comp)   += Dcoeff*dircval/(0.5*dx2);
+            
+            if(sgn==1) //left cell is internal
+            {
+                amrex::Real upwindval=(vel>0.0)?sb_arr(intcell,solved_comp):dircval;
+                rhs(intcell,rhs_comp) -= upwindval*vel/dx[dir];
+            }
+            else //right cell is internal
+            {
+                amrex::Real upwindval=(vel>0.0)?dircval:sb_arr(intcell,solved_comp);
+                rhs(intcell,rhs_comp) += upwindval*vel/dx[dir];
+            }
+        }
+        else if(solved_comp==HE_ID)
+        {
+            //Homogenous Neumann
+        }
+        else
+        {
+        
+        }
+    }
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
     int is_dielectric(int i, int j, int k, int dir, int sign, 

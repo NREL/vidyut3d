@@ -1,0 +1,119 @@
+max_step  = 20000000
+stop_time = 1e-4
+
+# PROBLEM SIZE & GEOMETRY
+geometry.is_periodic =  0  0  0
+geometry.coord_sys   =  0       # 0 => cart
+geometry.prob_lo     =  -0.1 -0.1     0.0 
+geometry.prob_hi     =   0.1  0.1     0.1
+amr.n_cell           =   128 128 64
+
+#use 4 cells minimum for hyp_order 5
+#other wise we wont have enough ghost cells 
+#and will result nan flux
+#geometry.prob_hi     =  0.02  0.0003125 0.0003125
+#amr.n_cell           =   128  4  4
+
+# VERBOSITY
+amr.v              = 1       # verbosity in Amr
+
+# REFINEMENT
+amr.max_level       = 1       # maximum level number allowed
+amr.blocking_factor = 8       # block factor in grid generation
+amr.max_grid_size   = 4096
+
+amr.regrid_int      = 5       # how often to regrid
+
+# TIME STEP CONTROL
+vidyut.dt             = 1e-11
+vidyut.adaptive_dt    = 0
+vidyut.advective_cfl  = 0.3
+vidyut.diffusive_cfl  = 10.0
+vidyut.dielectric_cfl = 10.0
+vidyut.num_timestep_correctors = 1
+vidyut.hyp_order = 5
+
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
+
+# Tagging
+vidyut.tagged_vars = Electron_Temp Potential
+vidyut.Potential_refine = 1e20
+vidyut.Potential_refinegrad = 20.0
+vidyut.Electron_Temp_refine = 6e4
+vidyut.Electron_Temp_refinegrad = 1e20
+
+
+#0 - periodic
+#1 - Dirichlet
+#2 - Homogenous Neumann
+#3 - Inhomogenous Neumann
+#4 - Robin
+#5 - axis
+
+vidyut.pot_bc_lo = 2 2 4
+vidyut.pot_bc_hi = 2 2 4
+
+vidyut.eden_bc_lo = 2 2 3
+vidyut.eden_bc_hi = 2 2 3 
+
+vidyut.eenrg_bc_lo = 2 2 3
+vidyut.eenrg_bc_hi = 2 2 3
+
+vidyut.ion_bc_lo = 2 2 3
+vidyut.ion_bc_hi = 2 2 3
+
+vidyut.neutral_bc_lo = 2 2 3
+vidyut.neutral_bc_hi = 2 2 3
+
+# PLOTFILES
+amr.plot_file  = plt    # root name of plot file
+amr.plot_int   = 3500   # number of timesteps between plot files
+
+# CHECKPOINT
+amr.chk_file = chk      # root name of checkpoint file
+amr.chk_int  = 7000       # number of timesteps between checkpoint files
+
+vidyut.bound_specden=1
+vidyut.min_species_density=1e10
+#vidyut.min_electron_density=1e8
+vidyut.linsolve_maxiter=1000
+#vidyut.linsolve_reltol=1e-9
+vidyut.bg_species_ids=1
+vidyut.elecenergy_solve=1
+vidyut.multicompsolves=1
+vidyut.linsolve_reltol=1e-11
+vidyut.linsolve_abstol=1e-11
+
+
+# PROB SPECIFIC
+vidyut.gas_pressure=13.3
+vidyut.gas_temperature=300.0
+prob.v1=81.0
+prob.v2=81.0
+prob.ph1=0.0
+prob.ph2=0.0
+prob.ionden_init=1e14
+prob.gama_trode1=0.01
+prob.gama_trode2=0.01
+prob.gama_subs=0.01
+
+#prob.trode1_minx=-0.03
+#prob.trode1_miny=0.01
+#prob.trode1_maxx=0.03
+#prob.trode1_maxy=0.07
+
+#prob.trode2_minx=-0.03
+#prob.trode2_miny=-0.07
+#prob.trode2_maxx=0.03
+#prob.trode2_maxy=-0.01
+
+#prob.subs_minx=-0.05
+#prob.subs_miny=-0.05
+#prob.subs_maxx=0.05
+#prob.subs_maxy=0.05
+#
+prob.circle_electrodes=1
+prob.trode1_cent=-0.03
+prob.trode2_cent=0.03

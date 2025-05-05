@@ -57,6 +57,8 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 {
                    phi(i,j,k,sp)=0.0;
                 }
+                phi(i,j,k,CMASK_ID)=1;
+                
                 phi(i,j,k,E_ID)  = 1e12;
                 phi(i,j,k,S1_ID)  = 1e12;
                 phi(i,j,k,S2_ID)  = 1e12;

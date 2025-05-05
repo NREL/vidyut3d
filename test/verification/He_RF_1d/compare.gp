@@ -1,6 +1,6 @@
 set terminal pngcairo dashed size 800,500
 #set terminal pdf
-set output "compare_eden.png"
+set output "compare_ionden.png"
 set termoption font "Helvetica,12"
 set key spacing 1.2
 set lmargin 9

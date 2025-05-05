@@ -198,8 +198,8 @@ public:
     amrex::Real min_electron_density=1e12;
     amrex::Real min_electron_temp=300.0;
 
-    amrex::Real gas_pressure=101325.0;
-    amrex::Real gas_temperature=300.0;
+    amrex::Real gas_pressure=P_NTP;
+    amrex::Real gas_temperature=T_NTP;
 
     amrex::Vector<std::string> plasma_param_names;
     amrex::Vector<std::string> allvarnames;
@@ -260,6 +260,27 @@ public:
     void update_surf_charge(Vector<MultiFab>& Sborder,
                             Real current_time, Real dt);
 
+    //IB functions
+    void set_solver_mask(Vector<iMultiFab>& solvermask,
+        Vector<MultiFab>& Sborder);
+
+    void set_explicit_fluxes_at_ib(int lev,MultiFab& rhs,
+        MultiFab& acoeff,
+        MultiFab& Sborder,
+        Real time,
+        int compid,
+        int rhscompid);
+
+    void null_bcoeff_at_ib(int lev,Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
+                                                MultiFab& Sborder,
+                                                int numcomps);
+
+    void correct_efields_ib(Vector<MultiFab>& Sborder,
+        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time);
+
+    void null_field_in_covered_cells(Vector<MultiFab>& fld,
+        Vector<MultiFab>& Sborder,int startcomp,int numcomp);
+
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)
@@ -286,8 +307,11 @@ public:
     int E_IDX = 0;
     int efield_limiter=0;
 
+    int using_ib=0;
+
     // Monitor file options
     int monitor_file_int = -1;
+
 
 private:
     ////////////////

@@ -65,6 +65,12 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real dist2 = amrex::Math::powi<2>(x-prob_parm->loc_x)
                       + amrex::Math::powi<2>(y-prob_parm->loc_y);
                 
+                for(int c=0;c<NVAR;c++)
+                {
+                   phi(i,j,k,c)=0.0;
+                }
+                phi(i,j,k,CMASK_ID)=1.0;
+                
                 if(!prob_parm->twod)
                 {
                     dist2 += amrex::Math::powi<2>(z-prob_parm->loc_z);
@@ -78,10 +84,6 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 phi(i,j,k,E_ID)  = prob_parm->bg/prob_parm->ns;
                 phi(i,j,k,ETEMP_ID) = 0.5*eV;
                 phi(i,j,k,EEN_ID) = 1.5*phi(i,j,k,E_ID)*K_B*phi(i,j,k,ETEMP_ID);
-                phi(i,j,k,EFX_ID) = 0.0;
-                phi(i,j,k,EFY_ID) = 0.0;
-                phi(i,j,k,EFZ_ID) = 0.0;
-                phi(i,j,k,POT_ID) = 0.0;
             }
         }
     }

@@ -103,9 +103,9 @@ void Vidyut::Evolve()
         Vector<MultiFab> phi_tmp(finest_level+1);
         Vector<MultiFab> photoion_src(finest_level+1);
         // this is declared only to copy to phi, so that it can be used to post-process as a variable
-        Vector<MultiFab> photoion_src_total(finest_level+1); 
+        Vector<MultiFab> photoion_src_total(finest_level+1);
 
-        // edge centered efield
+        // face centered efield
         Vector< Array<MultiFab,AMREX_SPACEDIM> > efield_fc(finest_level+1);
 
         //copy new to old and update time
@@ -158,8 +158,9 @@ void Vidyut::Evolve()
 
             photoion_src_total[lev].define(grids[lev], dmap[lev], 1, num_grow);
             photoion_src_total[lev].setVal(0.0);
-        }
 
+        }
+        
         for(int niter=0;niter<num_timestep_correctors;niter++)
         {
             //for second order accuracy in mid-point method
@@ -207,6 +208,19 @@ void Vidyut::Evolve()
             if(cs_technique)
             {
                 update_cc_efields(Sborder);
+                //fillpatching here to get the latest efields 
+                //in sborder so that it can be used in drift vel calcs
+                //may be there is a clever way to improve performance 
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
+            }
+
+            if(using_ib)
+            {
+                correct_efields_ib(Sborder,efield_fc,cur_time);
                 //fillpatching here to get the latest efields 
                 //in sborder so that it can be used in drift vel calcs
                 //may be there is a clever way to improve performance 
@@ -276,7 +290,7 @@ void Vidyut::Evolve()
             //electron density solve
             update_explsrc_at_all_levels(E_IDX, 1, Sborder, rxn_src, expl_src, 
                                          eden_bc_lo, eden_bc_hi, cur_time+time_offset);
-
+            
             implicit_solve_scalar(cur_time+time_offset,dt_common,E_IDX, 1,Sborder,
                                   Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, 
                                   gradne_fc);
@@ -298,7 +312,7 @@ void Vidyut::Evolve()
                                               expl_src[lev], 
                                               cur_time+time_offset, dt_common,floor_jh);
                 }
-
+            
                 implicit_solve_scalar(cur_time+time_offset,dt_common,EEN_ID, 1, 
                                       Sborder,Sborder_old, 
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);

@@ -27,13 +27,15 @@ high_end[axialdir]=prob_hi[axialdir]-0.5*dx_frb[axialdir]
 
 lb = yt.LineBuffer(ds, tuple(low_end), \
         tuple(high_end), res[axialdir])
-
-pot_1d=lb["Potential"].value
-s1_1d=lb["E"].value
-s2_1d=lb["HEp"].value
-s3_1d=lb["Electron_energy"].value
-x=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
+xarr=np.linspace(prob_lo[axialdir]+0.5*dx_frb[axialdir],\
         prob_hi[axialdir]-0.5*dx_frb[axialdir],res[axialdir])
+
+xvalid=xarr*(xarr-1.0)
+x=xarr[xvalid<0.0]
+pot_1d=lb["Potential"].value[xvalid<0.0]
+s1_1d=lb["E"].value[xvalid<0.0]
+s2_1d=lb["HEp"].value[xvalid<0.0]
+s3_1d=lb["Electron_energy"].value[xvalid<0.0]
 exactsoln_s1=x**3/alpha+n0
 exactsoln_s2=x**3/(2.0*alpha)+n0
 exactsoln_s3=x**3/(alpha)+n0

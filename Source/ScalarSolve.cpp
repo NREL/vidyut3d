@@ -139,6 +139,11 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
                                       expl_src[lev], cur_time);   
         }
     }
+   
+    if(using_ib) 
+    {
+        null_field_in_covered_cells(expl_src,Sborder,startspec,numspec);
+    }
 }
 
 void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
@@ -194,6 +199,11 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
              captured_gaspres);
         });
     }
+    
+    if(using_ib) 
+    {
+        null_field_in_covered_cells(rxn_src,Sborder,0,NUM_SPECIES+1);
+    }
 }
 
 void Vidyut::compute_scalar_transport_flux(int startspec, int numspec, 
@@ -219,6 +229,7 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
 
     int captured_startspec=startspec;
     int captured_numspec=numspec;
+    int captured_using_ib=using_ib;
 
     // Get the boundary ids
     const int* domlo_arr = geom[lev].Domain().loVect();
@@ -264,7 +275,7 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
                                  bclo, bchi, domlo, domhi, flux_arr[0], 
                                  captured_gastemp,captured_gaspres,
                                  time, dx, lev_dt, *localprobparm, captured_hyporder,
-                                 userdefvel,captured_wenoscheme); 
+                                 userdefvel,captured_wenoscheme,captured_using_ib); 
                 }
             });
 
@@ -277,7 +288,7 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
                                  bclo, bchi, domlo, domhi, flux_arr[1], 
                                  captured_gastemp,captured_gaspres,
                                  time, dx, lev_dt, *localprobparm, captured_hyporder,
-                                 userdefvel,captured_wenoscheme); 
+                                 userdefvel,captured_wenoscheme,captured_using_ib); 
                 }
             });
 
@@ -290,7 +301,7 @@ void Vidyut::compute_scalar_transport_flux(int startspec, int numspec,
                                  bclo, bchi, domlo, domhi, flux_arr[2], 
                                  captured_gastemp, captured_gaspres,
                                  time, dx, lev_dt, *localprobparm, captured_hyporder,
-                                 userdefvel,captured_wenoscheme);
+                                 userdefvel,captured_wenoscheme,captured_using_ib);
                 }
             });
 #endif
@@ -396,10 +407,6 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     info.setAgglomeration(true);
     info.setConsolidation(true);
     info.setMaxCoarseningLevel(max_coarsening_level);
-    linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
-                                           boxArray(0,finest_level), 
-                                           DistributionMap(0,finest_level), info, 
-                                           {}, numspec));
 
 #ifdef AMREX_USE_HYPRE
     if(use_hypre)
@@ -482,6 +489,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     Vector<MultiFab> robin_a(finest_level+1);
     Vector<MultiFab> robin_b(finest_level+1);
     Vector<MultiFab> robin_f(finest_level+1);
+    Vector<iMultiFab> solvemask(finest_level+1);
 
     const int num_grow = 1;
 
@@ -495,13 +503,36 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
 
         bcoeff[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
         solution[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
-        rhs[ilev].define(grids[ilev], dmap[ilev], numspec, 0);
+        rhs[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
 
         //FIXME: Robin BCs are suspect with multi component mlabec
         //fix this after amrex fixes things
         robin_a[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
         robin_b[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
         robin_f[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
+        
+        if(using_ib)
+        {
+            solvemask[ilev].define(grids[ilev],dmap[ilev], 1, 0);
+            solvemask[ilev].setVal(1);
+        }
+    }
+    
+    if(using_ib)
+    {
+        set_solver_mask(solvemask,Sborder);
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level),  
+                                               GetVecOfConstPtrs(solvemask),info,{},
+                                               numspec)); 
+    }  
+    else
+    { 
+        linsolve_ptr.reset(new MLABecLaplacian(Geom(0,finest_level), 
+                                               boxArray(0,finest_level), 
+                                               DistributionMap(0,finest_level), info, 
+                                               {}, numspec));
     }
 
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
@@ -707,6 +738,18 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                 }
             }
         }
+        
+        if(using_ib)
+        {
+            null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],numspec);
+            //FIXME: may be can be inverted for performance
+            for(int specid=startspec;specid<(startspec+numspec);specid++)
+            {
+                set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],
+                                          Sborder[ilev],
+                        current_time,specid,specid-startspec);
+            }
+        }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
 
@@ -824,6 +867,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     bcoeff.clear();
     solution.clear();
     rhs.clear();
+    solvemask.clear();
 
     robin_a.clear();
     robin_b.clear();
