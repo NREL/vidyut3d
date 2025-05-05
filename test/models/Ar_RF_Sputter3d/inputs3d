@@ -95,9 +95,9 @@ prob.v2=81.0
 prob.ph1=0.0
 prob.ph2=0.0
 prob.ionden_init=1e14
-prob.gama_trode1=0.05
-prob.gama_trode2=0.05
-prob.gama_subs=0.05
+prob.gama_trode1=0.01
+prob.gama_trode2=0.01
+prob.gama_subs=0.01
 
 #prob.trode1_minx=-0.03
 #prob.trode1_miny=0.01

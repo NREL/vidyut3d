@@ -286,17 +286,8 @@ namespace user_transport
                     amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
                     amrex::Real flx = ne*cbar/4.0*outward_normal[dir];
 
-                    //ion flux
-                    amrex::Real mu = specMob(spec_id,phi(cell_int,ETEMP_ID),
-                                             ndens, efieldmag,
-                                             Tg);
-                    amrex::Real efield=phi(cell_int,EFX_ID+dir);
-                    amrex::Real ion_drift_flux = mu*phi(cell_int,spec_id)*efield;
-                    amrex::Real ion_drift_flux_dotn = ion_drift_flux*outward_normal[dir];
-                    amrex::Real ion_flux=(ion_drift_flux_dotn >= 0.0)?ion_drift_flux_dotn:0.0;
-
+                    //secondary emission
                     amrex::Real gama=0.0;
-
                     if(sgn==-1 && inside_trode1)
                     {
                         gama=prob_parm.gama_trode1;
@@ -309,9 +300,21 @@ namespace user_transport
                     {
                         gama=prob_parm.gama_subs;
                     }
-                    
-                    //flux is inwards
-                    flx -= gama*ion_flux*outward_normal[dir]; 
+                    amrex::Real flx_se=0.0;
+                    for(int ion_id=FIRST_ION;ion_id<(FIRST_ION+NUM_IONS);ion_id++)
+                    {
+                        amrex::Real mu = specMob(ion_id,phi(cell_int,ETEMP_ID),
+                                                 ndens, efieldmag,
+                                                 Tg);
+
+                        amrex::Real ion_drift_flux_dotn = mu*phi(cell_int,ion_id)
+                        *phi(cell_int,EFX_ID+dir)*outward_normal[dir];
+                        flx_se += (ion_drift_flux_dotn>0.0)?gama*ion_drift_flux_dotn:0.0; 
+                    }
+
+                    //-1 for inward flux
+                    flx_se *= (-1.0)*outward_normal[dir];
+                    flx += flx_se;
 
                     //why -flx/D?
                     //because diffusive flux -D dc/dx = flx
