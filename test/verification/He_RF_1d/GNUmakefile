@@ -7,7 +7,7 @@ PROFILE    = FALSE
 DEBUG      = TRUE
 DEBUG      = FALSE
 
-DIM        = 2
+DIM        = 1
 #DIM       = 3
 
 COMP	   = gnu
