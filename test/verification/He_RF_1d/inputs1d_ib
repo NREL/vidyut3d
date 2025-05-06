@@ -1,5 +1,5 @@
 max_step  = 120000000
-stop_time = 100e-5 #1000 rf cycles
+stop_time = 75e-6 #1000 rf cycles
 
 # PROBLEM SIZE & GEOMETRY
 geometry.is_periodic =  0  1  1

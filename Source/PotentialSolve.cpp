@@ -610,11 +610,11 @@ void Vidyut::potential_gradlimiter(Vector<MultiFab>& Sborder)
         for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             const Box& bx = mfi.tilebox();
-            Box bx_x = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+            Box bx_x = mfi.nodaltilebox(0);
 #if AMREX_SPACEDIM > 1
-            Box bx_y = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+            Box bx_y = mfi.nodaltilebox(1);
 #if AMREX_SPACEDIM == 3
-            Box bx_z = convert(bx, {0, 0, 1});
+            Box bx_z = mfi.nodaltilebox(2);
 #endif
 #endif
             Array4<Real> phi_arr   = phi_new[ilev].array(mfi);

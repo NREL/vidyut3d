@@ -503,11 +503,11 @@ void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab,
     {
         const Box& bx = mfi.tilebox();
         Array<Box,AMREX_SPACEDIM> face_boxes;
-        face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+        face_boxes[0] = mfi.nodaltilebox(0);
 #if AMREX_SPACEDIM > 1
-        face_boxes[1] = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+        face_boxes[1] = mfi.nodaltilebox(1);
 #if AMREX_SPACEDIM == 3
-        face_boxes[2] = convert(bx, {0, 0, 1});
+        face_boxes[2] = mfi.nodaltilebox(2);
 #endif
 #endif
 
@@ -593,11 +593,11 @@ void Vidyut::set_explicit_fluxes_at_ib(int ilev, MultiFab& rhs,
         Array4<Real> acoeff_arr = acoeff.array(mfi);
 
         Array<Box,AMREX_SPACEDIM> face_boxes;
-        face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+        face_boxes[0] = mfi.nodaltilebox(0);
 #if AMREX_SPACEDIM > 1
-        face_boxes[1] = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+        face_boxes[1] = mfi.nodaltilebox(1);
 #if AMREX_SPACEDIM == 3
-        face_boxes[2] = convert(bx, {0, 0, 1});
+        face_boxes[2] = mfi.nodaltilebox(2);
 #endif
 #endif
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) 
@@ -681,11 +681,11 @@ void Vidyut::correct_efields_ib(Vector<MultiFab>& Sborder,
             GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
 
             Array<Box,AMREX_SPACEDIM> face_boxes;
-            face_boxes[0] = convert(bx, {AMREX_D_DECL(1, 0, 0)});
+            face_boxes[0] = mfi.nodaltilebox(0);
 #if AMREX_SPACEDIM > 1
-            face_boxes[1] = convert(bx, {AMREX_D_DECL(0, 1, 0)});
+            face_boxes[1] = mfi.nodaltilebox(1);
 #if AMREX_SPACEDIM == 3
-            face_boxes[2] = convert(bx, {0, 0, 1});
+            face_boxes[2] = mfi.nodaltilebox(2);
 #endif
 #endif
             GpuArray<Array4<Real>, AMREX_SPACEDIM> 
