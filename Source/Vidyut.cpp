@@ -396,6 +396,8 @@ void Vidyut::ReadParameters()
         
         pp.query("weno_scheme",weno_scheme);
         pp.query("track_surf_charge",track_surf_charge);
+        pp.query("solver_verbose",solver_verbose);
+        pp.query("evolve_verbose",evolve_verbose);
 
         if(hyp_order==1) //first order upwind
         {

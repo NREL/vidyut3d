@@ -8,7 +8,7 @@ DEBUG      = TRUE
 DEBUG      = FALSE
 
 #DIM        = 2
-DIM       = 3
+DIM       = 1
 
 COMP	   = gnu
 

@@ -312,6 +312,9 @@ public:
     // Monitor file options
     int monitor_file_int = -1;
 
+    int solver_verbose=1;
+    int evolve_verbose=1;
+
 
 private:
     ////////////////

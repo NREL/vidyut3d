@@ -28,7 +28,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     Real ascalar = 1.0;
     Real bscalar = 1.0;
     ProbParm const* localprobparm = d_prob_parm;
-    int linsolve_verbose=1;
+    int linsolve_verbose=solver_verbose;
     
     // First initialization of MLMG solver
     LPInfo info;
@@ -63,7 +63,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     amrex::Real vcen = voltage_center;
 
 #ifdef AMREX_USE_HYPRE
-    if(use_hypre)
+    if(use_hypre && linsolve_verbose)
     {
         amrex::Print()<<"using hypre\n";
     }

@@ -48,8 +48,11 @@ void Vidyut::Evolve()
         for(int lev=0;lev<=finest_level;lev++)
         {
             find_time_scales(lev,dt_edrift_lev,dt_ediff_lev,dt_diel_relax_lev);
-            amrex::Print()<<"electron drift, diffusion and dielectric relaxation time scales at level (sec):"<<lev<<"\t"<<
-            dt_edrift_lev<<"\t"<<dt_ediff_lev<<"\t"<<dt_diel_relax_lev<<"\n";
+            if(evolve_verbose)
+            {
+                amrex::Print()<<"electron drift, diffusion and dielectric relaxation time scales at level (sec):"<<lev<<"\t"<<
+                dt_edrift_lev<<"\t"<<dt_ediff_lev<<"\t"<<dt_diel_relax_lev<<"\n";
+            }
 
             if(dt_edrift_lev < dt_edrift)
             {
@@ -66,7 +69,7 @@ void Vidyut::Evolve()
         }
 
         amrex::Print()<<"global minimum electron drift, diffusion and dielectric relaxation time scales (sec):"<<
-        dt_edrift<<"\t"<<dt_ediff<<"\t"<<dt_diel_relax<<"\t"<<istep[0]<<"\n";
+        dt_edrift<<"\t"<<dt_ediff<<"\t"<<dt_diel_relax<<"\n";
 
         ComputeDt(cur_time, adaptive_dt_delay, dt_edrift, dt_ediff, dt_diel_relax);
 
@@ -74,16 +77,22 @@ void Vidyut::Evolve()
         {
             if (istep[0] % regrid_int == 0)
             {
-                amrex::Print()<<"regridding\n";
+                if(evolve_verbose)
+                {
+                    amrex::Print()<<"regridding\n";
+                }
                 regrid(0, cur_time);
             }
         }
 
-        for (int lev = 0; lev <= finest_level; lev++)
+        if(evolve_verbose)
         {
-            amrex::Print() << "[Level " << lev << " step " << istep[lev]+1 << "] ";
-            amrex::Print() << "ADVANCE with time = " << t_new[lev]
-            << " dt = " << dt[0] << std::endl;
+            for (int lev = 0; lev <= finest_level; lev++)
+            {
+                amrex::Print() << "[Level " << lev << " step " << istep[lev]+1 << "] ";
+                amrex::Print() << "ADVANCE with time = " << t_new[lev]
+                << " dt = " << dt[0] << std::endl;
+            }
         }
         amrex::Real dt_common=dt[0]; //no subcycling
 
@@ -160,7 +169,7 @@ void Vidyut::Evolve()
             photoion_src_total[lev].setVal(0.0);
 
         }
-        
+
         for(int niter=0;niter<num_timestep_correctors;niter++)
         {
             //for second order accuracy in mid-point method
@@ -400,7 +409,10 @@ void Vidyut::Evolve()
                     }
                     if(comp!=(FIRST_ION+NUM_IONS))
                     {
-                        amrex::Print()<<"in slack part for ions\n";
+                        if(evolve_verbose)
+                        {
+                            amrex::Print()<<"in slack part for ions\n";
+                        }
                         //remaining slack
                         update_explsrc_at_all_levels(comp, FIRST_ION+NUM_IONS-comp, Sborder, rxn_src,
                                                      expl_src, ion_bc_lo, ion_bc_hi, 
@@ -430,7 +442,10 @@ void Vidyut::Evolve()
                     if(comp!=(FIRST_NEUTRAL+NUM_NEUTRALS))
                     {
                         //remaining slack
-                        amrex::Print()<<"in slack part for neutrals\n";
+                        if(evolve_verbose)
+                        {
+                           amrex::Print()<<"in slack part for neutrals\n";
+                        }
                         update_explsrc_at_all_levels(comp, FIRST_NEUTRAL+NUM_NEUTRALS-comp, 
                                                      Sborder, rxn_src,
                                                      expl_src, neutral_bc_lo, neutral_bc_hi, 
@@ -461,15 +476,15 @@ void Vidyut::Evolve()
                                 auto phi_arrays = phi_new[ilev].arrays();
                                 auto rxn_arrays = rxn_src[ilev].arrays();
                                 amrex::ParallelFor(phi_new[ilev], [=] 
-                                                   AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                                                       auto phi_arr = phi_arrays[nbx];
-                                                       auto rxn_arr = rxn_arrays[nbx];
-                                                       phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                                                       if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                                                       {
-                                                           phi_arr(i,j,k,ind) = minspecden;
-                                                       }
-                                                   });
+                                AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                                    auto phi_arr = phi_arrays[nbx];
+                                    auto rxn_arr = rxn_arrays[nbx];
+                                    phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                    if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                    {
+                                        phi_arr(i,j,k,ind) = minspecden;
+                                    }
+                                });
                             }
                         }
                     }
@@ -488,7 +503,11 @@ void Vidyut::Evolve()
                 //copy new to old and update time
                 for(int lev=0;lev<=finest_level;lev++)
                 {
-                    amrex::Print()<<"averaging state at iter:"<<niter<<"\n";
+                    if(evolve_verbose)
+                    {
+                       amrex::Print()<<"averaging state at iter:"<<niter<<"\n";
+                    }
+
                     MultiFab::LinComb(phi_tmp[lev], 0.5, phi_old[lev], 0, 0.5, 
                                       phi_new[lev], 0, 0, phi_new[lev].nComp(), 0);
 
@@ -505,10 +524,13 @@ void Vidyut::Evolve()
         for (int lev = 0; lev <= finest_level; lev++)
             ++istep[lev];
 
+        if(evolve_verbose)
+        {
         for (int lev = 0; lev <= finest_level; lev++)
         {
             amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
             amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
+        }
         }
 
         cur_time += dt_common;
@@ -519,6 +541,7 @@ void Vidyut::Evolve()
         amrex::Print() << "Coarse STEP " << step + 1 << " ends."
         << " TIME = " << cur_time << " DT = " << dt_common << std::endl;
         amrex::Print()<<"Time step wall clock time:"<<run_time<<"\n";
+        amrex::Print()<<"================================================================\n";
 
         if (plot_time > 0){
             if(plottime > plot_time){
