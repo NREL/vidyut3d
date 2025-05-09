@@ -31,7 +31,14 @@
 
 #define NUM_ELEMENTS 4
 #define NUM_SPECIES 16
+
+//FIX these and make species of same type continuous
+#define FIRST_ION 10
 #define NUM_IONS 5
+#define FIRST_NEUTRAL 1
+#define NUM_NEUTRALS 10
+//==================================================
+
 #define NUM_REACTIONS 68
 
 #define NUM_FIT 4

@@ -60,6 +60,14 @@
 #define AR2e_ID 42
 #define AR2p_ID 43
 
+//FIX these and make species of same type continuous
+#define FIRST_ION 10
+#define NUM_IONS 5
+#define FIRST_NEUTRAL 1
+#define NUM_NEUTRALS 10
+//==================================================
+
+
 #define NUM_GAS_ELEMENTS 5    // Elements in the homogeneous phase
 #define NUM_GAS_SPECIES 44    // Species in the homogeneous phase
 #define NUM_GAS_REACTIONS 385 // Reactions in the homogeneous phase
