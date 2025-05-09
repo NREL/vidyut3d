@@ -40,11 +40,8 @@ int main(int argc, char* argv[])
 
         // print wallclock time
         ParallelDescriptor::ReduceRealMax(end_total, ParallelDescriptor::IOProcessorNumber());
-        if (vidyut_obj.Verbose())
-        {
-            amrex::Print() << "\nEvolve_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
-            amrex::Print() << "\nTotal_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
-        }
+        amrex::Print() << "\nEvolve_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
+        amrex::Print() << "\nTotal_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
 
         // destroy timer for profiling
         BL_PROFILE_VAR_STOP(pmain);

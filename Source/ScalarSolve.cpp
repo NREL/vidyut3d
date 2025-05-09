@@ -364,7 +364,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
 
     // FIXME: add these as inputs
     int max_coarsening_level = linsolve_max_coarsening_level;
-    int linsolve_verbose = 1;
+    int linsolve_verbose = solver_verbose;
     int captured_startspec=startspec;
     int captured_numspec=numspec;
 
@@ -409,7 +409,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     info.setMaxCoarseningLevel(max_coarsening_level);
 
 #ifdef AMREX_USE_HYPRE
-    if(use_hypre)
+    if(use_hypre && linsolve_verbose)
     {
         amrex::Print()<<"using hypre\n";
     }
