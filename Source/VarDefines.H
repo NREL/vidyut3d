@@ -23,5 +23,6 @@
 #define IHNEUBC 3
 #define ROBINBC 4
 #define AXISBC 5
+#define CATBC 6
 
 #endif

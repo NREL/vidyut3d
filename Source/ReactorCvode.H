@@ -4,9 +4,6 @@
 #include "AMReX_Sundials.H"
 #include "ReactorBase.H"
 #include "ReactorCvodeUtils.H"
-// #include "ReactorCvodePreconditioner.H"
-// #include "ReactorCvodeJacobian.H"
-// #include "ReactorCvodeCustomLinSolver.H"
 #include <cvode/cvode.h>
 #include <nvector/nvector_serial.h>
 #include <sunmatrix/sunmatrix_dense.h>
@@ -90,8 +87,23 @@ public:
 #endif
     ) override;
 
+  int surf_react(
+    const amrex::Box& box,
+    amrex::Array4<amrex::Real> const& nspec_in,
+    amrex::Real Tgas_in,
+    amrex::Real& dt_react,
+    amrex::Real& time
+#ifdef AMREX_USE_GPU
+    ,
+    amrex::gpuStream_t stream
+#endif
+    ) override;
+
   static int
   cF_RHS(amrex::Real t, N_Vector y_in, N_Vector ydot, void* user_data);
+
+  static int
+  cF_SurfRHS(amrex::Real t, N_Vector y_in, N_Vector ydot, void* user_data);
 
   void flatten(
     const amrex::Box& box,
@@ -119,6 +131,27 @@ public:
       box, ncells, nspec, Ue, Te, y_vect, dt);
   }
 
+  void surf_flatten(
+    const amrex::Box& box,
+    const int ncells,
+    amrex::Array4<const amrex::Real> const& nspec,
+    amrex::Real* y_vect) override
+  {
+    flatten_ops.surf_flatten(
+      box, ncells, nspec, y_vect);
+  }
+
+  void surf_unflatten(
+    const amrex::Box& box,
+    const int ncells,
+    amrex::Array4<amrex::Real> const& nspec,
+    amrex::Real* y_vect,
+    amrex::Real dt) override
+  {
+    flatten_ops.surf_unflatten(
+      box, ncells, nspec, y_vect, dt);
+  }
+
 private:
   void checkCvodeOptions(
     const std::string& a_solve_type_str,
@@ -137,7 +170,8 @@ private:
     amrex::gpuStream_t stream,
 #endif
     const amrex::Real& a_time,
-    int ncells);
+    int ncells,
+    int surf_flag = 0);
   void allocUserData(
     CVODEUserData* udata,
     int a_ncells
@@ -149,8 +183,8 @@ private:
   ) const;
   static void freeUserData(CVODEUserData* data_wk);
 
-  amrex::Real relTol{1e-5};
-  amrex::Real absTol{1e4};
+  amrex::Real relTol{1e-4};
+  amrex::Real absTol{1e6};
   utils::FlattenOps<Ordering> flatten_ops;
   int m_reactor_type{0};
 #if defined(AMREX_USE_HIP)

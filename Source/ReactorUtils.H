@@ -171,29 +171,6 @@ box_flatten(
   amrex::Real* EN_vect,
   amrex::Real* y_vect)
 {
-  // amrex::Real mass_frac[NUM_SPECIES];
-  // amrex::Real rho = 0.0;
-  // amrex::Real rho_old = 0.0;
-  // if (clean_init_massfrac) {
-  //   for (int n = 0; n < NUM_SPECIES; n++) {
-  //     rho_old += rhoY(i, j, k, n);
-  //   }
-  // }
-  // for (int n = 0; n < NUM_SPECIES; n++) {
-  //   const int idx2 = spec_index<OrderType>(n, icell, ncells);
-  //   const amrex::Real rhoYn =
-  //     (clean_init_massfrac)
-  //       ? amrex::min<amrex::Real>(
-  //           amrex::max<amrex::Real>(0.0, rhoY(i, j, k, n)), rho_old)
-  //       : rhoY(i, j, k, n);
-  //   src_vect[idx2] = frcExt(i, j, k, n);
-  //   rho += rhoYn;
-  //   mass_frac[n] = rhoYn;
-  // }
-  // const amrex::Real rho_inv = 1.0 / rho;
-  // for (amrex::Real& Yn : mass_frac) {
-  //   Yn *= rho_inv;
-  // }
 
   for (int n = 0; n < NUM_SPECIES; n++) {
     const int idx = vec_index<OrderType>(n, icell, ncells);
@@ -204,16 +181,6 @@ box_flatten(
   y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = Ue(i,j,k,0);
   EN_vect[icell] = EN(i, j, k, 0);
 
-  // amrex::Real Enrg_loc = vect_energy[icell] * rho_inv;
-  // auto eos = pele::physics::PhysicsType::eos();
-  // if (reactor_type == ReactorTypes::e_reactor_type) {
-  //   eos.REY2T(rho, Enrg_loc, mass_frac, temp);
-  // } else if (reactor_type == ReactorTypes::h_reactor_type) {
-  //   eos.RHY2T(rho, Enrg_loc, mass_frac, temp);
-  // } else {
-  //   amrex::Abort("Wrong reactor type. Choose between 1 (e) or 2 (h).");
-  // }
-  // y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = temp;
 }
 
 template <typename OrderType>
@@ -230,59 +197,44 @@ box_unflatten(
   const amrex::Real* y_vect,
   amrex::Real dt)
 {
-  // Get the old Ys & rho as well as the clipped version
-  // that went into CVODE
-  // amrex::Real rhoY_oldclipped[NUM_SPECIES];
-  // amrex::Real rho_old = 0.0;
-  // amrex::Real rho_oldclipped = 0.0;
-  // if (clean_init_massfrac) {
-  //   for (int n = 0; n < NUM_SPECIES; n++) {
-  //     rho_old += rhoY(i, j, k, n);
-  //   }
-  //   for (int n = 0; n < NUM_SPECIES; n++) {
-  //     rhoY_oldclipped[n] = amrex::min<amrex::Real>(
-  //       amrex::max<amrex::Real>(0.0, rhoY(i, j, k, n)), rho_old);
-  //     rho_oldclipped += rhoY_oldclipped[n];
-  //   }
-  // }
-
-  // amrex::Real mass_frac[NUM_SPECIES];
-  // amrex::Real rho = 0.0;
-  // for (int n = 0; n < NUM_SPECIES; n++) {
-  //   // With clean_init_massfrac, new rhoY equal old one + CVODE increment
-  //   const amrex::Real rhoYn =
-  //     (clean_init_massfrac)
-  //       ? rhoY(i, j, k, n) + (y_vect[vec_index<OrderType>(n, icell, ncells)] -
-  //                             rhoY_oldclipped[n]) *
-  //                              rho_old / rho_oldclipped
-  //       : y_vect[vec_index<OrderType>(n, icell, ncells)];
-  //   rhoY(i, j, k, n) = rhoYn;
-  //   rho += rhoYn;
-  //   mass_frac[n] = rhoYn;
-  // }
-  // const amrex::Real rho_inv = 1.0 / rho;
-  // for (amrex::Real& Yn : mass_frac) {
-  //   Yn *= rho_inv;
-  // }
-
   for (int n = 0; n < NUM_SPECIES; n++) nspec(i,j,k,n) = y_vect[vec_index<OrderType>(n, icell, ncells)];
   Ue(i, j, k, 0) = y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
   Te(i, j, k, 0) = 1.5 * Ue(i,j,k,0) * K_B * nspec(i,j,k,E_ID);
+}
 
-  // amrex::Real temp = y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)];
-  // rhoE(i, j, k, 0) = vect_energy[icell] + dt * frcEExt(i, j, k, 0);
+template <typename OrderType>
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void
+surf_box_flatten(
+  const int icell,
+  const int i,
+  const int j,
+  const int k,
+  const int ncells,
+  amrex::Array4<const amrex::Real> const& nspec,
+  amrex::Real* y_vect)
+{
+  for (int n = 0; n < NUM_SPECIES; n++) {
+    const int idx = vec_index<OrderType>(n, icell, ncells);
+    y_vect[idx] = nspec(i, j, k, n);
+  }
 
-  // amrex::Real Enrg_loc = rhoE(i, j, k, 0) * rho_inv;
-  // auto eos = pele::physics::PhysicsType::eos();
-  // if (reactor_type == ReactorTypes::e_reactor_type) {
-  //   eos.REY2T(rho, Enrg_loc, mass_frac, temp);
-  // } else if (reactor_type == ReactorTypes::h_reactor_type) {
-  //   eos.RHY2T(rho, Enrg_loc, mass_frac, temp);
-  // } else {
-  //   amrex::Abort("Wrong reactor type. Choose between 1 (e) or 2 (h).");
-  // }
-  // temperature(i, j, k, 0) = temp;
-  // FC_in(i, j, k, 0) = static_cast<amrex::Real>(FCunt);
+  // Ue assumed not to change due to surface reactions, dummy value given
+  y_vect[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = 1.0;
+}
+
+template <typename OrderType>
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void
+surf_box_unflatten(
+  const int icell,
+  const int i,
+  const int j,
+  const int k,
+  const int ncells,
+  amrex::Array4<amrex::Real> const& nspec,
+  const amrex::Real* y_vect,
+  amrex::Real dt)
+{
+  for (int n = 0; n < NUM_SPECIES; n++) nspec(i,j,k,n) = y_vect[vec_index<OrderType>(n, icell, ncells)];
 }
 
 template <typename OrderType>
@@ -332,6 +284,41 @@ public:
         icell, i, j, k, ncells, nspec, Ue, Te,  y_vect, dt);
     });
   }
+
+  void surf_flatten(
+    const amrex::Box& box,
+    const int ncells,
+    amrex::Array4<const amrex::Real> const& nspec,
+    amrex::Real* y_vect)
+  {
+    BL_PROFILE("Pele::surf_flatten()");
+    const auto len = amrex::length(box);
+    const auto lo = amrex::lbound(box);
+    amrex::ParallelFor(box, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+      const int icell =
+        (k - lo.z) * len.x * len.y + (j - lo.y) * len.x + (i - lo.x);
+      surf_box_flatten<OrderType>(
+        icell, i, j, k, ncells, nspec, y_vect);
+    });
+  }
+
+  void surf_unflatten(
+    const amrex::Box& box,
+    const int ncells,
+    amrex::Array4<amrex::Real> const& nspec,
+    amrex::Real* y_vect,
+    amrex::Real dt)
+  {
+    BL_PROFILE("Pele::surf_unflatten()");
+    const auto len = amrex::length(box);
+    const auto lo = amrex::lbound(box);
+    amrex::ParallelFor(box, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+      const int icell =
+        (k - lo.z) * len.x * len.y + (j - lo.y) * len.x + (i - lo.x);
+      surf_box_unflatten<OrderType>(
+        icell, i, j, k, ncells, nspec,  y_vect, dt);
+    });
+  }
 };
 
 template <typename OrderType>
@@ -370,6 +357,31 @@ fKernelSpec(
   for (int n = 0; n < NUM_SPECIES; n++) ydot_d[vec_index<OrderType>(n, icell, ncells)] = wdot[n] * NA;
 
   ydot_d[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = ener_exch;
+}
+
+template <typename OrderType>
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void
+fKernelSurfSpec(
+  const int icell,
+  const int ncells,
+  const amrex::Real dt_save,
+  const amrex::Real Tgas_in,
+  const amrex::Real* yvec_d,
+  amrex::Real* ydot_d // NOLINT(readability-non-const-parameter)
+)
+{
+  amrex::Real NA = 6.02214076e23;
+  amrex::Real specconc[NUM_SPECIES];
+  amrex::Real wdot[NUM_SPECIES];
+  for (int n = 0; n < NUM_SPECIES; n++) {
+    specconc[n] = yvec_d[vec_index<OrderType>(n, icell, ncells)] / NA;
+  }
+
+  SKWC(Tgas_in, specconc, wdot);
+
+  for (int n = 0; n < NUM_SPECIES; n++) ydot_d[vec_index<OrderType>(n, icell, ncells)] = wdot[n] * NA;
+
+  ydot_d[vec_index<OrderType>(NUM_SPECIES, icell, ncells)] = 0.0;
 }
 
 #ifdef AMREX_USE_GPU

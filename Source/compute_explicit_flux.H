@@ -318,14 +318,14 @@ void compute_flux(
 
     if(face[sweepdir]==domlo[sweepdir])
     {
-        if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) )
+        if( (bclo[sweepdir]==IHNEUBC) || (bclo[sweepdir]==AXISBC) || (bclo[sweepdir]==CATBC) )
         {
             fx(face,fluxid)=0.0;
         }
     }
     if(face[sweepdir]==domhi[sweepdir]+1) 
     {
-        if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) )
+        if( (bchi[sweepdir]==IHNEUBC) || (bchi[sweepdir]==AXISBC) || (bchi[sweepdir]==CATBC) )
         {
             fx(face,fluxid)=0.0;
         }
