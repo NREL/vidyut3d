@@ -29,6 +29,7 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     Real bscalar = 1.0;
     ProbParm const* localprobparm = d_prob_parm;
     int linsolve_verbose=solver_verbose;
+    int pterm=sph_id;
     
     // First initialization of MLMG solver
     LPInfo info;
@@ -63,7 +64,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     const amrex::Real Torr_to_Pa = 133.322;
 
     amrex::Real A_j[3];
-    amrex::Real lambda_j[3]; 
+    amrex::Real lambda_j[3];
+
+
     amrex::Real pq = 30.0*Torr_to_Pa; // From Bourdon et al., 2007 Plasma Sources Sci. Technol. 16 656 
     amrex::Real pO2 = captured_gaspres*0.21; // assuming air - update this as per need
     amrex::Real quenching_fact = pq / (pq + captured_gaspres);
@@ -233,42 +236,57 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
 
         Real time = current_time; // for GPU capture
 
-        auto phi_arrays = Sborder[ilev].const_arrays();
+        auto phi_arrays = Sborder[ilev].arrays();
         auto rhs_arrays = rhs[ilev].arrays();
+        auto acoeff_arrays = acoeff[ilev].arrays();
         amrex::ParallelFor(rhs[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+
             auto phi_arr = phi_arrays[nbx];
             auto rhs_arr = rhs_arrays[nbx];
+            auto acoeff_arr = acoeff_arrays[nbx];
+
+            //default
+            acoeff_arr(i,j,k)=0.0; 
+
+            user_transport::get_photoion_acoeff(i,j,k,pterm,phi_arr,acoeff_arr,
+                                                prob_lo,prob_hi,dx,time,
+                                                *localprobparm,captured_gastemp,
+                                                captured_gaspres);
 
             rhs_arr(i,j,k)=0.0;
-            
-            #if defined(O2_ID) && defined(N2_ID)
-                amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
-                amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
-                amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
-                amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
 
-                std::vector<amrex::Real> Fit1(7, 0.0);
-                Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
-                amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te + Fit1[3]/amrex::Math::powi<2>(Te) + Fit1[4]/amrex::Math::powi<3>(Te) + Fit1[5]/amrex::Math::powi<4>(Te) + Fit1[6]/amrex::Math::powi<5>(Te));
-                amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
+            /*amrex::Real e_num_density = phi_arr(i,j,k,E_ID);
+              amrex::Real Te = phi_arr(i,j,k,ETEMP_ID);
+              amrex::Real O2_num_density = phi_arr(i,j,k,O2_ID);
+              amrex::Real N2_num_density = phi_arr(i,j,k,N2_ID);
+              std::vector<amrex::Real> Fit1(7, 0.0);
+              Fit1 = {-3.36229396e+01,  2.98924694e-01, -2.65909178e+05,  0.0, 0.0, 0.0, 0.0};
+              amrex::Real k_N2_ion = std::exp(Fit1[0] + Fit1[1]*log(Te) + Fit1[2]/Te 
+              + Fit1[3]/amrex::Math::powi<2>(Te) 
+              + Fit1[4]/amrex::Math::powi<3>(Te) 
+              + Fit1[5]/amrex::Math::powi<4>(Te) + Fit1[6]/amrex::Math::powi<5>(Te));
+              amrex::Real rate_N2_ion = k_N2_ion*e_num_density*N2_num_density;
+              amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
+              (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+              (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 
+              + (-1.32208241e+00)*std::log(Te) + 
+              (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+              (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 
+              + (-1.32208241e+00)*std::log(Te) + 
+              (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
+              (-9.57567162e+12)/std::pow(Te,3)); 
+            // Update these to b1Piu, b1'Sg+u and c41'Sg+u
+            //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
+            //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. i
+            //- A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
+            // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
+            // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
+            rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);*/
 
-                /*amrex::Real k_N2_exc = std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)) + std::exp(-1.67067355e+01 + (-1.32208241e+00)*std::log(Te) + 
-                        (-2.17286625e+05)/Te + (2.14505360e+09)/std::pow(Te,2) + 
-                        (-9.57567162e+12)/std::pow(Te,3)); // Update these to b1Piu, b1'Sg+u and c41'Sg+u
-                */
-                
-                
-                //Aj * pO2 * I(r) where I(r) = (pq/(pq+p))*Xi*nu_u/nu_i*Si(r)
-                //nu_u / nu_i is assumed to be 1 for now, as is also done in Breden et al. - A numerical study of high-pressure non-equilibrium streamers for combustion ignition application
-                // Si(r) = electron impact ionization rate of photon emitting species only, i.e. N2
-                // -1 multiplied on both sides of equation 8 in Bourdon et al.'s work
-
-                rhs_arr(i,j,k) = (A_j[sph_id]*pO2*pO2)*(quenching_fact*photoion_eff*rate_N2_ion);
-            #endif
+            user_transport::get_photoion_rhs(i,j,k,pterm,phi_arr,rhs_arr,
+                                                prob_lo,prob_hi,dx,time,
+                                                *localprobparm,captured_gastemp,
+                                                captured_gaspres);
         });
 
         // average cell coefficients to faces, this includes boundary faces
@@ -308,21 +326,21 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
                 {
                     amrex::ParallelFor(amrex::bdryLo(bx, idim), [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                         int domend = -1;
-                        
+
                         if(userdefphotoion == 1){
                             user_transport::photoionization_bc(i, j, k, idim, -1, 
-                                                         phi_arr, bc_arr, robin_a_arr, 
-                                                         robin_b_arr, robin_f_arr, 
-                                                         prob_lo, prob_hi, dx, time, 
-                                                         *localprobparm,captured_gastemp,
-                                                         captured_gaspres);
-                        } else {
-                            plasmachem_transport::photoionization_bc(i, j, k, idim, -1, 
                                                                phi_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time, 
                                                                *localprobparm,captured_gastemp,
                                                                captured_gaspres);
+                        } else {
+                            plasmachem_transport::photoionization_bc(i, j, k, idim, -1, 
+                                                                     phi_arr, bc_arr, robin_a_arr, 
+                                                                     robin_b_arr, robin_f_arr, 
+                                                                     prob_lo, prob_hi, dx, time, 
+                                                                     *localprobparm,captured_gastemp,
+                                                                     captured_gaspres);
                         }
                     });
                 }
@@ -333,24 +351,24 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
 
                         if(userdefphotoion == 1){
                             user_transport::photoionization_bc(i, j, k, idim, +1, 
-                                                         phi_arr, bc_arr, robin_a_arr, 
-                                                         robin_b_arr, robin_f_arr, 
-                                                         prob_lo, prob_hi, dx, time,
-                                                         *localprobparm,captured_gastemp,
-                                                         captured_gaspres);
-                        } else {
-                            plasmachem_transport::photoionization_bc(i, j, k, idim, +1, 
                                                                phi_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time,
                                                                *localprobparm,captured_gastemp,
                                                                captured_gaspres);
+                        } else {
+                            plasmachem_transport::photoionization_bc(i, j, k, idim, +1, 
+                                                                     phi_arr, bc_arr, robin_a_arr, 
+                                                                     robin_b_arr, robin_f_arr, 
+                                                                     prob_lo, prob_hi, dx, time,
+                                                                     *localprobparm,captured_gastemp,
+                                                                     captured_gaspres);
                         }
                     });                    
                 }
             }
         }
-        
+
         if(using_ib)
         {
             null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
@@ -381,11 +399,11 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     mlmg.setVerbose(linsolve_verbose);
 
 #ifdef AMREX_USE_HYPRE
-        if (use_hypre)
-        {
-            mlmg.setHypreOptionsNamespace("vidyut.hypre");
-            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
-        }
+    if (use_hypre)
+    {
+        mlmg.setHypreOptionsNamespace("vidyut.hypre");
+        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+    }
 #endif
 
     mlmg.solve(GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
@@ -398,7 +416,9 @@ void Vidyut::solve_photoionization(Real current_time, Vector<MultiFab>& Sborder,
     }
 
     //clean-up
-    // photoionization_src.clear(); // Commented since this MF is added to rxn_src MF
+    // Commented since this MF is added to rxn_src MF
+    // photoionization_src.clear(); 
+    
     acoeff.clear();
     solution.clear();
     rhs.clear();
