@@ -1,0 +1,127 @@
+max_step  = 100000000
+#max_step  = 10000
+stop_time = 2e-3
+
+# PROBLEM SIZE & GEOMETRY
+geometry.is_periodic =  0  1  1
+geometry.coord_sys   =  0       # 0 => cart
+geometry.prob_lo     =  0.0   0.0     0.0 
+#geometry.prob_hi     =   0.00015625 0.00015625 0.00015625
+geometry.prob_hi     =   0.011 0.011 0.011
+amr.n_cell           =   2  2  2
+
+# VERBOSITY
+amr.v              = 0       # verbosity in Amr
+
+# REFINEMENT
+amr.max_level       = 0       # maximum level number allowed
+amr.blocking_factor = 2       # block factor in grid generation
+amr.max_grid_size   = 2
+
+amr.regrid_int      = 5       # how often to regrid
+
+# TIME STEP CONTROL
+#vidyut.dt             = 1e-13
+vidyut.adaptive_dt = 1
+vidyut.dt_pulse = 1e-11
+vidyut.dt_max = 1e-9
+vidyut.dt_stretch = 1.25
+
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
+
+vidyut.multicompsolves=0
+
+# CVODE reactor
+vidyut_ode.verbose = 1
+vidyut_ode.rel_tol = 1e-6
+vidyut_ode.abs_tol = 1e0
+cvode.solve_type = "GMRES"
+
+# reactor_scaling
+vidyut.reactor_scaling = 1
+#vidyut.pellet_r = 1.0e-3
+vidyut.pellet_r = 0.054
+
+# Voltage from Yang 2022
+vidyut.experimental_voltage = 1
+vidyut.exp_volt_name = "yang_2022"
+vidyut.num_pulse = 150
+vidyut.pulse_freq = 1.0e5
+vidyut.exp_volt_dir = 0
+vidyut.diel_thickness = 0.002
+vidyut.eps_r = 4.3
+#vidyut.eps_r = 5.0
+
+# Voltage
+#vidyut.voltage_profile = 3
+#vidyut.voltage_amp_lo = 18000.0 0.0 0.0
+#vidyut.voltage_amp_hi = 0.0 0.0 0.0
+#vidyut.pulse_freq = 1.0e5
+#vidyut.voltage_dur = 1.25e-9
+#vidyut.voltage_center = 4.0e-9
+#vidyut.num_pulse = 150
+
+# Tagging
+vidyut.tagged_vars = ReducedEF
+vidyut.ReducedEF_refine = 250.0
+vidyut.ReducedEF_refinegrad = 10000.0
+
+#0 - periodic
+#1 - Dirichlet
+#2 - Homogenous Neumann
+#3 - Inhomogenous Neumann
+#4 - Robin
+
+vidyut.pot_bc_lo = 1 0 0
+vidyut.pot_bc_hi = 1 0 0
+
+vidyut.eden_bc_lo = 2 0 0
+vidyut.eden_bc_hi = 2 0 0 
+
+vidyut.eenrg_bc_lo = 2 0 0
+vidyut.eenrg_bc_hi = 2 0 0
+
+vidyut.ion_bc_lo = 2 0 0
+vidyut.ion_bc_hi = 2 0 0
+
+vidyut.neutral_bc_lo = 6 0 0
+vidyut.neutral_bc_hi = 6 0 0
+
+# PLOTFILES
+amr.plot_file  = plt    # root name of plot file
+amr.plot_int   = -1     # number of timesteps between plot files
+
+# CHECKPOINT
+amr.chk_file = chk      # root name of checkpoint file
+amr.chk_int  = 10000000       # number of timesteps between checkpoint files
+
+# MONITORFILE
+vidyut.monitor_file_int = 10
+
+vidyut.bound_specden=1
+#vidyut.min_species_density=1e13
+vidyut.linsolve_maxiter=200
+vidyut.min_species_density=0.0
+vidyut.min_surface_species_density=1.0e-6
+vidyut.min_electron_density=1e9
+vidyut.min_electron_temp=523.0
+vidyut.elecenergy_solve=1
+vidyut.do_reactions=1
+vidyut.do_transport=0
+vidyut.do_spacechrg=0
+vidyut.do_surface_reactions=1
+vidyut.do_bg_reactions=1
+vidyut.bg_species_ids = 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
+vidyut.surface_species_ids = 50 51 52 53 54
+
+prob.nscale=1.0
+prob.potscale=1.0
+
+#vidyut.gas_pressure=19998.4
+#vidyut.gas_temperature=400.0
+#vidyut.gas_num_dens=4.456856e24
+vidyut.gas_pressure=73327.3
+vidyut.gas_temperature=523.0
+vidyut.gas_num_dens=1.0155e25
