@@ -37,7 +37,7 @@ namespace user_transport
     void get_photoion_rhs(int i,int j,int k,
                           int sph_id,
                           Array4<Real> const& phi_arr,
-                          Array4<Real> const& rhs,
+                          Array4<Real> const& rhs_arr,
                           GpuArray<Real, AMREX_SPACEDIM> prob_lo,
                           GpuArray<Real, AMREX_SPACEDIM> prob_hi,
                           GpuArray<Real, AMREX_SPACEDIM> dx,
@@ -49,10 +49,11 @@ namespace user_transport
         const amrex::Real Torr_to_Pa = 133.322;
 
         amrex::Real pO2 = 150.0*Torr_to_Pa; // assuming air - update this as per need
+        amrex::Real pq = 30.0*Torr_to_Pa; // From Bourdon et al., 2007 Plasma Sources Sci. Technol. 16 656 
         amrex::Real A_j[3]; 
-        amrex::Real quenching_fact = pq / (pq + captured_gaspres);
+        amrex::Real quenching_fact = pq / (pq + Pg);
         amrex::Real photoion_eff = 0.075;
-    
+
         A_j[0] = 1.986e-4 / ((cm_to_m*cm_to_m)*(Torr_to_Pa*Torr_to_Pa));
         A_j[1]= 0.0051 / ((cm_to_m*cm_to_m)*(Torr_to_Pa*Torr_to_Pa));;
         A_j[2] = 0.4886 / ((cm_to_m*cm_to_m)*(Torr_to_Pa*Torr_to_Pa));;

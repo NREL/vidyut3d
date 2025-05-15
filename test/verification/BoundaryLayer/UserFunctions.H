@@ -11,6 +11,34 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
+    void get_photoion_acoeff(int i,int j,int k,int sph_id,
+               Array4<Real> const& sb_arr,
+               Array4<Real> const& acoeff,
+               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+               GpuArray<Real, AMREX_SPACEDIM> dx,
+               const Real time,
+               ProbParm const& prob_parm,
+               Real Tg, Real Pg)
+    {
+    
+    }
+    
+    AMREX_GPU_DEVICE AMREX_INLINE
+    void get_photoion_rhs(int i,int j,int k,int sph_id,
+               Array4<Real> const& sb_arr,
+               Array4<Real> const& rhs_arr,
+               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+               GpuArray<Real, AMREX_SPACEDIM> dx,
+               const Real time,
+               ProbParm const& prob_parm,
+               Real Tg, Real Pg)
+    {
+    
+    }
+    
+    AMREX_GPU_DEVICE AMREX_INLINE
     void bc_ib(IntVect face,
                int dir, int sgn,
                int solved_comp,
