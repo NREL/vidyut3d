@@ -265,41 +265,28 @@ void Vidyut::Evolve()
             {
                 //First add the photoionization source jth component to the total photoionization source multifab
                 //In the same loop over levels, add the inidividual components to rxn_src
-                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 0);
-                for (int ilev=0; ilev <= finest_level; ilev++)
+                for(int pterm=0;pterm<3;pterm++)
                 {
-                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
+                    solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
+                                          photoion_src, pterm);
+                    for (int ilev=0; ilev <= finest_level; ilev++)
+                    {
+                        amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
+                        amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
+                        amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
+                    }
                 }
-
-                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 1);
                 for (int ilev=0; ilev <= finest_level; ilev++)
                 {
-                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
-                }    
-
-                solve_photoionization(cur_time+time_offset, Sborder, photoion_bc_lo, photoion_bc_hi, 
-                                      photoion_src, 2);
-                for (int ilev=0; ilev <= finest_level; ilev++)
-                {
-                    amrex::MultiFab::Saxpy(photoion_src_total[ilev], 1.0, photoion_src[ilev], 0, 0, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, E_ID, 1, 0);
-                    amrex::MultiFab::Saxpy(rxn_src[ilev], 1.0, photoion_src[ilev], 0, photoion_ID, 1, 0);
-
                     // Copy the photion_src_total multifab to the state vector
                     amrex::Copy(Sborder[ilev], photoion_src_total[ilev], 0, PHOTO_ION_SRC_ID, 1, 0);
-                }    
+                }
             }
 
             //electron density solve
             update_explsrc_at_all_levels(E_IDX, 1, Sborder, rxn_src, expl_src, 
                                          eden_bc_lo, eden_bc_hi, cur_time+time_offset);
-            
+
             implicit_solve_scalar(cur_time+time_offset,dt_common,E_IDX, 1,Sborder,
                                   Sborder_old,expl_src,eden_bc_lo,eden_bc_hi, 
                                   gradne_fc);
@@ -321,7 +308,7 @@ void Vidyut::Evolve()
                                               expl_src[lev], 
                                               cur_time+time_offset, dt_common,floor_jh);
                 }
-            
+
                 implicit_solve_scalar(cur_time+time_offset,dt_common,EEN_ID, 1, 
                                       Sborder,Sborder_old, 
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
