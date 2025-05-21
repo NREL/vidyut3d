@@ -34,8 +34,6 @@ void Vidyut::compute_elecenergy_source(int lev,
     int ncomp = Sborder.nComp();
     amrex::Real captured_gastemp=gas_temperature;
     amrex::Real captured_gaspres=gas_pressure;
-    int cs_technique_enabled=cs_technique;
-    int efield_limiter_enabled=efield_limiter;
     int ib_enabled=using_ib;
     int eidx = E_IDX;
 
@@ -139,9 +137,8 @@ void Vidyut::compute_elecenergy_source(int lev,
                     ne = (sborder_arr(lcell,eidx)*mask_L 
                           + sborder_arr(rcell,eidx)*mask_R)/mask_tot;
 
-                    //efield_face=ef_arr[idim](face);
-                    efield_face = (cs_technique_enabled || efield_limiter_enabled) 
-                    ? efieldvec_face[idim] : ef_arr[idim](face);
+                    efield_face=ef_arr[idim](face);
+                    //efield_face = efieldvec_face[idim];
 
                     amrex::Real ndens = 0.0;
                     for(int sp=0; sp<NUM_SPECIES; sp++)

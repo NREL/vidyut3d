@@ -11,14 +11,14 @@ using namespace amrex;
 AMREX_GPU_HOST_DEVICE 
 AMREX_FORCE_INLINE 
 amrex::Real get_onesided_grad(IntVect face,int sgn, int idim,int comp,
-        const GpuArray<Real,AMREX_SPACEDIM> dx, 
-        Array4<Real>const sb_arr)
+                              const GpuArray<Real,AMREX_SPACEDIM> dx, 
+                              Array4<Real>const sb_arr)
 {
     //sgn is always outward normal
     IntVect cell=face;
     int cell_adjust = (sgn==1)?-1:0;
     cell[idim]+=cell_adjust;
-    
+
     IntVect ncell1=cell;
     IntVect ncell2=cell;
     ncell1[idim]=cell[idim]-sgn;
@@ -49,12 +49,12 @@ amrex::Real get_onesided_grad(IntVect face,int sgn, int idim,int comp,
 }
 
 AMREX_GPU_HOST_DEVICE 
-    AMREX_FORCE_INLINE 
+AMREX_FORCE_INLINE 
 amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
-        const GpuArray<int,AMREX_SPACEDIM> domlo,
-        const GpuArray<int,AMREX_SPACEDIM> domhi, 
-        const GpuArray<Real,AMREX_SPACEDIM> dx, 
-        Array4<Real>const &s_arr)
+                                const GpuArray<int,AMREX_SPACEDIM> domlo,
+                                const GpuArray<int,AMREX_SPACEDIM> domhi, 
+                                const GpuArray<Real,AMREX_SPACEDIM> dx, 
+                                Array4<Real>const &s_arr)
 {
     IntVect cellid{AMREX_D_DECL(i, j, k)};
     Real efield_dir=0.0;
@@ -79,8 +79,8 @@ amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
         //fdash = (-f_{i+2}+4f_{i+1}-3f_i)/(2 dx)
         if(domhi[dir] - domlo[dir] > 2){
             efield_dir=-0.5*(  -s_arr(ip2,POT_ID) 
-                    + 4.0*s_arr(ip1,POT_ID)
-                    - 3.0*s_arr(cellid,POT_ID))/dx[dir];
+                             + 4.0*s_arr(ip1,POT_ID)
+                             - 3.0*s_arr(cellid,POT_ID))/dx[dir];
         } else {
             efield_dir=-(s_arr(ip1,POT_ID) - s_arr(cellid,POT_ID))/dx[dir];
         }
@@ -95,8 +95,8 @@ amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
         //fdash = (f_{i-2}-4f_{i-1}+3f_i)/(2 dx)
         if(domhi[dir] - domlo[dir] > 2){
             efield_dir=-0.5*(     s_arr(im2,POT_ID)
-                    - 4.0*s_arr(im1,POT_ID)
-                    + 3.0*s_arr(cellid,POT_ID))/dx[dir];
+                             - 4.0*s_arr(im1,POT_ID)
+                             + 3.0*s_arr(cellid,POT_ID))/dx[dir];
         } else {
             efield_dir=-(s_arr(cellid,POT_ID) - s_arr(im1,POT_ID))/dx[dir];
         }
@@ -110,7 +110,7 @@ amrex::Real get_efield_alongdir(int i,int j,int k,int dir,
 }
 
 AMREX_GPU_HOST_DEVICE 
-    AMREX_FORCE_INLINE
+AMREX_FORCE_INLINE
 amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, Real v1, Real v2, Real vfreq, Real vdur, Real vcen)
 {
     Real voltage;
@@ -129,8 +129,9 @@ amrex::Real get_applied_potential(Real current_time, int domain_end, int vprof, 
 
     return voltage;
 }
+
 AMREX_GPU_DEVICE
-    AMREX_FORCE_INLINE
+AMREX_FORCE_INLINE
 amrex::Real minmod_limiter(amrex::Real left_difference,amrex::Real right_difference)
 {
     amrex::Real phi=1.0;
@@ -145,25 +146,4 @@ amrex::Real minmod_limiter(amrex::Real left_difference,amrex::Real right_differe
     }
     return(phi);
 }
-
-AMREX_GPU_DEVICE
-AMREX_FORCE_INLINE
-amrex::Real efieldlimiter(int i,int j,int k, int sweepdir,
-                          Array4<Real> const& state_arr)
-{
-    IntVect iv{AMREX_D_DECL(i,j,k)};
-    IntVect ivl{AMREX_D_DECL(i,j,k)};
-    IntVect ivr{AMREX_D_DECL(i,j,k)};
-
-    ivl[sweepdir]-=1;
-    ivr[sweepdir]+=1;
-
-    amrex::Real ldiff=state_arr(iv,POT_ID)-state_arr(ivl,POT_ID);
-    amrex::Real rdiff=state_arr(ivr,POT_ID)-state_arr(iv,POT_ID);
-
-    amrex::Real lim=minmod_limiter(ldiff,rdiff);
-
-    return(lim);
-}
-
 #endif
