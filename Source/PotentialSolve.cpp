@@ -374,40 +374,36 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, POT_ID, 1, 0);
     }
 
-    // Use standard AMReX routines to get cell and edge-centered efields if not using charge technique
-    if(!cs_technique)
+    mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_fc));
+
+    for (int ilev = 0; ilev <= finest_level; ilev++)
     {
-        mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_fc));
-    
-        for (int ilev = 0; ilev <= finest_level; ilev++)
-        {
-            efield_fc[ilev][0].mult(-1.0,0,1);
+        efield_fc[ilev][0].mult(-1.0,0,1);
 #if AMREX_SPACEDIM > 1
-            efield_fc[ilev][1].mult(-1.0,0,1);
+        efield_fc[ilev][1].mult(-1.0,0,1);
 #if AMREX_SPACEDIM == 3
-            efield_fc[ilev][2].mult(-1.0,0,1);
+        efield_fc[ilev][2].mult(-1.0,0,1);
 #endif
 #endif   
 
-            const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(&efield_fc[ilev][0], 
-                &efield_fc[ilev][1], &efield_fc[ilev][2])};
-            average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
+        const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(&efield_fc[ilev][0], 
+                                                                             &efield_fc[ilev][1], &efield_fc[ilev][2])};
+        average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
 
-            // Calculate the reduced electric field
-            auto phi_arrays = phi_new[ilev].arrays();
-            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                auto s_arr = phi_arrays[nbx];
-                RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
-                Real Esum = 0.0;
-                amrex::Real ndens = 0.0;
-                for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
-                ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
-                for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
-                s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
-            });
-        }
+        // Calculate the reduced electric field
+        auto phi_arrays = phi_new[ilev].arrays();
+        amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+            auto s_arr = phi_arrays[nbx];
+            RealVect Evect{AMREX_D_DECL(s_arr(i,j,k,EFX_ID),s_arr(i,j,k,EFY_ID),s_arr(i,j,k,EFZ_ID))};
+            Real Esum = 0.0;
+            amrex::Real ndens = 0.0;
+            for(int sp=0; sp<NUM_SPECIES; sp++) ndens += s_arr(i,j,k,sp);
+            ndens = ndens - s_arr(i,j,k,E_ID); // Only use heavy species denstities
+            for(int dim=0; dim<AMREX_SPACEDIM; dim++) Esum += Evect[dim]*Evect[dim];
+            s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
+        });
     }
-    
+
     //clean-up
     potential.clear();
     acoeff.clear();
@@ -461,191 +457,5 @@ void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
             s_arr(i,j,k,REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
             phi_arr(i,j,k,REF_ID) = s_arr(i,j,k,REF_ID);
         });
-    }
-}
-void Vidyut::update_cs_technique_potential()
-{
-    BL_PROFILE("Vidyut::cs_technique_potential()");
-    int findlev_local=-1;
-    int findlev_global=-1;
-    int found=0; 
-    amrex::Vector<amrex::Real> all_cs_charges(cs_ncharges);
-    int is2d=cs_2d; //GPU capture
-
-    for(int nch=0;nch<cs_ncharges;nch++)
-    {
-        
-        amrex::Real dist_ch = amrex::Math::powi<2>((cs_locx[nch]-cs_pin_locx[nch])) +
-                              amrex::Math::powi<2>((cs_locy[nch]-cs_pin_locy[nch]));
-        if(!is2d)
-        {
-              dist_ch+=amrex::Math::powi<2>((cs_locz[nch]-cs_pin_locz[nch]));
-        }
-        dist_ch=std::sqrt(dist_ch);
-
-        for (int ilev = 0; ilev <= finest_level; ilev++)
-        {
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const auto dx = geom[ilev].CellSizeArray();
-            const int* domlo_arr = geom[ilev].Domain().loVect();
-            const int* domhi_arr = geom[ilev].Domain().hiVect();
-
-            GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
-            GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
-
-            int loc_i=amrex::Math::floor((cs_pin_locx[nch]-prob_lo[0])/dx[0]);
-            int loc_j=amrex::Math::floor((cs_pin_locy[nch]-prob_lo[1])/dx[1]);
-            int loc_k=amrex::Math::floor((cs_pin_locz[nch]-prob_lo[2])/dx[2]);
-
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                IntVect ivloc{AMREX_D_DECL(loc_i,loc_j,loc_k)};
-                
-                if(bx.contains(ivloc))
-                {
-                    found=1;
-                    findlev_local=ilev;
-                }
-            }
-        }
-
-        findlev_global=findlev_local;
-        amrex::ParallelDescriptor::ReduceIntMax(findlev_global);
-
-        amrex::Real cs_charge=0.0;
-        int proc_with_charge=-1;
-
-        //find proc with max findlev
-        if(findlev_global==findlev_local)
-        {
-            proc_with_charge=amrex::ParallelDescriptor::MyProc();
-            //probe in that processor to get charge
-            int ilev=findlev_local;
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const auto dx = geom[ilev].CellSizeArray();
-            
-            int loc_i=amrex::Math::floor((cs_pin_locx[nch]-prob_lo[0])/dx[0]);
-            int loc_j=amrex::Math::floor((cs_pin_locy[nch]-prob_lo[1])/dx[1]);
-            int loc_k=amrex::Math::floor((cs_pin_locz[nch]-prob_lo[2])/dx[2]);
-            
-            for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-                Array4<Real> phi_arr   = phi_new[ilev].array(mfi);
-                IntVect ivloc{AMREX_D_DECL(loc_i,loc_j,loc_k)};
-
-                if(bx.contains(ivloc))
-                {
-                    cs_charge=(cs_voltages[nch]-phi_arr(ivloc,POT_ID))*4.0*PI*EPS0*dist_ch;
-                    break;
-                }
-            }
-        }
-
-        amrex::ParallelDescriptor::ReduceRealSum(cs_charge);
-
-        /*amrex::AllPrint()<<"cs_charge, proc:"<<cs_charge<<"\t"
-        <<amrex::ParallelDescriptor::MyProc()<<"\n";*/
-
-        all_cs_charges[nch]=cs_charge;
-    }
-
-    //update potential    
-    for(int nch=0;nch<cs_ncharges;nch++)
-    {
-        //for local gpu capture
-        amrex::Real q_x=cs_locx[nch];
-        amrex::Real q_y=cs_locy[nch];
-        amrex::Real q_z=cs_locz[nch];
-
-        amrex::Real cs_charge=all_cs_charges[nch];
-
-        //superimpose charge voltage
-        for (int ilev = 0; ilev <= finest_level; ilev++)
-        {
-            auto prob_lo = geom[ilev].ProbLoArray();
-            auto prob_hi = geom[ilev].ProbHiArray();
-            const auto dx = geom[ilev].CellSizeArray();
-            
-            auto phi_arrays = phi_new[ilev].arrays();
-            amrex::ParallelFor(phi_new[ilev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                auto phi_arr = phi_arrays[nbx];
-
-                amrex::Real x=prob_lo[0]+(i+0.5)*dx[0];
-                amrex::Real y=prob_lo[1]+(j+0.5)*dx[1];
-                amrex::Real z=prob_lo[2]+(k+0.5)*dx[2];
-
-                amrex::Real dist=amrex::Math::powi<2>(x-q_x) 
-                                +amrex::Math::powi<2>(y-q_y);
-
-                if(!is2d)
-                {
-                    dist+=amrex::Math::powi<2>(z-q_z);
-                }
-                dist=std::sqrt(dist);
-
-                phi_arr(i,j,k,POT_ID) += cs_charge/(4.0*PI*EPS0*dist);
-            });
-        }
-    }
-}
-
-void Vidyut::potential_gradlimiter(Vector<MultiFab>& Sborder)
-{
-    BL_PROFILE("Vidyut::potential_gradlimiter()");
-    for (int ilev = 0; ilev <= finest_level; ilev++)
-    {
-        auto prob_lo = geom[ilev].ProbLoArray();
-        auto prob_hi = geom[ilev].ProbHiArray();
-        const auto dx = geom[ilev].CellSizeArray();
-        const int* domlo_arr = geom[ilev].Domain().loVect();
-        const int* domhi_arr = geom[ilev].Domain().hiVect();
-
-        GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
-        GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
-
-        for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            Box bx_x = mfi.nodaltilebox(0);
-#if AMREX_SPACEDIM > 1
-            Box bx_y = mfi.nodaltilebox(1);
-#if AMREX_SPACEDIM == 3
-            Box bx_z = mfi.nodaltilebox(2);
-#endif
-#endif
-            Array4<Real> phi_arr   = phi_new[ilev].array(mfi);
-            Array4<Real> sb_arr   = Sborder[ilev].array(mfi);
-
-            //x sweep
-            amrex::ParallelFor(bx_x, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-
-                amrex::Real lim=efieldlimiter(i, j, k, 0, sb_arr);
-                phi_arr(i,j,k,EFX_ID)*=lim;
-            });
-            
-#if AMREX_SPACEDIM > 1
-            //y sweep
-            amrex::ParallelFor(bx_y, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                
-                amrex::Real lim=efieldlimiter(i, j, k, 1, sb_arr);
-                phi_arr(i,j,k,EFY_ID)*=lim;
-
-            });
-            
-#if AMREX_SPACEDIM == 3
-            //z sweep
-            amrex::ParallelFor(bx_z, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                
-                amrex::Real lim=efieldlimiter(i, j, k, 2, sb_arr);
-                phi_arr(i,j,k,EFZ_ID)*=lim;
-
-            });
-#endif
-#endif
-        }
     }
 }

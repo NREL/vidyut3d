@@ -200,11 +200,6 @@ void Vidyut::Evolve()
             solve_potential(cur_time+time_offset, Sborder, pot_bc_lo, pot_bc_hi, 
                             efield_fc);
 
-            if(cs_technique)
-            {
-                update_cs_technique_potential(); 
-            }
-
             //fillpatching here to get the latest potentials in 
             //sborder so that it can be used in efield calc
             for(int lev=0;lev<=finest_level;lev++)
@@ -213,37 +208,9 @@ void Vidyut::Evolve()
                 FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
             }
 
-            //update cell-centered electric fields using alternative method if cs_technique is used
-            if(cs_technique)
-            {
-                update_cc_efields(Sborder);
-                //fillpatching here to get the latest efields 
-                //in sborder so that it can be used in drift vel calcs
-                //may be there is a clever way to improve performance 
-                for(int lev=0;lev<=finest_level;lev++)
-                {
-                    Sborder[lev].setVal(0.0);
-                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
-                }
-            }
-
             if(using_ib)
             {
                 correct_efields_ib(Sborder,efield_fc,cur_time);
-                //fillpatching here to get the latest efields 
-                //in sborder so that it can be used in drift vel calcs
-                //may be there is a clever way to improve performance 
-                for(int lev=0;lev<=finest_level;lev++)
-                {
-                    Sborder[lev].setVal(0.0);
-                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
-                }
-            }
-
-            if(efield_limiter)
-            {
-                potential_gradlimiter(Sborder); 
-
                 //fillpatching here to get the latest efields 
                 //in sborder so that it can be used in drift vel calcs
                 //may be there is a clever way to improve performance 
