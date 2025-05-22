@@ -146,4 +146,25 @@ amrex::Real minmod_limiter(amrex::Real left_difference,amrex::Real right_differe
     }
     return(phi);
 }
+
+AMREX_GPU_DEVICE
+AMREX_FORCE_INLINE
+amrex::Real get_gradlimiter(int i,int j,int k, int var,
+                            int sweepdir,
+                          Array4<Real> const& state_arr)
+{
+    IntVect iv{AMREX_D_DECL(i,j,k)};
+    IntVect ivl{AMREX_D_DECL(i,j,k)};
+    IntVect ivr{AMREX_D_DECL(i,j,k)};
+
+    ivl[sweepdir]-=1;
+    ivr[sweepdir]+=1;
+
+    amrex::Real ldiff=state_arr(iv,var)-state_arr(ivl,var);
+    amrex::Real rdiff=state_arr(ivr,var)-state_arr(iv,var);
+
+    amrex::Real lim=minmod_limiter(ldiff,rdiff);
+
+    return(lim);
+}
 #endif
