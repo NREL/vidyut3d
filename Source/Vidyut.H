@@ -241,21 +241,9 @@ public:
     amrex::Real voltage_dur=0.0; 
     amrex::Real voltage_center=0.0; 
 
-    int cs_technique=0;
-    int cs_ncharges=0;
-    int cs_2d=0;
     int floor_jh=0;
-    amrex::Vector<amrex::Real> cs_locx;
-    amrex::Vector<amrex::Real> cs_locy;
-    amrex::Vector<amrex::Real> cs_locz;
-    amrex::Vector<amrex::Real> cs_pin_locx;
-    amrex::Vector<amrex::Real> cs_pin_locy;
-    amrex::Vector<amrex::Real> cs_pin_locz;
-    amrex::Vector<amrex::Real> cs_voltages;
 
     void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
-    void update_cs_technique_potential(); 
-    void potential_gradlimiter(amrex::Vector<MultiFab>& Sborder);
 
     void update_surf_charge(Vector<MultiFab>& Sborder,
                             Real current_time, Real dt);
@@ -305,7 +293,6 @@ public:
 
     // Electron species index
     int E_IDX = 0;
-    int efield_limiter=0;
 
     int using_ib=0;
 
