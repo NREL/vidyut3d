@@ -124,6 +124,11 @@ Vidyut::Vidyut()
       amrex::Abort("Electron not found in chemistry mechanism!\n");
     }
 
+#ifdef USE_CVODE
+    reactor_ptr = pele::physics::reactions::ReactorBase::create("ReactorCvode");
+    reactor_ptr->init(1,1);
+#endif
+
     if(multicompsolves)
     {
         if(using_ib)
@@ -352,7 +357,7 @@ void Vidyut::ReadParameters()
             pp.query("advective_cfl", advective_cfl);
             pp.query("diffusive_cfl", diffusive_cfl);
             pp.query("dielectric_cfl", dielectric_cfl);
-            pp.query("dt_min", dt_min);
+            pp.query("dt_pulse", dt_pulse);
             pp.query("dt_max", dt_max);
             pp.query("adaptive_dt_delay", adaptive_dt_delay);
             pp.query("dt_stretch", dt_stretch);
@@ -372,6 +377,7 @@ void Vidyut::ReadParameters()
         pp.query("linsolve_max_coarsening_level",linsolve_max_coarsening_level);
         pp.query("bound_specden", bound_specden);
         pp.query("min_species_density",min_species_density);
+        pp.query("min_surface_species_density",min_surface_species_density);
         pp.query("min_electron_density",min_electron_density);
         pp.query("min_electron_temp",min_electron_temp);
         pp.query("elecenergy_solve",elecenergy_solve);
@@ -379,6 +385,7 @@ void Vidyut::ReadParameters()
         pp.query("do_reactions",do_reactions);
         pp.query("do_transport",do_transport);
         pp.query("do_spacechrg",do_spacechrg);
+        pp.query("do_surface_reactions",do_surface_reactions);
         pp.query("user_defined_potential", user_defined_potential);
         pp.query("user_defined_species", user_defined_species);
         pp.query("user_defined_vel", user_defined_vel);
@@ -393,7 +400,40 @@ void Vidyut::ReadParameters()
         pp.query("gas_pressure",gas_pressure);
         bg_specid_list.resize(0);
         pp.queryarr("bg_species_ids",bg_specid_list);
+        pp.queryarr("surface_species_ids",surface_specid_list);
         
+        // Fill in the surface species flag array
+        surf_flag.resize(NUM_SPECIES);
+        for(int sp=0; sp<=NUM_SPECIES; sp++){
+            auto it=std::find(surface_specid_list.begin(),surface_specid_list.end(),sp);
+            if(it != surface_specid_list.end())
+            {
+              surf_flag[sp] = 1;
+            } else {
+              surf_flag[sp] = 0;
+            }
+        }
+        
+        pp.query("reactor_scaling", reactor_scaling);
+        // 1 for simple reactor scaling, 2 for reactor scaling as discussed in Maitre et al., J. Phys. Chem. C., 2022
+        if(reactor_scaling == 1){  
+            pp.get("pellet_r", pellet_r);
+            catalysis_scale = 3.0/pellet_r;
+        } else if(reactor_scaling == 2){
+            pp.get("reactor_r_inner", reactor_r_inner);
+            pp.get("reactor_r_outer", reactor_r_outer);
+            pp.get("reactor_h", reactor_h);
+            pp.get("reactor_void", reactor_void);
+            pp.get("pellet_porosity", pellet_porosity);
+            pp.get("pellet_density", pellet_density);
+            pp.get("pellet_spec_area", pellet_spec_area);
+
+            reactor_V = PI*(reactor_r_outer - reactor_r_inner) * reactor_h;
+            void_total_V = (reactor_void*reactor_V) + (1.0 - reactor_void)*pellet_porosity*reactor_V;
+            pellet_area = pellet_density*(1.0 - reactor_void)*reactor_V*pellet_spec_area;
+            catalysis_scale = pellet_area/void_total_V;
+        }
+
         pp.query("weno_scheme",weno_scheme);
         pp.query("track_surf_charge",track_surf_charge);
         pp.query("solver_verbose",solver_verbose);
@@ -418,15 +458,32 @@ void Vidyut::ReadParameters()
         }
 
         // Voltage options
-        pp.query("voltage_profile", voltage_profile);
-        pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
-        pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
-        if(voltage_profile == 1){
-            pp.get("voltage_freq", voltage_freq);
-        } else if (voltage_profile == 2) {
-            pp.get("voltage_dur", voltage_dur);
-            pp.get("voltage_center", voltage_center);
-        } 
+        pp.query("experimental_voltage", experimental_voltage);
+        if(experimental_voltage == 0){
+            pp.query("voltage_profile", voltage_profile);
+            pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
+            pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
+            if(voltage_profile >= 1){
+                pp.get("pulse_freq", pulse_freq);
+            } 
+            if (voltage_profile >= 2) {
+                pp.get("voltage_dur", voltage_dur);
+                pp.get("voltage_center", voltage_center);
+                pp.get("num_pulse", num_pulse);
+            } 
+        } else {
+            pp.get("num_pulse", num_pulse);
+            pp.get("pulse_freq", pulse_freq);
+            pp.get("exp_volt_name", exp_volt_name);
+            pp.get("exp_volt_dir", exp_volt_dir);
+            pp.get("diel_thickness", diel_thickness);
+            pp.get("eps_r", eps_r);
+            if(exp_volt_name == "yang_2022"){
+                voltage_dur = 25.0e-9;
+            } else {
+                amrex::Abort("A valid experimental voltage profile must be specified!\n");
+            }
+        }
 
         pp.query("monitor_file_int", monitor_file_int);
         pp.query("num_timestep_correctors",num_timestep_correctors);

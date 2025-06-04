@@ -24,6 +24,7 @@
 #define IHNEUBC 3
 #define ROBINBC 4
 #define AXISBC 5
+#define CATBC 6
 
 #define POTEQ_TYPE 0
 #define PHOTEQ_TYPE 1

@@ -581,6 +581,18 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
     *enerExch -= elec_elastic_coll_term;
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+productionRateSurface(amrex::Real *wdot, const amrex::Real *sc, const amrex::Real T) {
+
+}
+
+// compute the production rate for each species
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+SKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot_surface[]) {
+
+  productionRateSurface(wdot_surface, C, T);
+}
+
 // compute the production rate for each species
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot[], const amrex::Real Te, const amrex::Real EN, amrex::Real * ener_exch)
 {

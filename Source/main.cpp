@@ -23,6 +23,10 @@ int main(int argc, char* argv[])
         //             - sizes multilevel arrays and data structures
         Vidyut vidyut_obj;
 
+#ifdef USE_CVODE
+        amrex::sundials::Initialize(amrex::OpenMP::get_max_threads());
+#endif
+
         // initialize AMR data
         vidyut_obj.InitData();
         

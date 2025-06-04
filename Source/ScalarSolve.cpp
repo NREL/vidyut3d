@@ -13,10 +13,14 @@
 #include <UserSources.H>
 #include <compute_explicit_flux.H>
 #include <AMReX_MLABecLaplacian.H>
+#ifdef USE_CVODE
+#include <ReactorBase.H>
+#endif
 
 void Vidyut::compute_dsdt(int startspec, int numspec, int lev, 
                             Array<MultiFab,AMREX_SPACEDIM>& flux, 
                             MultiFab& rxn_src,
+                            MultiFab& surface_rxn_src,
                             MultiFab& dsdt,
                             Real time, Real dt)
 {
@@ -32,6 +36,7 @@ void Vidyut::compute_dsdt(int startspec, int numspec, int lev,
     amrex::Real captured_gaspres=gas_pressure;
 
     auto rxn_arrays = rxn_src.const_arrays();
+    auto surf_rxn_arrays = surface_rxn_src.const_arrays();
     auto dsdt_arrays = dsdt.arrays();
 
     auto fluxx_arrays = flux[0].arrays();
@@ -46,11 +51,14 @@ void Vidyut::compute_dsdt(int startspec, int numspec, int lev,
     amrex::ParallelFor(dsdt, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
         auto dsdt_arr = dsdt_arrays[nbx];
         auto rxn_arr = rxn_arrays[nbx];
+        auto surf_rxn_arr = surf_rxn_arrays[nbx];
 
         GpuArray<Array4<Real>, AMREX_SPACEDIM> flux_arr{AMREX_D_DECL(fluxx_arrays[nbx], fluxy_arrays[nbx],fluxz_arrays[nbx])};
-            for(int c=captured_startspec;
-                c<(captured_startspec+captured_numspec);c++)
-            {
+
+        for(int c=captured_startspec; c<(captured_startspec+captured_numspec);c++)
+        {
+            // Only need to update gas-phase species, surface species updated in Evolve
+            if(!surf_flag[c]){
                 dsdt_arr(i, j, k, c) = (flux_arr[0](i, j, k, c-captured_startspec) 
                                         - flux_arr[0](i + 1, j, k, c-captured_startspec)) / dx[0] 
                 + rxn_arr(i,j,k,c);
@@ -62,14 +70,21 @@ void Vidyut::compute_dsdt(int startspec, int numspec, int lev,
                                       - flux_arr[2](i, j, k + 1, c-captured_startspec)) / dx[2]; 
 #endif
 #endif      
+                // Add on surface reactive source (1/m3-s)
+                if(reactor_scaling){
+                    dsdt_arr(i,j,k,c) += surf_rxn_arr(i,j,k,c)*catalysis_scale;
+                } else {
+                    dsdt_arr(i,j,k,c) += surf_rxn_arr(i,j,k,c)/dx[0];
+                }    
             }
-
+        }
     });
 }
 
 void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
                                           Vector<MultiFab>& Sborder,
                                           Vector<MultiFab>& rxn_src, 
+                                          Vector<MultiFab>& surface_rxn_src, 
                                           Vector<MultiFab>& expl_src, 
                                           Vector<int>& bc_lo, Vector<int>& bc_hi,
                                           amrex::Real cur_time)
@@ -126,7 +141,7 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
     for(int lev=0;lev<=finest_level;lev++)
     {
         compute_dsdt(startspec, numspec, lev, 
-                     flux[lev], rxn_src[lev], expl_src[lev], 
+                     flux[lev], rxn_src[lev], surface_rxn_src[lev], expl_src[lev], 
                      cur_time, dt[lev]);
     }
 
@@ -148,16 +163,23 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
 
 void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                                          Vector<MultiFab>& rxn_src, 
-                                         amrex::Real cur_time)
+                                         amrex::Real cur_time, amrex::Real dt)
 {
+
     BL_PROFILE("Vidyut::update_rxnsrc_at_all_levels()");
     amrex::Real time = cur_time;
     ProbParm const* localprobparm = d_prob_parm;
+
+    Vector<MultiFab> Sborder_temp(finest_level+1);
+    int num_grow=ngrow_for_fillpatch;
 
     // Zero out reactive source MFs
     for(int lev=0; lev <= finest_level; lev++)
     {
         rxn_src[lev].setVal(0.0);
+        // TODO: Is there a better way to do this that doesnt involve copying the solution?
+        Sborder_temp[lev].define(grids[lev], dmap[lev], phi_new[lev].nComp(), num_grow);
+        amrex::MultiFab::Copy(Sborder_temp[lev], Sborder[lev], 0, 0, Sborder[lev].nComp(), num_grow);
     }
 
     for(int lev=0;lev<=finest_level;lev++)
@@ -171,38 +193,194 @@ void Vidyut::update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
         auto sborder_arrays = Sborder[lev].arrays();
         auto rxn_arrays = rxn_src[lev].arrays();
 
-        // update residual
-        amrex::ParallelFor(rxn_src[lev], [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-            auto sborder_arr = sborder_arrays[nbx];
-            auto rxn_arr = rxn_arrays[nbx];
+        for (MFIter mfi(rxn_src[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            const Box& gbx = amrex::grow(bx, 1);
 
-            // Create array with species concentrations
-            amrex::Real spec_C[NUM_SPECIES];
-            amrex::Real spec_wdot[NUM_SPECIES];
-            amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
-            amrex::Real EN = sborder_arr(i,j,k,REF_ID);
-            amrex::Real ener_exch = 0.0;
-            for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
+            Array4<Real> sborder_arr = Sborder_temp[lev].array(mfi);
+            Array4<Real> sborder_arr_old = Sborder[lev].array(mfi);
+            Array4<Real> rxn_arr = rxn_src[lev].array(mfi);
 
-            // Get molar production rates
-            CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
+            Array4<Real> nspec_arr = Sborder_temp[lev].array(mfi,0);
+            Array4<Real> Ue_arr = Sborder_temp[lev].array(mfi,EEN_ID);
+            Array4<Real> Te_arr = Sborder_temp[lev].array(mfi,ETEMP_ID);
+            Array4<Real> EN_arr = Sborder_temp[lev].array(mfi,REF_ID);
 
-            // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
-            for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
-            rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
+#ifdef USE_CVODE
+            reactor_ptr->react(bx, nspec_arr, Ue_arr, Te_arr, captured_gastemp, EN_arr, dt, cur_time);
 
-            // Add on user-defined reactive sources
-            user_sources::add_user_react_sources
-            (i, j, k, sborder_arr, rxn_arr,
-             prob_lo, prob_hi, dx, time, *localprobparm,
-             captured_gastemp,
-             captured_gaspres);
-        });
+            // add on user sources
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                for(int sp=0; sp<=NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)) / dt;
+
+                user_sources::add_user_react_sources
+                (i, j, k, sborder_arr, rxn_arr,
+                 prob_lo, prob_hi, dx, time, *localprobparm,
+                 captured_gastemp,
+                 captured_gaspres);
+            });
+#else
+            // update residual
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                // Create array with species concentrations
+                amrex::Real spec_C[NUM_SPECIES];
+                amrex::Real spec_wdot[NUM_SPECIES];
+                amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
+                amrex::Real EN = sborder_arr(i,j,k,REF_ID);
+                amrex::Real ener_exch = 0.0;
+                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
+
+                // Get molar production rates
+                CKWC(captured_gastemp, spec_C, spec_wdot, Te, EN, &ener_exch);
+
+                // Convert from mol/m3-s to 1/m3-s and add to scalar react source MF
+                for(int sp = 0; sp<NUM_SPECIES; sp++) rxn_arr(i,j,k,sp) = spec_wdot[sp] * N_A;
+                rxn_arr(i,j,k,NUM_SPECIES) = ener_exch;
+                
+                // Add on user-defined reactive sources
+                user_sources::add_user_react_sources
+                (i, j, k, sborder_arr, rxn_arr,
+                 prob_lo, prob_hi, dx, time, *localprobparm,
+                 captured_gastemp,
+                 captured_gaspres);
+
+            });
+#endif
+        }
     }
-    
+
     if(using_ib) 
     {
         null_field_in_covered_cells(rxn_src,Sborder,0,NUM_SPECIES+1);
+    }
+}
+    
+void Vidyut::update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
+                                         Vector<MultiFab>& surface_rxn_src,
+                                         Vector<int>& bc_lo,
+                                         Vector<int>& bc_hi,
+                                         amrex::Real cur_time,
+                                         amrex::Real dt)
+{
+    amrex::Real time = cur_time;
+    ProbParm const* localprobparm = d_prob_parm;
+
+    Vector<MultiFab> Sborder_temp(finest_level+1);
+    int num_grow=ngrow_for_fillpatch;
+
+    // Zero out reactive source MFs
+    for(int lev=0; lev <= finest_level; lev++)
+    {
+        surface_rxn_src[lev].setVal(0.0);
+        // TODO: Is there a better way to do this that doesnt involve copying the solution?
+        Sborder_temp[lev].define(grids[lev], dmap[lev], phi_new[lev].nComp(), num_grow);
+        amrex::MultiFab::Copy(Sborder_temp[lev], Sborder[lev], 0, 0, Sborder[lev].nComp(), num_grow);
+    }
+
+    for(int lev=0;lev<=finest_level;lev++)
+    {
+        amrex::Real captured_gastemp=gas_temperature;
+        amrex::Real captured_gaspres=gas_pressure;
+        const auto dx = geom[lev].CellSizeArray();
+        auto prob_lo = geom[lev].ProbLoArray();
+        auto prob_hi = geom[lev].ProbHiArray();
+
+        // Get the boundary ids
+        const int* domlo_arr = geom[lev].Domain().loVect();
+        const int* domhi_arr = geom[lev].Domain().hiVect();
+
+        for (MFIter mfi(surface_rxn_src[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.tilebox();
+            const Box& gbx = amrex::grow(bx, 1);
+
+            Array4<Real> sborder_arr = Sborder_temp[lev].array(mfi);
+            Array4<Real> sborder_arr_old = Sborder[lev].array(mfi);
+            Array4<Real> surface_rxn_arr = surface_rxn_src[lev].array(mfi);
+            Array4<Real> nspec_arr = Sborder_temp[lev].array(mfi,0);
+
+            // Apply area/volume scaling if needed
+            if(reactor_scaling){
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                    for(int sp=0; sp<=NUM_SPECIES; sp++){
+                        if(surf_flag[sp]) sborder_arr(i,j,k,sp) /= catalysis_scale;
+                    }
+                });
+            }
+
+#ifdef USE_CVODE
+            reactor_ptr->surf_react(bx, nspec_arr, captured_gastemp, dt, cur_time);
+
+            // Get surface reactive updates only for relevant cellss
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+            
+                for(int sp=0; sp<=NUM_SPECIES; sp++){
+                    if((i==domlo_arr[0] && bc_lo[0]==CATBC) || (i==domhi_arr[0] && bc_hi[0]==CATBC))
+                    {
+                        if(surf_flag[sp] && reactor_scaling){
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)/catalysis_scale) / dt;
+                        } else {
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)) / dt;
+                        }
+                    } 
+                    if((j==domlo_arr[1] && bc_lo[1]==CATBC) || (j==domhi_arr[j] && bc_hi[j]==CATBC))
+                    {
+                        if(surf_flag[sp] && reactor_scaling){
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)/catalysis_scale) / dt;
+                        } else {
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)) / dt;
+                        }
+                    } 
+                    if((k==domlo_arr[2] && bc_lo[2]==CATBC) || (k==domhi_arr[2] && bc_hi[2]==CATBC))
+                    {
+                        if(surf_flag[sp] && reactor_scaling){
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)/catalysis_scale) / dt;
+                        } else {
+                            surface_rxn_arr(i,j,k,sp) = (sborder_arr(i,j,k,sp) - sborder_arr_old(i,j,k,sp)) / dt;
+                        }
+                    } 
+                }
+            });
+#else
+            // update residual
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                amrex::Real spec_C[NUM_SPECIES];
+                amrex::Real spec_wdot_surface[NUM_SPECIES];
+
+                // Convert to concentrations
+                for(int sp=0; sp<NUM_SPECIES; sp++) spec_C[sp] = sborder_arr(i,j,k,sp) / N_A;
+
+                // Check for catalyst BCs in x-dir
+                if((i==domlo_arr[0] && bc_lo[0]==CATBC) || (i==domhi_arr[0] && bc_hi[0]==CATBC))
+                {
+                    // Calculate surface reaction production rates
+                    SKWC(captured_gastemp, spec_C, spec_wdot_surface);
+
+                    // Convert from mol/m2-s to 1/m2-s
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
+                }
+                // Check for catalyst BCs in y-dir
+                if((j==domlo_arr[1] && bc_lo[1]==CATBC) || (j==domhi_arr[1] && bc_hi[1]==CATBC))
+                {
+                    // Calculate surface reaction production rates
+                    SKWC(captured_gastemp, spec_C, spec_wdot_surface);
+
+                    // Convert from mol/m2-s to 1/m2-s
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
+                }
+                // Check for catalyst BCs in z-dir
+                if((k==domlo_arr[2] && bc_lo[2]==CATBC) || (k==domhi_arr[2] && bc_hi[2]==CATBC))
+                {
+                    // Calculate surface reaction production rates
+                    SKWC(captured_gastemp, spec_C, spec_wdot_surface);
+
+                    // Convert from mol/m2-s to 1/m2-s
+                    for(int sp = 0; sp<NUM_SPECIES; sp++) surface_rxn_arr(i,j,k,sp) = spec_wdot_surface[sp] * N_A;
+                }
+            });
+#endif
+        }
     }
 }
 
@@ -438,7 +616,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         {
             bc_linsolve_lo[idim] = LinOpBCType::Neumann;
         }
-        if (bc_lo[idim] == IHNEUBC)
+        if (bc_lo[idim] == IHNEUBC || bc_lo[idim] == CATBC)
         {
             bc_linsolve_lo[idim] = LinOpBCType::inhomogNeumann;
         }
@@ -465,7 +643,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         {
             bc_linsolve_hi[idim] = LinOpBCType::Neumann;
         }
-        if (bc_hi[idim] == IHNEUBC)
+        if (bc_hi[idim] == IHNEUBC || bc_hi[idim] == CATBC)
         {
             bc_linsolve_hi[idim] = LinOpBCType::inhomogNeumann;
         }
@@ -555,6 +733,25 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
         robin_f[ilev].setVal(0.0);
 
         rhs[ilev].setVal(0.0);
+        
+        /*LINCOMB cheat sheet==============
+         * \brief dst = a*x + b*y
+         *
+         * \param dst     destination FabArray
+         * \param a       scalar a
+         * \param x       FabArray x
+         * \param xcomp   starting component of x
+         * \param b       scalar b
+         * \param y       FabArray y
+         * \param ycomp   starting component of y
+         * \param dstcomp starting component of destination
+         * \param numcomp number of components
+         * \param nghost  number of ghost cells
+         static void LinComb (FabArray<FAB>& dst,
+         value_type a, const FabArray<FAB>& x, int xcomp,
+         value_type b, const FabArray<FAB>& y, int ycomp,
+         int dstcomp, int numcomp, const IntVect& nghost);
+         ====================================*/
 
         /*LINCOMB cheat sheet==============
          * \brief dst = a*x + b*y

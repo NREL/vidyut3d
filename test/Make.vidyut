@@ -21,6 +21,19 @@ Pdirs 	:= Base Boundary AmrCore LinearSolvers/MLMG
 ifeq ($(USE_SENSEI_INSITU),TRUE)
 	Pdirs += Amr Extern/SENSEI
 endif
+ifeq ($(USE_CVODE),TRUE)
+#  include $(TOP)/Source/Reactor/Make.package
+#	 INCLUDE_LOCATIONS   += $(TOP)/Submodules/sundials/include
+	INCLUDE_LOCATIONS   += $(TOP)/../cvode_no_mpi/sundials/INSTDIR/include
+  CPPFLAGS += -DUSE_CVODE
+  Pdirs += Extern/SUNDIALS
+#  REL_SUNDIALS_LIB_DIR := $(VIDYUT_DIR)/Submodules/sundials/lib
+  REL_SUNDIALS_LIB_DIR := $(VIDYUT_DIR)/../cvode_no_mpi/sundials/INSTDIR/lib
+  SUNDIALS_LIB_DIR := $(abspath $(lastword $(REL_SUNDIALS_LIB_DIR)))
+  LIBRARIES += -L$(SUNDIALS_LIB_DIR) -lsundials_cvode -lsundials_arkode
+  LIBRARIES += -L$(SUNDIALS_LIB_DIR) -lsundials_core -lsundials_nvecserial
+#  LIBRARIES += -Wl,-rpath=${SUNDIALS_LIB_DIR}
+endif
 Ppack	+= $(foreach dir, $(Pdirs), $(AMREX_HOME)/Src/$(dir)/Make.package)
 
 include $(Ppack)

@@ -14,11 +14,14 @@
 #include <AMReX_AmrCore.H>
 #include <AMReX_BCRec.H>
 #include <ProbParm.H>
+#include <AppliedVoltages.H>
 
 #include <AMReX_MLABecLaplacian.H>
 #include <UnivConstants.H>
 #include <VarDefines.H>
-
+#ifdef USE_CVODE
+#include "ReactorBase.H"
+#endif
 
 using namespace amrex;
 
@@ -83,6 +86,7 @@ public:
     void compute_dsdt(int startspec, int numspec, int lev,
                       Array<MultiFab,AMREX_SPACEDIM>& flux, 
                       MultiFab& rxn_src,
+                      MultiFab& surface_rxn_src,
                       MultiFab& dsdt,
                       Real time, Real dt);
 
@@ -94,13 +98,21 @@ public:
     void update_explsrc_at_all_levels(int startspec, int numspec, 
                                       Vector<MultiFab>& Sborder,
                                       Vector<MultiFab>& rxn_src, 
+                                      Vector<MultiFab>& surface_rxn_src,
                                       Vector<MultiFab>& expl_src, 
                                       Vector<int>& bc_lo, Vector<int>& bc_hi,
                                       amrex::Real cur_time);
 
     void update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
                                      Vector<MultiFab>& rxn_src, 
-                                     amrex::Real cur_time);
+                                     amrex::Real cur_time, amrex::Real dt);
+
+    void update_surface_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
+                                        Vector<MultiFab>& rxn_src,
+                                        Vector<int>& bc_lo,
+                                        Vector<int>& bc_hi,
+                                        amrex::Real cur_time,
+                                        amrex::Real dt);
 
     void implicit_solve_scalar(Real current_time,Real dt,int startspec,int numspec,
                                Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
@@ -128,7 +140,10 @@ public:
     static ProbParm* d_prob_parm;
 
     std::unique_ptr<amrex::MLABecLaplacian> linsolve_ptr;
-
+#ifdef USE_CVODE
+    std::unique_ptr<pele::physics::reactions::ReactorBase> reactor_ptr;
+#endif
+    
     ////////////////
     amrex::Gpu::ManagedVector<Real> refine_phi;
     amrex::Gpu::ManagedVector<Real> refine_phigrad;
@@ -185,7 +200,7 @@ public:
 
     amrex::Real fixed_dt=1e-12;
     int adaptive_dt = 0;
-    amrex::Real dt_min=1e-14;
+    amrex::Real dt_pulse=1e-12;
     amrex::Real dt_max=1e-9;
     amrex::Real adaptive_dt_delay = 0.0;
     amrex::Real dt_stretch = std::numeric_limits<amrex::Real>::max();
@@ -195,6 +210,7 @@ public:
     amrex::Real linsolve_bot_reltol = 1e-10;
     amrex::Real linsolve_bot_abstol = -1.0;
     amrex::Real min_species_density=1e-20;
+    amrex::Real min_surface_species_density = 1e-20;
     amrex::Real min_electron_density=1e12;
     amrex::Real min_electron_temp=300.0;
 
@@ -222,6 +238,7 @@ public:
     int do_reactions=1;
     int do_transport=1;
     int do_spacechrg=1;
+    int do_surface_reactions=1;
     int user_defined_potential = 0;
     int user_defined_species = 0;
     int user_defined_vel = 0;
@@ -234,12 +251,21 @@ public:
     int comp_neutral_chunks=NUM_NEUTRALS;
 
     // Voltage options
-    int voltage_profile=0;
-    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};
+    int voltage_profile=0;    // (0): const voltage, (1): sinusoidal, (2): traingular pulses, (3): gaussian pulses
+    int num_pulse = 1;        // Number of pulses (only for triangular and gaussian pulses)
+    amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};   
     amrex::Vector<amrex::Real> voltage_amp_hi{0.0, 0.0, 0.0};
-    amrex::Real voltage_freq=1.0; 
-    amrex::Real voltage_dur=0.0; 
-    amrex::Real voltage_center=0.0; 
+    amrex::Real pulse_freq=1.0;     // Pulse frequency (Hz, only for sinusoidal, triangular and gaussian pulses)
+    amrex::Real voltage_dur=0.0;      // Total pulse duration (triangular pulse) or pulse full-width at half max (gaussian pulse)
+    amrex::Real voltage_center=0.0;   // Timing of the peak for the first pulse (triangular and gaussian profiles) 
+
+    int experimental_voltage = 0;      // Turn on if you wish to use one of the experimentally measured profiles in AppliedVoltages.H
+    std::string exp_volt_name = "";      // Name of the profile  
+    int exp_volt_dir = 0;             // Direction across which experimental voltage is applied (other directions have no applied potential)
+    amrex::Real diel_thickness = 0.0;   // dielectric thickness (used to modify the measured applied voltage)
+    amrex::Real eps_r = 1.0;          // relative dielectric constant
+    amrex::Real curr_voltage = 0.0;     // Track current voltage if needed for calculating temporal deriv.
+    amrex::Real prev_voltage = 0.0;     // Track previous voltage if needed for calculating temporal deriv.
 
     int floor_jh=0;
 
@@ -269,6 +295,23 @@ public:
     void null_field_in_covered_cells(Vector<MultiFab>& fld,
         Vector<MultiFab>& Sborder,int startcomp,int numcomp);
 
+    // Options for 0D reactor A/V scaling (assumes a packed cylindrical DBD reactor with porous spherical catalyst pellets)
+    int reactor_scaling = 0;
+    amrex::Real reactor_r_inner = 0.0;      // m
+    amrex::Real reactor_r_outer = 0.0;      // m
+    amrex::Real pellet_r = 0.0;             // m
+    amrex::Real reactor_h = 0.0;            // m
+    amrex::Real reactor_void = 0.0;         // -
+    amrex::Real pellet_porosity = 0.0;      // -
+    amrex::Real pellet_density = 1000.0;    // kg/m3
+    amrex::Real pellet_spec_area = 1000.0;  // m2/kg
+
+    amrex::Real reactor_V = 0.0;
+    amrex::Real void_total_V = 0.0;
+    amrex::Real pellet_area = 0.0;
+    amrex::Real catalysis_scale = 0.0;
+
+    amrex::Vector<int> surf_flag;
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)
@@ -348,6 +391,7 @@ private:
     static void GotoNextLine(std::istream& is);
 
     Vector<int> bg_specid_list;
+    Vector<int> surface_specid_list{-1};
 
     // Creates monitor file showing the maximum domain value of all variables 
     void WriteMonitorFile(amrex::Real time);
