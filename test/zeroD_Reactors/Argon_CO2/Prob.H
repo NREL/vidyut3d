@@ -57,6 +57,9 @@ void initdomaindata(Box const& bx, Array4<Real> const& phi,
                 Real y = prob_lo[1] + (0.5+j) * dx[1];
                 Real x = prob_lo[0] + (0.5+i) * dx[0];
 
+                // No masking of reactor cells
+                phi(i,j,k,CMASK_ID)=1.0;
+
                 phi(i,j,k,0)  = 1e9;         // electron num dens.
                 phi(i,j,k,3)  = 0.9*2.446e25;    // Ar num dens.
                 phi(i,j,k,4)  = 0.1*2.446e25;    // CO2 num dens.

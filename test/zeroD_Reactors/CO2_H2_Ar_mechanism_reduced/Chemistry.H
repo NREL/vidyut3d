@@ -61,10 +61,10 @@
 #define AR2p_ID 43
 
 //FIX these and make species of same type continuous
-#define FIRST_ION 10
-#define NUM_IONS 5
-#define FIRST_NEUTRAL 1
-#define NUM_NEUTRALS 10
+#define FIRST_ION 0
+#define NUM_IONS 19
+#define FIRST_NEUTRAL 0
+#define NUM_NEUTRALS 25
 //==================================================
 
 
@@ -6395,155 +6395,6 @@ CKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot[],
 
   // convert to chemkin units
   productionRate(wdot, C, T, Te, EN, ener_exch);
-}
-
-// Returns the molar production rate of species
-// Given P, T, and mass fractions
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-CKWYP(const amrex::Real P, const amrex::Real T, const amrex::Real y[],
-      amrex::Real wdot[], const amrex::Real Te, const amrex::Real EN,
-      amrex::Real *ener_exch) {
-  amrex::Real c[44]; // temporary storage
-  amrex::Real YOW = 0;
-  amrex::Real PWORT;
-
-  // Compute inverse of mean molecular wt first
-  for (int i = 0; i < 44; i++) {
-    YOW += y[i] * imw(i);
-  }
-  // PW/RT (see Eq. 7)
-  PWORT = P / (YOW * 8.31446261815324e+07 * T);
-  // multiply by 1e6 so c goes to SI
-  PWORT *= 1e6;
-  // Now compute conversion (and go to SI)
-  for (int i = 0; i < 44; i++) {
-    c[i] = PWORT * y[i] * imw(i);
-  }
-
-  // convert to chemkin units
-  productionRate(wdot, c, T, Te, EN, ener_exch);
-
-  // convert to chemkin units
-  for (int id = 0; id < 44; ++id) {
-    wdot[id] *= 1.0e-6;
-  }
-}
-
-// Returns the molar production rate of species
-// Given P, T, and mole fractions
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-CKWXP(const amrex::Real P, const amrex::Real T, const amrex::Real x[],
-      amrex::Real wdot[], const amrex::Real Te, const amrex::Real EN,
-      amrex::Real *ener_exch) {
-  amrex::Real c[44]; // temporary storage
-  amrex::Real PORT =
-      1e6 * P / (8.31446261815324e+07 * T); // 1e6 * P/RT so c goes to SI units
-
-  // Compute conversion, see Eq 10
-  for (int id = 0; id < 44; ++id) {
-    c[id] = x[id] * PORT;
-  }
-
-  // convert to chemkin units
-  productionRate(wdot, c, T, Te, EN, ener_exch);
-
-  // convert to chemkin units
-  for (int id = 0; id < 44; ++id) {
-    wdot[id] *= 1.0e-6;
-  }
-}
-
-// Returns the molar production rate of species
-// Given rho, T, and mass fractions
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-CKWYR(const amrex::Real rho, const amrex::Real T, const amrex::Real y[],
-      amrex::Real wdot[], const amrex::Real Te, const amrex::Real EN,
-      amrex::Real *ener_exch) {
-  amrex::Real c[44]; // temporary storage
-
-  // See Eq 8 with an extra 1e6 so c goes to SI
-  for (int i = 0; i < 44; i++) {
-    c[i] = 1e6 * rho * y[i] * imw(i);
-  }
-
-  // call productionRate
-  productionRate(wdot, c, T, Te, EN, ener_exch);
-
-  // convert to chemkin units
-  for (int id = 0; id < 44; ++id) {
-    wdot[id] *= 1.0e-6;
-  }
-}
-
-// Returns the molar production rate of species
-// Given rho, T, and mole fractions
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-CKWXR(const amrex::Real rho, const amrex::Real T, const amrex::Real x[],
-      amrex::Real wdot[], const amrex::Real Te, const amrex::Real EN,
-      amrex::Real *ener_exch) {
-  amrex::Real c[44];  // temporary storage
-  amrex::Real XW = 0; // See Eq 4, 11 in CK Manual
-  amrex::Real ROW;
-  // Compute mean molecular wt first
-  XW += x[0] * 0.000549;   // E
-  XW += x[1] * 1.008000;   // H
-  XW += x[2] * 1.008549;   // H-
-  XW += x[3] * 2.016000;   // H2
-  XW += x[4] * 2.016000;   // H2v
-  XW += x[5] * 2.015451;   // H2+
-  XW += x[6] * 3.023451;   // H3+
-  XW += x[7] * 15.999000;  // O
-  XW += x[8] * 15.999549;  // O-
-  XW += x[9] * 31.998000;  // O2
-  XW += x[10] * 31.998549; // O2-
-  XW += x[11] * 28.010000; // CO
-  XW += x[12] * 44.009000; // CO2
-  XW += x[13] * 44.009000; // CO2v1
-  XW += x[14] * 44.009000; // CO2v2
-  XW += x[15] * 44.009000; // CO2v3
-  XW += x[16] * 44.009000; // CO2v4
-  XW += x[17] * 44.008451; // CO2+
-  XW += x[18] * 72.018451; // C2O3+
-  XW += x[19] * 88.017451; // C2O4+
-  XW += x[20] * 60.008549; // CO3-
-  XW += x[21] * 12.011000; // C
-  XW += x[22] * 17.007000; // OH
-  XW += x[23] * 17.006451; // OH+
-  XW += x[24] * 18.015000; // H2O
-  XW += x[25] * 18.014451; // H2O+
-  XW += x[26] * 19.022451; // H3O+
-  XW += x[27] * 29.018000; // HCO
-  XW += x[28] * 13.018451; // CH+
-  XW += x[29] * 14.027000; // CH2
-  XW += x[30] * 14.026451; // CH2+
-  XW += x[31] * 15.035000; // CH3
-  XW += x[32] * 15.034451; // CH3+
-  XW += x[33] * 16.043000; // CH4
-  XW += x[34] * 30.026000; // CH2O
-  XW += x[35] * 31.034000; // CH3O
-  XW += x[36] * 32.042000; // CH3OH
-  XW += x[37] * 31.034000; // CH2OH
-  XW += x[38] * 39.950000; // AR
-  XW += x[39] * 39.950000; // ARe
-  XW += x[40] * 39.949451; // AR+
-  XW += x[41] * 40.957451; // ARH+
-  XW += x[42] * 79.900000; // AR2e
-  XW += x[43] * 79.899451; // AR2+
-  // Extra 1e6 factor to take c to SI
-  ROW = 1e6 * rho / XW;
-
-  // Compute conversion, see Eq 11
-  for (int id = 0; id < 44; ++id) {
-    c[id] = x[id] * ROW;
-  }
-
-  // convert to chemkin units
-  productionRate(wdot, c, T, Te, EN, ener_exch);
-
-  // convert to chemkin units
-  for (int id = 0; id < 44; ++id) {
-    wdot[id] *= 1.0e-6;
-  }
 }
 
 //  species unit charge number

@@ -7,6 +7,9 @@
 #include <AMReX_PhysBCFunct.H>
 #include <Vidyut.H>
 #include <VarDefines.H>
+#include <fstream>
+#include <unistd.h>
+#include <string>
 
 // utility to skip to next line in Header
 void Vidyut::GotoNextLine(std::istream& is)
@@ -219,8 +222,9 @@ void Vidyut::WriteMonitorFile(amrex::Real time){
         std::string intString = std::to_string(lev);
         std::string monitorFileName = (baseName + intString + datString);
         if (ParallelDescriptor::IOProcessor()){
-            //if (!std::filesystem::exists(monitorFileName.c_str())){
-            {
+            if(access(monitorFileName.c_str(), F_OK) == -1){
+            // if (!std::filesystem::exists(monitorFileName.c_str())){
+            // {
                 std::ofstream MonitorFile;
                 MonitorFile.open(monitorFileName.c_str(), std::ios::out);
                 MonitorFile << "# (1)time\t";
