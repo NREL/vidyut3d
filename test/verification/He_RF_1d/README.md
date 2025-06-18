@@ -7,6 +7,10 @@ This is a 1d case that simulates He capacitive discharge
 make sure $AMREX_HOME is set to your clone of amrex
 `$ export AMREX_HOME=/path/to/amrex`
 
+If you are copying this case folder elsewhere then
+make sure $VIDYUT_DIR is set to your clone of vidyut
+`$ export VIDYUT_DIR=/path/to/vidyut`
+
 To build a serial executable with gcc do
 `$ make -j COMP=gnu`
 
