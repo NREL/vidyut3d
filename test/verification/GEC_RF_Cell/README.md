@@ -1,7 +1,10 @@
-# Linear advection test
+# Gaseous Electronics Conference Radio-frequency cell
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case simulates GEC RF cell at 100 mTorr with argon 
+plasma chemistry. This run takes about 4 mins to do
+a single RF cycle with 64 processors. To get to steady state, 
+about 500 cycles is required. This case uses the
+cell masking feature in the 2D axisymmetric mode.
 
 ### Build instructions
 
@@ -22,8 +25,5 @@ To build a parallel executable with gcc, mpi and cuda
 
 ### Run instructions
 
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
-
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+Run with inputs2d 
+`$ mpirun -n 64 ./*.ex inputs2d`

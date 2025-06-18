@@ -1,7 +1,7 @@
 # Linear advection test
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case solves a coupled diffusion and poisson problem 
+with two species
 
 ### Build instructions
 
@@ -22,8 +22,13 @@ To build a parallel executable with gcc, mpi and cuda
 
 ### Run instructions
 
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
+Runs can be done with any of the input files:
+`inputs_x`,`inputs_y`,`inputs_z` to test if numerics 
+are implemented correctly along each direction, e.g.
+`$ mpirun -n 1 ./*.ex inputs_x`
 
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+Testing can be done also with the cell-mask feature 
+using `inputs_ib` file
+
+to view solution and compare with analytic solution, use 
+python script:`python verify_spec.py plt00001`
