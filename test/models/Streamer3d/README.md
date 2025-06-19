@@ -1,7 +1,7 @@
-# Linear advection test
+# Ar Streamers at atmospheric pressure
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case simulates propagation and interaction of 5 cathode directed streamers
+initiated by seed charges between two parallel plates.
 
 ### Build instructions
 
@@ -26,8 +26,11 @@ To build a parallel executable with gcc, mpi and cuda
 
 ### Run instructions
 
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
+This is a 3D run with 4 AMR levels.
+`mpirun -n 32 ./*.ex inputs3d`
+Over about 12 ns, the streamer in the middle propagates faster
+and the ones in the periphery tend to merge with the middle one.
 
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+<img src="https://github.com/user-attachments/assets/e2f4414f-7434-4255-8596-6b505d91633d" width=500>
+
+
