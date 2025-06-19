@@ -33,6 +33,5 @@ number of cells can approach 300 million.
 This run finishes in approximately 3 hours with 200 NVIDIA-H100 GPUs
 `mpirun -n 200 ./<gpu-ex> inputs3d`
 
-<img src="https://github.com/user-attachments/assets/e2f4414f-7434-4255-8596-6b505d91633d" width=500>
-
+<img src="https://github.com/user-attachments/assets/1acbc367-c4e0-478c-80dd-b81caf5da95d" width=500>
 
