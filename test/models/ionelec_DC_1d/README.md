@@ -1,7 +1,9 @@
-# Linear advection test
+# Simple ion-electron plasma
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case simulates a DC discharge between two parallel plates.
+It captures the cathode sheath formation and associated electron,ion and 
+electron temperature distributions with a simple ion-electron plasma with 
+just one ionization reaction.
 
 ### Build instructions
 
@@ -25,9 +27,6 @@ To build a parallel executable with gcc, mpi and cuda
 `$ make -j COMP=gnu USE_CUDA=TRUE USE_MPI=TRUE`
 
 ### Run instructions
-
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
-
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+This case can be built with `DIM=1`, `DIM=2`, or `DIM=3`, 1d being
+the quickest to run.
+`$ mpirun -n 4 ./*.ex inputs1d`
