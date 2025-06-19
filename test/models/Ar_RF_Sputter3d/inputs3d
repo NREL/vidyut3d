@@ -26,7 +26,7 @@ amr.regrid_int      = 5       # how often to regrid
 
 # TIME STEP CONTROL
 vidyut.dt             = 1e-11
-vidyut.adaptive_dt    = 0
+vidyut.adaptive_dt    = 1
 vidyut.advective_cfl  = 0.3
 vidyut.diffusive_cfl  = 10.0
 vidyut.dielectric_cfl = 10.0
@@ -38,11 +38,11 @@ vidyut.user_defined_species = 1
 vidyut.user_defined_vel = 1
 
 # Tagging
-vidyut.tagged_vars = Electron_Temp Potential
-vidyut.Potential_refine = 1e20
-vidyut.Potential_refinegrad = 20.0
+vidyut.tagged_vars = Electron_Temp ARp
 vidyut.Electron_Temp_refine = 6e4
-vidyut.Electron_Temp_refinegrad = 1e20
+vidyut.Electron_Temp_refinegrad = 1e30
+vidyut.ARp_refine = 2e14
+vidyut.ARp_refinegrad = 1e30
 
 
 #0 - periodic
@@ -69,7 +69,7 @@ vidyut.neutral_bc_hi = 2 2 3
 
 # PLOTFILES
 amr.plot_file  = plt    # root name of plot file
-amr.plot_int   = 3500   # number of timesteps between plot files
+amr.plot_int   = 7000   # number of timesteps between plot files
 
 # CHECKPOINT
 amr.chk_file = chk      # root name of checkpoint file
@@ -90,14 +90,14 @@ vidyut.linsolve_abstol=1e-11
 # PROB SPECIFIC
 vidyut.gas_pressure=13.3
 vidyut.gas_temperature=300.0
-prob.v1=81.0
-prob.v2=81.0
+prob.v1=60.0
+prob.v2=60.0
 prob.ph1=0.0
 prob.ph2=0.0
 prob.ionden_init=1e14
-prob.gama_trode1=0.01
-prob.gama_trode2=0.01
-prob.gama_subs=0.01
+prob.gama_trode1=0.1
+prob.gama_trode2=0.1
+prob.gama_subs=0.1
 
 #prob.trode1_minx=-0.03
 #prob.trode1_miny=0.01
