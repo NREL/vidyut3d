@@ -1,6 +1,15 @@
 # Parallel plate He capacitive discharge
 
-This is a 1d case that simulates He capacitive discharge
+This is a 1d case that simulates He capacitive discharge between two parallel plates. 
+This case has been used as benchmark for PIC and fluid simulations. see
+
+Turner, M. M., Derzsi, A., Donko, Z., Eremin, D., Kelly, S. J., Lafleur, T., & Mussenbrock, T. (2013). 
+Simulation benchmarks for low-pressure plasmas: Capacitive discharges. Physics of Plasmas, 20(1).
+https://pubs.aip.org/aip/pop/article/20/1/013507/1017414
+
+We also compare our solution with other plasma fluid codes, 
+for e.g. SOMAFOAM (https://www.sciencedirect.com/science/article/pii/S0010465521000229)
+and mps1d (https://iopscience.iop.org/article/10.1088/1361-6463/ad7ecb/meta)
 
 ### Build instructions
 
@@ -32,6 +41,9 @@ Run with inputs1d
  cell masking
 `$ mpirun -n 16 ./*.ex inputs1d_ib`
 
+These runs will take about an hour to run 1000 cycles over
+which the ion density profiles become steady.
+
 Use the track_residual.py script to see if 
 quantities are approaching steady state.
 `python track_residual.py "plt?????" "HEp"
@@ -43,3 +55,6 @@ quantities along an axial line:
 Use the compare.gp gnuplot script to get a plot 
 of ion density compared against literature data
 `gnuplot compare.gp`
+<img src="https://github.com/user-attachments/assets/29dda91f-09ce-4562-ac51-0ffcea583f42" width=500>
+
+
