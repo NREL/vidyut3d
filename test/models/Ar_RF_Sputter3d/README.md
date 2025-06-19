@@ -1,7 +1,16 @@
-# Linear advection test
+# Ar discharge in a 3 electrode reactor
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case simulates a three electrode reactor similar to the one used
+for thin film deposition. The two powered electrodes on the bottom 
+boundary are "targets" from which metal is sputtered off by the plasma 
+while the top boundary has a larger substrate electrode where deposition takes place.
+In this case, we do not include any sputtering reactions. We include 
+plasma reactions and secondary electron emission.
+
+Reactor geometry is similar to the one in
+Fébba, Davi M., et al. "Autonomous sputter synthesis of thin film nitrides with composition controlled by Bayesian optimization of optical plasma emission." APL Materials 11.7 (2023).
+
+https://pubs.aip.org/aip/apm/article/11/7/071119/2903572
 
 ### Build instructions
 
@@ -26,8 +35,11 @@ To build a parallel executable with gcc, mpi and cuda
 
 ### Run instructions
 
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
+This is a 3D run with 2 levels of AMR and a cell count 
+reaching approximately 3.4 million. It takes about
+15 mins to do 1 RF cycle with 256 processors.
+`mpirun -n 256 ./*.ex inputs3d`
 
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+Change the `amr.plot_int` variable to print outputs more often.
+
+<img src="https://github.com/user-attachments/assets/03aeea0d-b38d-4d1c-9f46-7fcb668b5f6b" width=500>
