@@ -1,10 +1,16 @@
-# Gaseous Electronics Conference Radio-frequency cell
+# Axisymmetric streamer propagation
 
-This case simulates GEC RF cell at 100 mTorr with argon 
-plasma chemistry. This run takes about 4 mins to do
-a single RF cycle with 64 processors. To get to steady state, 
-about 500 cycles is required. This case uses the
-cell masking feature in the 2D axisymmetric mode.
+This case simulates air streamer propagation and is a 
+replication of case 3 in the paper with **photoionization** by
+`Bagheri, Behnaz, et al. "Comparison of six simulation codes for positive streamers in air, 
+Plasma Sources Science and Technology 27.9 (2018): 095002` 
+see https://iopscience.iop.org/article/10.1088/1361-6595/aad768/meta
+
+A seed of positive ions are initialized in a Gaussian kernel between 
+two electrode boundaries separated by 1.25 cm with a powered electrode (top) 
+at 18.75 kV and the bottom electrode grounded. 
+This case is solved in the axisymmetric mode.
+Local field approximation is used and Electron energy solves are turned off.
 
 ### Build instructions
 
@@ -24,10 +30,15 @@ To build a serial executable with clang++ do
 To build a parallel executable with gcc do
 `$ make -j COMP=gnu USE_MPI=TRUE`
 
-To build a parallel executable with gcc, mpi and cuda
-`$ make -j COMP=gnu USE_CUDA=TRUE USE_MPI=TRUE`
-
 ### Run instructions
 
-Run with inputs2d 
+Run with inputs2d that has a total of 3 AMR levels
 `$ mpirun -n 64 ./*.ex inputs2d`
+
+Figure below compares $$L(t)-vt$$ (v=0.06 cm/ns) with photoionization with results from 
+CWI and vidyut. Here L(t) is the streamer head location at time t. A constant speed of v
+is subtracted out to see differences.
+<img src="https://github.com/user-attachments/assets/c4a6e80f-f291-4a69-a5b6-2456bd98e5f2" width=500>
+
+
+
