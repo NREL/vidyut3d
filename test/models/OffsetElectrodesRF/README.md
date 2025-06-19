@@ -1,7 +1,8 @@
-# Linear advection test
+# RF discharge with two offset electrodes
 
-This case tests linear advection with the 5th order WENO scheme and 
-verifies its accuracy. 
+This case simulates He discharge in a cylindrical tube
+with ring electrodes. This case includes the thin
+dielectric layer boundary condition along with surface charge solves.
 
 ### Build instructions
 
@@ -15,6 +16,7 @@ make sure $VIDYUT_DIR is set to your clone of vidyut
 To build a serial executable with gcc do
 `$ make -j COMP=gnu`
 
+
 To build a serial executable with clang++ do
 `$ make -j COMP=llvm`
 
@@ -25,9 +27,8 @@ To build a parallel executable with gcc, mpi and cuda
 `$ make -j COMP=gnu USE_CUDA=TRUE USE_MPI=TRUE`
 
 ### Run instructions
-
-Use the `plasjob` script and then the `postprocess.sh` script to run 
-multiple 1d cases and verify order of convergence.
-
-Run with inputs2d to see how advection of a Gaussian feature is 
-captured with AMR. `$ mpirun -n 1 ./*.ex inputs2d`
+To run do
+`$ mpirun -n 8 ./*.ex inputs2d`
+It takes about 3 mins to do a single RF cycle.
+See below, a picture of electron temperature, during the 3rd cycle.
+<img src="https://github.com/user-attachments/assets/aa9530e9-d401-438d-ba8c-f7ba89dc80b6" width=900>
