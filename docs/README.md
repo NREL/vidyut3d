@@ -32,7 +32,7 @@ various high performance computing architectures for problem sizes consisting of
 * Like many AMReX based codes, the main numerical schemes are implemented in the `vidyut3d/Source` folder
 * Any simulation with `vidyut` needs its own executable. It is built by linking case specific headers and c++ files with
   the source files. For an example case, please go to the `vidyut3d/test` folder and try out any of the
-  `verification` or `model` cases.
+  `verification` or `model` cases. Each case here has an associated README file that is most readable through github on a web browser.
   
 
 * Each example/run case must include
@@ -41,6 +41,7 @@ various high performance computing architectures for problem sizes consisting of
    - `UserFunctions.H`: User specific functions for setting boundary conditions
    - `UserSources.H` : User specific sources for each equation
    - `Chemistry.H/cpp` : Plasma chemistry description including mobility,diffusion coefficients, and production Rates from chemical kinetics
+   - `inputs` : includes run time parameters, e.g., final time, number of AMR levels
       
 * Vidyut relies on AMReX's multi-level-multi-grid linear solvers and therefore uses all of the
   various boundary condition handles such as Dirichlet, Homogenous/inhomogenous Neumann and Robin. The setting of these conditions
