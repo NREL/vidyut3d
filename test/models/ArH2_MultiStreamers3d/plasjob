@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --nodes=50            
+#SBATCH --ntasks-per-node=4         
+#SBATCH --time=48:00:00             
+#SBATCH --account=plascatco2h
+#SBATCH --job-name=ArStnewgpu
+#SBATCH --output=job_output_filename.%j.out  # %j will be replaced with the job ID
+#SBATCH --partition=gpu-h100
+#SBATCH --exclusive
+#SBATCH --gres=gpu:h100:4
+
+module load PrgEnv-gnu
+module load cuda
+srun -n 200 ./gpu_ex inputs3d
