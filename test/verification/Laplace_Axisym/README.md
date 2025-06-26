@@ -2,7 +2,7 @@
 
 This case tests the Laplace equation solution in axisymmetric coordinate system.
 
-$$\nabla^2\phi=0 \quad \frac{d^2\phi}{dx^2}+\frac{1}{r}\frac{d\phi}{dr}=0$$
+$$\nabla^2\phi=0 \quad \frac{d^2\phi}{dr^2}+\frac{1}{r}\frac{d\phi}{dr}=0$$
 $$\phi(r=R_{min})=\phi_1 \quad \phi(r=R_{max})=\phi_2$$
 
 The exact solution for this equation is
