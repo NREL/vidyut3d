@@ -120,6 +120,8 @@ public:
                                    MultiFab& dsdt,
                                    Real time, Real dt,int floor_jh);
 
+    void compute_electemp_lfa(int lev,MultiFab& Sborder,amrex::Real time);
+
     // compute dt from CFL considerations
     void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
                           amrex::Real& dt_diel_relax);
@@ -295,6 +297,8 @@ public:
     int E_IDX = 0;
 
     int using_ib=0;
+
+    int using_LFA=0;
 
     // Monitor file options
     int monitor_file_int = -1;

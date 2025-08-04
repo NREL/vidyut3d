@@ -280,6 +280,14 @@ void Vidyut::Evolve()
                                       Sborder,Sborder_old, 
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
+            
+            if(using_LFA)
+            {
+               for(int lev=0;lev<=finest_level;lev++)
+               {
+                  compute_electemp_lfa(lev,Sborder[lev],cur_time+time_offset); 
+               }
+            }
 
             if(!multicompsolves)
             {
