@@ -375,6 +375,7 @@ void Vidyut::ReadParameters()
         pp.query("min_electron_density",min_electron_density);
         pp.query("min_electron_temp",min_electron_temp);
         pp.query("elecenergy_solve",elecenergy_solve);
+        pp.query("using_LFA",using_LFA);
         pp.query("hyp_order",hyp_order);
         pp.query("do_reactions",do_reactions);
         pp.query("do_transport",do_transport);

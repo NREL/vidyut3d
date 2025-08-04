@@ -14,6 +14,57 @@
 #include <compute_explicit_flux.H>
 #include <AMReX_MLABecLaplacian.H>
 
+void Vidyut::compute_electemp_lfa(int lev,MultiFab& Sborder,amrex::Real time)
+{
+    BL_PROFILE("vidyut::compute_elecenergy_source()");
+
+    Real captured_time=time;
+    const auto dx = geom[lev].CellSizeArray();
+    auto prob_lo = geom[lev].ProbLoArray();
+    auto prob_hi = geom[lev].ProbHiArray();
+    ProbParm const* localprobparm = d_prob_parm;
+
+    amrex::Real captured_gastemp=gas_temperature;
+    amrex::Real captured_gaspres=gas_pressure;
+    amrex::Real minetemp=min_electron_temp; 
+    int eidx = E_IDX;
+
+    const int* domlo_arr = geom[lev].Domain().loVect();
+    const int* domhi_arr = geom[lev].Domain().hiVect();
+
+    GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
+    GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
+
+    auto sborder_arrays = Sborder.arrays();
+    auto phi_arrays = phi_new[lev].arrays();
+
+    amrex::ParallelFor(Sborder, [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+
+        auto sborder_arr = sborder_arrays[nbx];
+        auto phi_arr = phi_arrays[nbx];
+
+        int validcell=int(sborder_arr(i,j,k,CMASK_ID));
+        if(validcell)
+        {
+            // Create array with species concentrations
+            amrex::Real spec[NUM_SPECIES];
+            amrex::Real Te = sborder_arr(i,j,k,ETEMP_ID);
+            amrex::Real EN = sborder_arr(i,j,k,REF_ID);
+            for(int sp=0; sp<NUM_SPECIES; sp++) 
+            {
+                spec[sp] = sborder_arr(i,j,k,sp);
+            }
+            // Get molar production rates
+            phi_arr(i,j,k,ETEMP_ID)=etempLFA(captured_gastemp, spec, EN);
+            if(phi_arr(i,j,k,ETEMP_ID) < minetemp)
+            {
+                phi_arr(i,j,k,ETEMP_ID)=minetemp;
+            }
+            phi_arr(i,j,k,EEN_ID)=1.5*K_B*phi_arr(i,j,k,eidx)*minetemp;
+        }
+    });
+}
+
 void Vidyut::compute_elecenergy_source(int lev, 
                                        MultiFab& Sborder, 
                                        MultiFab& rxnsrc, 

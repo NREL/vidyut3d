@@ -1691,6 +1691,14 @@ CKCHRG(int kcharge[])
   kcharge[15] = 1;  // ARp
 }
 
+// compute electron temperature from EbyN using local field approximation
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+etempLFA(const amrex::Real Tg, amrex::Real C[], const amrex::Real EN) 
+{
+  //0.5 eV
+  return(5802.25);
+}
+
 //  species charge per unit mass
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
 CKCHRGMASS(amrex::Real zk[])
