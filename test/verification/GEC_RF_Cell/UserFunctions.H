@@ -75,9 +75,18 @@ namespace user_transport
 
         if(solved_comp==POT_ID)
         {
-            //We are solving del^2 (phi)=source
-            //in vidyut
-            //so del(phi)|i+1/2 - del(phi)|i-1/2 = source
+            //We are solving -B del.(beta * grad(phi))=source
+            //in vidyut where B=1 and beta=-1
+            //This is unlike the species equations where
+            //B=1 and beta > 0
+            //FVM for cell i at the boundary
+            //(-B beta grad(phi).\hat{n}|internal 
+            //-B beta grad(phi).\hat{n}|boundary)/h = source
+            //now grad(phi).\hat{n} is always (phi_d-phi_i)/(h/2)
+            //therefore, diagonal contribution is always +B beta/(0.5*h^2)
+            //rhs contribution is always +B beta phi_d/(0.5*h^2)
+            //remember B*beta=-1 for Poisson 
+            //and B*beta=beta>0 for other equations
 
             //for both left or right being the interior cell 
             //Dirichlet condition works out to the same sign
