@@ -9,7 +9,7 @@
 
 AMREX_GPU_HOST_DEVICE 
     AMREX_FORCE_INLINE
-amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
+amrex::Real charge_flux(int i,int j,int k, int sgn, int dir, int eidx,
                         const GpuArray<Real,AMREX_SPACEDIM> dx,
                         amrex::Real gastemp,
                         Array4<Real> const& sb_arr)
@@ -45,7 +45,7 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
     {
         amrex::Real chrg=plasmachem::get_charge(sp);
 
-        if(amrex::Math::abs(chrg) > 0)
+        if(amrex::Math::abs(chrg) > 0 && sp!=eidx)
         {
             amrex::Real specdens=sb_arr(icell,sp);
             amrex::Real gradn_n=(sb_arr(icell,sp)-sb_arr(icell_prvs,sp))/dx[dir];
@@ -62,6 +62,10 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir,
         }
     }
 
+    //electron flux, -1 is charge, and then nc/4
+    q_times_flux += (-1.0)*sb_arr(icell,eidx)*sqrt(8.0*K_B*etemp/PI/ME)*0.25;
+    
+
     q_times_flux*=ECHARGE;
     return(q_times_flux);
 }
@@ -73,6 +77,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
     amrex::Real gastemp=gas_temperature;
     amrex::Real tstep=dt;
     ProbParm const* localprobparm = d_prob_parm;
+    int eidx = E_IDX;
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         // set boundary conditions
@@ -107,7 +112,7 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                                                IntVect icell{AMREX_D_DECL(i,j,k)};
                                                int cell_adjust = (sign==1)?-1:0;
                                                icell[idim]+=cell_adjust;
-                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,
+                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,eidx,
                                                                                     dx,gastemp,sb_arr);
                                                phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
                                            } 
@@ -122,12 +127,14 @@ void Vidyut::update_surf_charge(Vector<MultiFab>& Sborder,
                                            int dielectricflag=user_transport::is_dielectric(i, j, k, idim, sign, 
                                                                                         prob_lo, prob_hi, dx, 
                                                                                         time,*localprobparm); 
+
                                            if(dielectricflag)
                                            {
                                                IntVect icell{AMREX_D_DECL(i,j,k)};
                                                int cell_adjust = (sign==1)?-1:0;
                                                icell[idim]+=cell_adjust;
-                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,dx,gastemp,sb_arr);
+                                               amrex::Real q_times_flux=charge_flux(i,j,k,sign,idim,eidx,
+                                                                                    dx,gastemp,sb_arr);
                                                phi_arr(icell,SRFCH_ID)+= q_times_flux*tstep;
                                            } 
                                        });
