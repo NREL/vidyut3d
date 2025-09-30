@@ -296,18 +296,19 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
     
     // NOTE: units of JANEV fits for electron impact rxns are cm3/s and must be convered to m3/mol-s
     // Precalculating values
-    double Janev_sum;
-    double invTe =  (Te == 0) ? 1.0 : 1.0/Te;
-    double TeeV = Te / 11595.0;
-    double logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
-    double invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
-    double Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
+    amrex::Real Janev_sum;
+    amrex::Real invTe =  (Te == 0) ? 1.0 : 1.0/Te;
+    amrex::Real TeeV = Te / 11595.0;
+    amrex::Real logTe = log(TeeV);     // Fits are performed assuming Te is eV rather than K
+    amrex::Real invTeeV = (Te == 0) ? 1.0:1.0 / (TeeV);
+    amrex::Real Te_pow[] = {1.0, logTe, amrex::Math::powi<2>(logTe), amrex::Math::powi<3>(logTe), 
         amrex::Math::powi<4>(logTe), amrex::Math::powi<5>(logTe), amrex::Math::powi<6>(logTe), amrex::Math::powi<7>(logTe), 
         amrex::Math::powi<8>(logTe)};
-    double invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
+    amrex::Real invTe_pow[] = {invTeeV, amrex::Math::powi<2>(invTeeV), amrex::Math::powi<3>(invTeeV), amrex::Math::powi<4>(invTeeV)};
 
-    std::vector<double> Jfit_coefs = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    std::vector<double> Ffit_coefs = {0.0, 0.0, 0.0, 0.0};
+    amrex::Real Jfit_coefs[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    amrex::Real Ffit_coefs[] = {0.0, 0.0, 0.0, 0.0};
+
 
     //reaction rates taken from
     //1) Levko and Raja, Self-pulsing of direct-current discharge 
@@ -360,14 +361,14 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void  productionRate(amrex::Real * wdot
         {
             Jfit_coefs = {-1951.40116682516, 9125.28938191463, -19064.2751720459, 22763.7019090326, 
                 -16855.4371729404, 7904.47881474249, -2291.72587558317, 375.740475221758, -26.6926001068518};
-            double Jfit_A = 1.42900000000000e-14;
+            amrex::Real Jfit_A = 1.42900000000000e-14;
             for(int j = 0; j<9; j++) Janev_sum += Jfit_coefs[j] * Te_pow[j];
             k_f = Jfit_A * exp(Janev_sum) * 6.02214085774e23;
         } 
         else 
         {
             Ffit_coefs = {-77.9510931269820, 533.060249822779, -2091.33857389100, 1893.83145115372};
-            double Ffit_A = 1.13390537981533e-12;
+            amrex::Real Ffit_A = 1.13390537981533e-12;
             for(int j = 0; j<4; j++) Janev_sum += Ffit_coefs[j] * invTe_pow[j];
             k_f = Ffit_A * exp(Janev_sum) * 6.02214085774e23;
         }*/
