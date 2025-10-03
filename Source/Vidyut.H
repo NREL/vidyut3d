@@ -122,9 +122,15 @@ public:
 
     void compute_electemp_lfa(int lev,MultiFab& Sborder,amrex::Real time);
 
+    void compute_current_den(Vector<MultiFab>& Sborder);
+    
+    void compute_current_density_at_level(int lev, MultiFab& Sborder, 
+            Array<MultiFab,AMREX_SPACEDIM>& ecurrden,
+            Array<MultiFab,AMREX_SPACEDIM>& icurrden); 
+
     // compute dt from CFL considerations
     void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
-                          amrex::Real& dt_diel_relax);
+            amrex::Real& dt_diel_relax);
 
     static ProbParm* h_prob_parm;
     static ProbParm* d_prob_parm;
@@ -218,6 +224,7 @@ public:
     int ngrow_for_fillpatch=2;
     int weno_scheme=3; //WENO-Z by default
     int track_surf_charge=0;
+    int track_current_den=0;
 
     // Include physics
     int elecenergy_solve=0;

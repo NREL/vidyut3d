@@ -280,13 +280,13 @@ void Vidyut::Evolve()
                                       Sborder,Sborder_old, 
                                       expl_src,eenrg_bc_lo,eenrg_bc_hi, grad_fc);
             }
-            
+
             if(using_LFA)
             {
-               for(int lev=0;lev<=finest_level;lev++)
-               {
-                  compute_electemp_lfa(lev,Sborder[lev],cur_time+time_offset); 
-               }
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    compute_electemp_lfa(lev,Sborder[lev],cur_time+time_offset); 
+                }
             }
 
             if(!multicompsolves)
@@ -406,7 +406,7 @@ void Vidyut::Evolve()
                         //remaining slack
                         if(evolve_verbose)
                         {
-                           amrex::Print()<<"in slack part for neutrals\n";
+                            amrex::Print()<<"in slack part for neutrals\n";
                         }
                         update_explsrc_at_all_levels(comp, FIRST_NEUTRAL+NUM_NEUTRALS-comp, 
                                                      Sborder, rxn_src,
@@ -438,15 +438,15 @@ void Vidyut::Evolve()
                                 auto phi_arrays = phi_new[ilev].arrays();
                                 auto rxn_arrays = rxn_src[ilev].arrays();
                                 amrex::ParallelFor(phi_new[ilev], [=] 
-                                AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
-                                    auto phi_arr = phi_arrays[nbx];
-                                    auto rxn_arr = rxn_arrays[nbx];
-                                    phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
-                                    if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
-                                    {
-                                        phi_arr(i,j,k,ind) = minspecden;
-                                    }
-                                });
+                                                   AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                                                       auto phi_arr = phi_arrays[nbx];
+                                                       auto rxn_arr = rxn_arrays[nbx];
+                                                       phi_arr(i,j,k,ind) += rxn_arr(i,j,k,ind)*dt_common;
+                                                       if(phi_arr(i,j,k,ind) < minspecden && boundspecden)
+                                                       {
+                                                           phi_arr(i,j,k,ind) = minspecden;
+                                                       }
+                                                   });
                             }
                         }
                     }
@@ -459,6 +459,16 @@ void Vidyut::Evolve()
                 update_surf_charge(Sborder,cur_time+time_offset,dt_common);
             }
 
+            if(track_current_den)
+            {
+                //getting the latest species data
+                for(int lev=0;lev<=finest_level;lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(lev, cur_time+dt_common, Sborder[lev], 0, Sborder[lev].nComp());
+                }
+                compute_current_den(Sborder);
+            }
 
             if(niter<num_timestep_correctors-1)
             {
@@ -467,7 +477,7 @@ void Vidyut::Evolve()
                 {
                     if(evolve_verbose)
                     {
-                       amrex::Print()<<"averaging state at iter:"<<niter<<"\n";
+                        amrex::Print()<<"averaging state at iter:"<<niter<<"\n";
                     }
 
                     MultiFab::LinComb(phi_tmp[lev], 0.5, phi_old[lev], 0, 0.5, 
@@ -488,11 +498,11 @@ void Vidyut::Evolve()
 
         if(evolve_verbose)
         {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
-            amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
-        }
+            for (int lev = 0; lev <= finest_level; lev++)
+            {
+                amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
+                amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
+            }
         }
 
         cur_time += dt_common;

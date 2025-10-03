@@ -14,6 +14,7 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir, int eidx,
                         amrex::Real gastemp,
                         Array4<Real> const& sb_arr)
 {
+    IntVect face{AMREX_D_DECL(i,j,k)};
     IntVect icell{AMREX_D_DECL(i,j,k)};
     IntVect icell_prvs{AMREX_D_DECL(i,j,k)};
     amrex::Real outward_normal[AMREX_SPACEDIM]={0.0};
@@ -38,17 +39,24 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir, int eidx,
 #endif
     efield_mag=std::sqrt(efield_mag);
     amrex::Real q_times_flux=0.0;
-    amrex::Real efield_n=sb_arr(icell,EFX_ID+dir)*outward_normal[dir];
+
+    //linear interpolation among two cells
+    amrex::Real efield_n=(1.5*sb_arr(icell,EFX_ID+dir)
+                          -0.5*sb_arr(icell_prvs,EFX_ID+dir))*outward_normal[dir];
+    
     amrex::Real numdens=0.0;
     for(int sp=0; sp<NUM_SPECIES; sp++) numdens += sb_arr(icell,sp);
+    
     for(int sp=0;sp<NUM_SPECIES;sp++)
     {
         amrex::Real chrg=plasmachem::get_charge(sp);
 
-        if(amrex::Math::abs(chrg) > 0 && sp!=eidx)
+        //if(amrex::Math::abs(chrg) > 0 && sp!=eidx)
+        if(amrex::Math::abs(chrg) > 0)
         {
             amrex::Real specdens=sb_arr(icell,sp);
-            amrex::Real gradn_n=(sb_arr(icell,sp)-sb_arr(icell_prvs,sp))/dx[dir];
+            amrex::Real gradn_n=get_onesided_grad(face,sgn,dir,sp,dx,sb_arr)*outward_normal[dir];
+            //amrex::Real gradn_n=(sb_arr(icell,sp)-sb_arr(icell_prvs,sp))/dx[dir];
             amrex::Real mu = specMob(sp, etemp, numdens, efield_mag, gastemp);
             amrex::Real dcoeff = specDiff(sp, etemp, numdens, efield_mag, gastemp);
 
@@ -62,10 +70,11 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir, int eidx,
         }
     }
 
+    amrex::Print()<<"sgn,q_times_flux before:"<<sgn<<"\t"<<q_times_flux<<"\n";
     //electron flux, -1 is charge, and then nc/4
-    q_times_flux += (-1.0)*sb_arr(icell,eidx)*sqrt(8.0*K_B*etemp/PI/ME)*0.25;
+    //q_times_flux += (-1.0)*sb_arr(icell,eidx)*sqrt(8.0*K_B*etemp/PI/ME)*0.25;
+    amrex::Print()<<"sgn,q_times_flux after:"<<sgn<<"\t"<<q_times_flux<<"\n";
     
-
     q_times_flux*=ECHARGE;
     return(q_times_flux);
 }

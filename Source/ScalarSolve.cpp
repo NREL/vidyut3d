@@ -88,18 +88,7 @@ void Vidyut::update_explsrc_at_all_levels(int startspec, int numspec,
             flux[lev][idim].define(ba, dmap[lev], numspec, 0);
             flux[lev][idim].setVal(0.0);
         }
-    }
-
-    for(int lev=0; lev <= finest_level; lev++)
-    {
         expl_src[lev].setVal(0.0);
-        flux[lev][0].setVal(0.0);
-#if AMREX_SPACEDIM > 1
-        flux[lev][1].setVal(0.0);
-#if AMREX_SPACEDIM == 3
-        flux[lev][2].setVal(0.0);
-#endif
-#endif
     }
 
     if(do_transport)

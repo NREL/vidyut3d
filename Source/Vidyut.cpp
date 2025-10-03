@@ -165,8 +165,8 @@ Vidyut::Vidyut()
     
     if(using_ib && track_surf_charge)
     {
-        amrex::Print()<<"**Surface charge on IB not implemented***\n";
-        amrex::Print()<<"coming soon..";
+        amrex::Print()<<"**Warning: Surface charge on IB not implemented***\n";
+        amrex::Print()<<"**Surface charge on physical boundaries will be tracked***\n";
     }
 
     //Check inputs for axisymmetric geometry
@@ -399,6 +399,7 @@ void Vidyut::ReadParameters()
         pp.query("track_surf_charge",track_surf_charge);
         pp.query("solver_verbose",solver_verbose);
         pp.query("evolve_verbose",evolve_verbose);
+        pp.query("track_current_den",track_current_den);
 
         if(hyp_order==1) //first order upwind
         {
