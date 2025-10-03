@@ -45,8 +45,13 @@ Vidyut::Vidyut()
     plasma_param_names[10]="SurfaceCharge";
     plasma_param_names[11]="PhotoIon_Src";
     plasma_param_names[12]="cellmask";
+    plasma_param_names[13]="Ecurden_X";
+    plasma_param_names[14]="Ecurden_Y";
+    plasma_param_names[15]="Ecurden_Z";
+    plasma_param_names[16]="Icurden_X";
+    plasma_param_names[17]="Icurden_Y";
+    plasma_param_names[18]="Icurden_Z";
     
-
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
     {
