@@ -2,7 +2,7 @@ max_step  = 1
 stop_time = 2e-8
 
 # PROBLEM SIZE & GEOMETRY
-geometry.is_periodic =  0  0
+geometry.is_periodic =  1 1
 geometry.coord_sys   =  0       # 0 => cart, 1 => RZ (axisymmetric)
 geometry.prob_lo     =  -0.4     -0.4 
 geometry.prob_hi     =   0.4      0.4
