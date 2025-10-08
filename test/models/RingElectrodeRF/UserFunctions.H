@@ -10,6 +10,18 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
+    amrex::Real current_collector_value(IntVect cellid,int locid,
+                             int surfaceloc,
+               GpuArray<Real, AMREX_SPACEDIM> problo,
+               GpuArray<Real, AMREX_SPACEDIM> probhi,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> dx)
+    {
+        return(0.0);
+    }
+    
+    AMREX_GPU_DEVICE AMREX_INLINE
     void get_photoion_acoeff(int i,int j,int k,int sph_id,
                Array4<Real> const& sb_arr,
                Array4<Real> const& acoeff,
@@ -88,7 +100,10 @@ namespace user_transport
                       const Real time,
                       ProbParm const& prob_parm,
                       amrex::Real Tg,amrex::Real Pg,
-                      amrex::Real app_voltage)
+                      amrex::Real app_voltage,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                      GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
@@ -226,7 +241,10 @@ namespace user_transport
                     GpuArray<Real, AMREX_SPACEDIM> dx,
                     const Real time,
                     ProbParm const& prob_parm,
-                    amrex::Real Tg,amrex::Real Pg)
+                    amrex::Real Tg,amrex::Real Pg,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
@@ -243,9 +261,9 @@ namespace user_transport
 
         ghost_cell[dir]+=gcell_adjust;
         cell_int[dir]+=cell_adjust;
-        
+
         amrex::Real y=prob_lo[1]+(cell_int[1]+0.5)*dx[1];
-        
+
         //default
         robin_a(ghost_cell,bcspec_id) = 0.0;
         robin_b(ghost_cell,bcspec_id) = 1.0;
@@ -254,7 +272,7 @@ namespace user_transport
 
         amrex::Real ndens = 0.0;
         for(int sp=0; sp<NUM_SPECIES; sp++) ndens += phi(cell_int,sp);
-        
+
         if(spec_id==E_ID)
         {
             amrex::Real ne=phi(cell_int,E_ID);

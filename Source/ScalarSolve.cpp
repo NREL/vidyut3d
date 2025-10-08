@@ -356,6 +356,19 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
     int linsolve_verbose = solver_verbose;
     int captured_startspec=startspec;
     int captured_numspec=numspec;
+    
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_currents = {{0.0}};
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_current_areas = {{0.0}};
+    amrex::GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces = {{0}};
+    if(track_integrated_currents)
+    {
+        for(int i=0;i<ncurrent_locs;i++)
+        {
+            int_currents[i]=integrated_currents[i];
+            int_current_areas[i]=integrated_current_areas[i];
+            int_current_surfaces[i]=current_loc_surfaces[i];
+        }
+    }
 
     int electron_flag=0;
     int electron_energy_flag=0;
@@ -673,7 +686,8 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                                                sb_arr, bc_arr, robin_a_arr,
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time, *localprobparm,
-                                                               captured_gastemp,captured_gaspres);
+                                                               captured_gastemp,captured_gaspres, int_currents,
+                                                               int_current_areas, int_current_surfaces);
                                 }
                             } 
                             else 
@@ -686,7 +700,8 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                                                      sb_arr, bc_arr, robin_a_arr,
                                                                      robin_b_arr, robin_f_arr, 
                                                                      prob_lo, prob_hi, dx, time, *localprobparm,
-                                                                     captured_gastemp,captured_gaspres);
+                                                                     captured_gastemp,captured_gaspres, int_currents,
+                                                                     int_current_areas, int_current_surfaces);
                                 }
                             }
                         });
@@ -704,7 +719,9 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                                                sb_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr,
                                                                prob_lo, prob_hi, dx, time, *localprobparm,
-                                                               captured_gastemp,captured_gaspres);
+                                                               captured_gastemp,captured_gaspres,
+                                                               int_currents, int_current_areas,
+                                                               int_current_surfaces);
                                 }
                             } 
                             else 
@@ -719,7 +736,9 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                                                                      prob_lo, prob_hi, dx, time, 
                                                                      *localprobparm,
                                                                      captured_gastemp,
-                                                                     captured_gaspres);
+                                                                     captured_gaspres,
+                                                                     int_currents, int_current_areas,
+                                                                     int_current_surfaces);
                                 }
                             }
                         });
@@ -727,7 +746,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
                 }
             }
         }
-        
+
         if(using_ib)
         {
             null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],numspec);
@@ -736,7 +755,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
             {
                 set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],
                                           Sborder[ilev],
-                        current_time,specid,specid-startspec);
+                                          current_time,specid,specid-startspec);
             }
         }
 
@@ -756,7 +775,7 @@ void Vidyut::implicit_solve_scalar(Real current_time, Real dt,
             linsolve_ptr->setLevelBC(ilev, &(specdata[ilev]));
         }
     }
-    
+
     MLMG mlmg(*linsolve_ptr);
     mlmg.setMaxIter(linsolve_maxiter);
     mlmg.setVerbose(linsolve_verbose);

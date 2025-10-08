@@ -353,7 +353,8 @@ void Vidyut::ReadParameters()
 
         pp.query("dt", fixed_dt);
         pp.query("adaptive_dt", adaptive_dt);
-        if(adaptive_dt){
+        if(adaptive_dt)
+        {
             pp.query("advective_cfl", advective_cfl);
             pp.query("diffusive_cfl", diffusive_cfl);
             pp.query("dielectric_cfl", dielectric_cfl);
@@ -428,9 +429,12 @@ void Vidyut::ReadParameters()
         pp.query("voltage_profile", voltage_profile);
         pp.queryarr("voltage_amp_lo", voltage_amp_lo, 0, AMREX_SPACEDIM);
         pp.queryarr("voltage_amp_hi", voltage_amp_hi, 0, AMREX_SPACEDIM);
-        if(voltage_profile == 1){
+        if(voltage_profile == 1)
+        {
             pp.get("voltage_freq", voltage_freq);
-        } else if (voltage_profile == 2) {
+        } 
+        else if (voltage_profile == 2) 
+        {
             pp.get("voltage_dur", voltage_dur);
             pp.get("voltage_center", voltage_center);
         } 
@@ -449,6 +453,28 @@ void Vidyut::ReadParameters()
            ngrow_for_fillpatch=3;
         }
 
+        pp.query("track_integrated_currents", track_integrated_currents);
+        if(track_integrated_currents)
+        {
+
+            print_current_int=plot_int;
+            pp.query("print_current_int",print_current_int);
+            Vector<int> current_loc_surfaces_vec;
+            pp.queryarr("current_loc_surfaces",current_loc_surfaces_vec);
+            ncurrent_locs=current_loc_surfaces_vec.size();
+
+            if(ncurrent_locs>MAX_CURRENT_LOCS)
+            {
+                amrex::Print()<<"ncurrent locs is greater than maximum allowed ("
+                    <<MAX_CURRENT_LOCS<<")\n";
+                amrex::Abort("Reduce the number of ncurrent locs\n");
+            }
+
+            for(int i=0;i<ncurrent_locs;i++)
+            {
+                current_loc_surfaces[i]=current_loc_surfaces_vec[i];
+            }
+        }
     }
 }
 
@@ -480,7 +506,7 @@ void Vidyut::GetData(int lev, Real time, Vector<MultiFab*>& data, Vector<Real>& 
 
 //IB functions
 void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab, 
-                               AMREX_SPACEDIM>& face_bcoeff, 
+        AMREX_SPACEDIM>& face_bcoeff, 
         MultiFab& Sborder,
         int numcomps)
 {
@@ -505,25 +531,25 @@ void Vidyut::null_bcoeff_at_ib(int ilev, Array<MultiFab,
         for(int idim=0;idim<AMREX_SPACEDIM;idim++)
         {
             amrex::ParallelFor(face_boxes[idim], [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept 
-            {
+                    {
 
-                IntVect face{AMREX_D_DECL(i,j,k)};
-                IntVect lcell{AMREX_D_DECL(i,j,k)};
-                IntVect rcell{AMREX_D_DECL(i,j,k)};
+                    IntVect face{AMREX_D_DECL(i,j,k)};
+                    IntVect lcell{AMREX_D_DECL(i,j,k)};
+                    IntVect rcell{AMREX_D_DECL(i,j,k)};
 
-                lcell[idim]-=1;
-                int mask_L=int(sb_arr(lcell,CMASK_ID));
-                int mask_R=int(sb_arr(rcell,CMASK_ID));
+                    lcell[idim]-=1;
+                    int mask_L=int(sb_arr(lcell,CMASK_ID));
+                    int mask_R=int(sb_arr(rcell,CMASK_ID));
 
-                //1 when both mask_L and mask_R are 0
-                int covered_interface=(!mask_L)*(!mask_R);
-                //1 when both mask_L and mask_R are 1
-                int regular_interface=(mask_L)*(mask_R);
-                //1-0 or 0-1 interface
-                int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
+                    //1 when both mask_L and mask_R are 0
+                    int covered_interface=(!mask_L)*(!mask_R);
+                    //1 when both mask_L and mask_R are 1
+                    int regular_interface=(mask_L)*(mask_R);
+                    //1-0 or 0-1 interface
+                    int cov_uncov_interface=(mask_L)*(!mask_R)+(!mask_L)*(mask_R);
 
-                if(cov_uncov_interface) //1*0 0*1 cases
-                {
+                    if(cov_uncov_interface) //1*0 0*1 cases
+                    {
                     for(int sp=0;sp<captured_ncomps;sp++)
                     {
                         face_bcoeff_arr[idim](face,sp)=0.0;

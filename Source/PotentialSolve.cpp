@@ -29,6 +29,19 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     Real bscalar = 1.0;
     ProbParm const* localprobparm = d_prob_parm;
     int linsolve_verbose=solver_verbose;
+
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_currents = {{0.0}};
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_current_areas = {{0.0}};
+    amrex::GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces = {{0}};
+    if(track_integrated_currents)
+    {
+        for(int i=0;i<ncurrent_locs;i++)
+        {
+            int_currents[i]=integrated_currents[i];
+            int_current_areas[i]=integrated_current_areas[i];
+            int_current_surfaces[i]=current_loc_surfaces[i];
+        }
+    }
     
     // First initialization of MLMG solver
     LPInfo info;
@@ -291,14 +304,16 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                                                          robin_b_arr, robin_f_arr, 
                                                          prob_lo, prob_hi, dx, time, 
                                                          *localprobparm,captured_gastemp,
-                                                         captured_gaspres, app_voltage);
+                                                         captured_gaspres, app_voltage, int_currents, 
+                                                         int_current_areas, int_current_surfaces);
                         } else {
                             plasmachem_transport::potential_bc(i, j, k, idim, -1, 
                                                                phi_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time, 
                                                                *localprobparm,captured_gastemp,
-                                                               captured_gaspres, app_voltage);
+                                                               captured_gaspres, app_voltage, int_currents, 
+                                                               int_current_areas, int_current_surfaces);
                         }
                     });
                 }
@@ -313,14 +328,18 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
                                                          robin_b_arr, robin_f_arr, 
                                                          prob_lo, prob_hi, dx, time,
                                                          *localprobparm,captured_gastemp,
-                                                         captured_gaspres, app_voltage);
+                                                         captured_gaspres, app_voltage, 
+                                                         int_currents, int_current_areas,
+                                                         int_current_surfaces);
                         } else {
                             plasmachem_transport::potential_bc(i, j, k, idim, +1, 
                                                                phi_arr, bc_arr, robin_a_arr, 
                                                                robin_b_arr, robin_f_arr, 
                                                                prob_lo, prob_hi, dx, time,
                                                                *localprobparm,captured_gastemp,
-                                                               captured_gaspres, app_voltage);
+                                                               captured_gaspres, app_voltage,
+                                                               int_currents, int_current_areas,
+                                                               int_current_surfaces);
                         }
                     });
                 }
@@ -332,7 +351,7 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
             null_bcoeff_at_ib(ilev,face_bcoeff,Sborder[ilev],1);
             amrex::Print()<<"calling explicit fluxes\n";
             set_explicit_fluxes_at_ib(ilev,rhs[ilev],acoeff[ilev],
-                    Sborder[ilev],current_time,POT_ID,0);
+                                      Sborder[ilev],current_time,POT_ID,0);
         }
 
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
@@ -358,11 +377,11 @@ void Vidyut::solve_potential(Real current_time, Vector<MultiFab>& Sborder,
     mlmg.setVerbose(linsolve_verbose);
 
 #ifdef AMREX_USE_HYPRE
-        if (use_hypre)
-        {
-            mlmg.setHypreOptionsNamespace("vidyut.hypre");
-            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
-        }
+    if (use_hypre)
+    {
+        mlmg.setHypreOptionsNamespace("vidyut.hypre");
+        mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+    }
 #endif
 
     mlmg.solve(GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);

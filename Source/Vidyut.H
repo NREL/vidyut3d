@@ -123,6 +123,7 @@ public:
     void compute_electemp_lfa(int lev,MultiFab& Sborder,amrex::Real time);
 
     void compute_current_den(Vector<MultiFab>& Sborder);
+    void compute_integrated_currents(Vector<MultiFab>& Sborder);
     
     void compute_current_density_at_level(int lev, MultiFab& Sborder, 
             Array<MultiFab,AMREX_SPACEDIM>& ecurrden,
@@ -312,6 +313,13 @@ public:
 
     int solver_verbose=1;
     int evolve_verbose=1;
+
+    int track_integrated_currents=0;
+    amrex::Real integrated_currents[MAX_CURRENT_LOCS]={0.0};
+    amrex::Real integrated_current_areas[MAX_CURRENT_LOCS]={0.0};
+    int ncurrent_locs=0;
+    int current_loc_surfaces[MAX_CURRENT_LOCS]={-1};
+    int print_current_int=-1;
 
 
 private:

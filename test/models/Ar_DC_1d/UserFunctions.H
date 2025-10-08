@@ -10,33 +10,65 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
-    void get_photoion_acoeff(int i,int j,int k,int sph_id,
-               Array4<Real> const& sb_arr,
-               Array4<Real> const& acoeff,
-               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
-               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
-               GpuArray<Real, AMREX_SPACEDIM> dx,
-               const Real time,
-               ProbParm const& prob_parm,
-               Real Tg, Real Pg)
+    amrex::Real current_collector_value(IntVect cellid,int locid,
+                             int surfaceloc,
+               GpuArray<Real, AMREX_SPACEDIM> problo,
+               GpuArray<Real, AMREX_SPACEDIM> probhi,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> dx)
     {
-    
+        int dir=int(surfaceloc/2);
+        int sign=(surfaceloc%2==0)?-1:1; 
+        amrex::Real value=0.0;
+
+        if(sign==-1)
+        {
+            if(cellid[dir]==domlo[dir])
+            {
+                value=1.0;
+            }
+        }
+        
+        if(sign==1)
+        {
+            if(cellid[dir]==domhi[dir])
+            {
+                value=1.0;
+            }
+        }
+        
+        return(value); 
     }
-    
+
+    AMREX_GPU_DEVICE AMREX_INLINE
+    void get_photoion_acoeff(int i,int j,int k,int sph_id,
+                             Array4<Real> const& sb_arr,
+                             Array4<Real> const& acoeff,
+                             GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+                             GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+                             GpuArray<Real, AMREX_SPACEDIM> dx,
+                             const Real time,
+                             ProbParm const& prob_parm,
+                             Real Tg, Real Pg)
+    {
+
+    }
+
     AMREX_GPU_DEVICE AMREX_INLINE
     void get_photoion_rhs(int i,int j,int k,int sph_id,
-               Array4<Real> const& sb_arr,
-               Array4<Real> const& rhs_arr,
-               GpuArray<Real, AMREX_SPACEDIM> prob_lo,
-               GpuArray<Real, AMREX_SPACEDIM> prob_hi,
-               GpuArray<Real, AMREX_SPACEDIM> dx,
-               const Real time,
-               ProbParm const& prob_parm,
-               Real Tg, Real Pg)
+                          Array4<Real> const& sb_arr,
+                          Array4<Real> const& rhs_arr,
+                          GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+                          GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+                          GpuArray<Real, AMREX_SPACEDIM> dx,
+                          const Real time,
+                          ProbParm const& prob_parm,
+                          Real Tg, Real Pg)
     {
-    
+
     }
-    
+
     AMREX_GPU_DEVICE AMREX_INLINE
     void bc_ib(IntVect face,
                int dir, int sgn,
@@ -82,7 +114,10 @@ namespace user_transport
                       GpuArray<Real, AMREX_SPACEDIM> dx,
                       const Real time,
                       ProbParm const& prob_parm,
-                      Real Tg, Real Pg,  Real app_voltage)
+                      Real Tg, Real Pg,  Real app_voltage,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                      GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
@@ -189,7 +224,10 @@ namespace user_transport
                     GpuArray<Real, AMREX_SPACEDIM> dx,
                     const Real time,
                     ProbParm const& prob_parm,
-                    Real Tg, Real Pg)
+                    Real Tg, Real Pg,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};

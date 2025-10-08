@@ -10,6 +10,18 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
+    amrex::Real current_collector_value(IntVect cellid,int locid,
+                             int surfaceloc,
+               GpuArray<Real, AMREX_SPACEDIM> problo,
+               GpuArray<Real, AMREX_SPACEDIM> probhi,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> dx)
+    {
+        return(0.0);
+    }
+    
+    AMREX_GPU_DEVICE AMREX_INLINE
     void get_photoion_acoeff(int i,int j,int k,int sph_id,
                Array4<Real> const& sb_arr,
                Array4<Real> const& acoeff,
@@ -208,7 +220,10 @@ namespace user_transport
                       GpuArray<Real, AMREX_SPACEDIM> dx,
                       const Real time,
                       ProbParm const& prob_parm,
-                      Real Tg, Real Pg, Real app_voltage)
+                      Real Tg, Real Pg, Real app_voltage,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                      GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
@@ -297,7 +312,10 @@ namespace user_transport
                     GpuArray<Real, AMREX_SPACEDIM> dx,
                     const Real time,
                     ProbParm const& prob_parm,
-                    Real Tg, Real Pg)
+                    Real Tg, Real Pg,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
     {
         const int im1 = (dir == 0) ? i-1 : i;
@@ -339,20 +357,20 @@ namespace user_transport
             amrex::Real Te=phi(cell_int,ETEMP_ID);
             amrex::Real cbar=sqrt(8.0*K_B*Te/PI/ME);
             amrex::Real flx = ne*cbar/4.0*outward_normal[dir];
-            
+
             //ion flux
             amrex::Real mu_ARp = specMob(ARp_ID,Te,
-                                     ndens, efieldmag,
-                                     Tg);
-            
+                                         ndens, efieldmag,
+                                         Tg);
+
             amrex::Real mu_AR2p = specMob(AR2p_ID,Te,
-                                     ndens, efieldmag,
-                                     Tg);
+                                          ndens, efieldmag,
+                                          Tg);
             amrex::Real efield=phi(cell_int,EFX_ID+dir);
-            
+
             amrex::Real ARp_drift_flux = mu_ARp*phi(cell_int,ARp_ID)*efield;
             amrex::Real AR2p_drift_flux = mu_AR2p*phi(cell_int,AR2p_ID)*efield;
-            
+
             amrex::Real ARp_drift_flux_dotn = ARp_drift_flux*outward_normal[dir];
             amrex::Real ARp_flux=(ARp_drift_flux_dotn > 0.0)?ARp_drift_flux_dotn:0.0;
 

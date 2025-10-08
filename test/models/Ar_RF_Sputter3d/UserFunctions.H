@@ -10,6 +10,18 @@ using namespace amrex;
 namespace user_transport
 {
     AMREX_GPU_DEVICE AMREX_INLINE
+    amrex::Real current_collector_value(IntVect cellid,int locid,
+                             int surfaceloc,
+               GpuArray<Real, AMREX_SPACEDIM> problo,
+               GpuArray<Real, AMREX_SPACEDIM> probhi,
+               GpuArray<int, AMREX_SPACEDIM> domlo,
+               GpuArray<int, AMREX_SPACEDIM> domhi,
+               GpuArray<Real, AMREX_SPACEDIM> dx)
+    {
+        return(0.0);
+    }
+
+    AMREX_GPU_DEVICE AMREX_INLINE
     void get_photoion_acoeff(int i,int j,int k,int sph_id,
                Array4<Real> const& sb_arr,
                Array4<Real> const& acoeff,
@@ -83,7 +95,10 @@ namespace user_transport
                       const Real time,
                       ProbParm const& prob_parm,
                       amrex::Real Tg,amrex::Real Pg,
-                      amrex::Real app_voltage)
+                      amrex::Real app_voltage,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                      GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                      GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
         IntVect ghost_cell{AMREX_D_DECL(i,j,k)};
@@ -233,7 +248,10 @@ namespace user_transport
                     GpuArray<Real, AMREX_SPACEDIM> dx,
                     const Real time,
                     ProbParm const& prob_parm,
-                    amrex::Real Tg,amrex::Real Pg)
+                    amrex::Real Tg,amrex::Real Pg,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+                    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+                    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
     {
         IntVect cell_int{AMREX_D_DECL(i,j,k)};
@@ -275,12 +293,12 @@ namespace user_transport
                                y>=prob_parm.trode1_miny &&
                                x<=prob_parm.trode1_maxx &&
                                y<=prob_parm.trode1_maxy);
-            
+
                 inside_trode2=(x>=prob_parm.trode2_minx &&
                                y>=prob_parm.trode2_miny &&
                                x<=prob_parm.trode2_maxx &&
                                y<=prob_parm.trode2_maxy);
-                
+
                 inside_subs=(x>=prob_parm.subs_minx &&
                              y>=prob_parm.subs_miny &&
                              x<=prob_parm.subs_maxx &&
@@ -290,14 +308,14 @@ namespace user_transport
             {
                 inside_trode1=((x*x+(y-prob_parm.trode1_cent)*(y-prob_parm.trode1_cent))<
                                prob_parm.trode1_rad*prob_parm.trode1_rad);
-                
+
                 inside_trode2=((x*x+(y-prob_parm.trode2_cent)*(y-prob_parm.trode2_cent))<
                                prob_parm.trode2_rad*prob_parm.trode2_rad);
-                
+
                 inside_subs=((x*x+y*y)<prob_parm.subs_rad*prob_parm.subs_rad);
             }
             if( ((sgn==-1) && (inside_trode1 || inside_trode2)) ||
-                ((sgn==+1) && inside_subs) )
+               ((sgn==+1) && inside_subs) )
             {
                 if(spec_id==E_ID)
                 {

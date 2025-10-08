@@ -251,3 +251,89 @@ void Vidyut::compute_current_density_at_level(int lev, MultiFab& Sborder,
         }
     }
 }
+
+void Vidyut::compute_integrated_currents(Vector<MultiFab>& Sborder)
+{
+    for(int locs=0;locs<ncurrent_locs;locs++)
+    {
+        //note that the surfloc can be the same for different locs
+        //this means the current collector value can adjusted to mask
+        //out some parts of the same surface for different locs
+        int surfloc=current_loc_surfaces[locs];
+        amrex::Real outward_normal=(surfloc%2==0)?-1.0:1.0;
+        int dir=int(surfloc/2);
+        amrex::Real current=0.0; 
+        amrex::Real surfarea=0.0;
+        for(int lev=0;lev<=finest_level;lev++)
+        {
+            const auto dx = geom[lev].CellSizeArray();
+            amrex::Real cellvolume=AMREX_D_TERM(dx[0],*dx[1],*dx[2]);
+            amrex::Real cellarea=cellvolume/dx[dir];
+
+            // Get the boundary ids
+            const int* domlo_p = geom[lev].Domain().loVect();
+            const int* domhi_p = geom[lev].Domain().hiVect();
+            auto problo = geom[lev].ProbLoArray();
+            auto probhi = geom[lev].ProbHiArray();
+            const int* domlo_arr = geom[lev].Domain().loVect();
+            const int* domhi_arr = geom[lev].Domain().hiVect();
+
+            GpuArray<int,AMREX_SPACEDIM> domlo={AMREX_D_DECL(domlo_arr[0], domlo_arr[1], domlo_arr[2])};
+            GpuArray<int,AMREX_SPACEDIM> domhi={AMREX_D_DECL(domhi_arr[0], domhi_arr[1], domhi_arr[2])};
+
+            amrex::iMultiFab level_mask;
+            if (lev < finest_level) {
+                level_mask = makeFineMask(
+                    phi_new[lev].boxArray(), phi_new[lev].DistributionMap(),
+                    phi_new[lev+1].boxArray(), amrex::IntVect(2), 1, 0);
+            } else {
+                level_mask.define(
+                    phi_new[lev].boxArray(), phi_new[lev].DistributionMap(),
+                    1, 0, amrex::MFInfo());
+                level_mask.setVal(1);
+            }
+
+            current += amrex::ReduceSum(
+                Sborder[lev], level_mask, 0, 
+                [=] AMREX_GPU_HOST_DEVICE(
+                    Box const& bx,
+                    Array4<Real const> const& fab, 
+                    Array4<int const> const& mask_arr) -> Real {
+
+                    //surface integral part
+                    Real si_part = 0.0;
+                    amrex::Loop(bx, [=, &si_part](int i, int j, int k) noexcept {
+                        IntVect cellid(AMREX_D_DECL(i,j,k));
+                        si_part += cellarea*outward_normal*(fab(cellid,ECURX_ID+dir)+fab(cellid,ICURX_ID+dir))*mask_arr(cellid)*
+                        user_transport::current_collector_value(cellid, locs, surfloc, 
+                                                                problo, probhi, domlo, domhi, dx); 
+                    });
+                    return si_part;
+                });
+
+            surfarea += amrex::ReduceSum(
+                Sborder[lev], level_mask, 0, 
+                [=] AMREX_GPU_HOST_DEVICE(
+                    Box const& bx,
+                    Array4<Real const> const& fab, 
+                    Array4<int const> const& mask_arr) -> Real {
+
+                    //surface integral part
+                    Real si_part = 0.0;
+                    amrex::Loop(bx, [=, &si_part](int i, int j, int k) noexcept {
+                        IntVect cellid(AMREX_D_DECL(i,j,k));
+                        si_part += cellarea*
+                        user_transport::current_collector_value(cellid, locs, surfloc, 
+                                                                problo, probhi, domlo, domhi, dx); 
+                    });
+                    return si_part;
+                });
+
+        }
+
+        ParallelAllReduce::Sum(current, ParallelContext::CommunicatorSub());
+        ParallelAllReduce::Sum(surfarea, ParallelContext::CommunicatorSub());
+        integrated_currents[locs]=current;
+        integrated_current_areas[locs]=surfarea;
+    }
+}

@@ -35,4 +35,6 @@
 #define PHOTEQ_TYPE 1
 #define SPECEQ_TYPE 2
 
+#define MAX_CURRENT_LOCS 10
+
 #endif
