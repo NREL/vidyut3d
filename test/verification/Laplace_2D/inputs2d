@@ -4,8 +4,8 @@ stop_time = 2e-8
 # PROBLEM SIZE & GEOMETRY
 geometry.is_periodic =  1 1
 geometry.coord_sys   =  0       # 0 => cart, 1 => RZ (axisymmetric)
-geometry.prob_lo     =  -0.4     -0.4 
-geometry.prob_hi     =   0.4      0.4
+geometry.prob_lo     =  -0.3     -0.3
+geometry.prob_hi     =   0.3      0.3
 amr.n_cell           = 64 64
 
 # VERBOSITY
@@ -29,11 +29,7 @@ vidyut.hyp_order = 5
 vidyut.user_defined_potential = 1
 vidyut.user_defined_species = 1
 vidyut.user_defined_vel = 1
-
-# Tagging
-vidyut.tagged_vars = Potential
-vidyut.Potential_refine = 17.0
-vidyut.Potential_refinegrad = 1e20
+vidyut.using_ib=1
 
 #0 - periodic
 #1 - Dirichlet
@@ -50,7 +46,7 @@ vidyut.pot_bc_lo = 0 0
 vidyut.pot_bc_hi = 0 0
 
 vidyut.eden_bc_lo = 0 0
-vidyut.eden_bc_hi = 0 0 
+vidyut.eden_bc_hi = 0 0
 
 vidyut.eenrg_bc_lo = 0 0
 vidyut.eenrg_bc_hi = 0 0
