@@ -22,6 +22,9 @@ void amrex_probinit (ProbParm & h_prob_parm, ProbParm & d_prob_parm)
     pp.query("outer_radius", h_prob_parm.outer_radius );
     pp.query("inner_voltage", h_prob_parm.inner_voltage );
     pp.query("outer_voltage", h_prob_parm.outer_voltage );
+    pp.query("inner_dirichlet", h_prob_parm.inner_dirichlet );
+    pp.query("outer_dirichlet", h_prob_parm.outer_dirichlet );
+    AMREX_ALWAYS_ASSERT(!(h_prob_parm.inner_dirichlet == 0 && h_prob_parm.outer_dirichlet == 0));
 
 #ifdef AMREX_USE_GPU
     amrex::Gpu::htod_memcpy(&d_prob_parm, &h_prob_parm, sizeof(ProbParm));

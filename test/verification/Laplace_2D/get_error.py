@@ -31,12 +31,12 @@ def exact_solution_grad(rad, rmin, rmax, phi1, phi2):
 
 def exact_solution_gradx(x, y, rmin, rmax, phi1, phi2):
     r = np.sqrt(x**2 + y**2)
-    return -(phi2 - phi1) * x / (r**2 * np.log(rmax / rmin))
+    return (phi2 - phi1) * x / (r**2 * np.log(rmax / rmin))
 
 
 def exact_solution_grady(x, y, rmin, rmax, phi1, phi2):
     r = np.sqrt(x**2 + y**2)
-    return -(phi2 - phi1) * y / (r**2 * np.log(rmax / rmin))
+    return (phi2 - phi1) * y / (r**2 * np.log(rmax / rmin))
 
 
 def main():
@@ -83,10 +83,10 @@ def main():
         exact = exact_solution(rad, rmin, rmax, phi1, phi2) * cellmask
         error = np.sqrt(np.mean((potential - exact) ** 2))
 
-        exact_efieldx = exact_solution_gradx(x, y, rmin, rmax, phi1, phi2) * cellmask
+        exact_efieldx = -exact_solution_gradx(x, y, rmin, rmax, phi1, phi2) * cellmask
         error_efieldx = np.sqrt(np.mean((Efieldx - exact_efieldx) ** 2))
 
-        exact_efieldy = exact_solution_grady(x, y, rmin, rmax, phi1, phi2) * cellmask
+        exact_efieldy = -exact_solution_grady(x, y, rmin, rmax, phi1, phi2) * cellmask
         error_efieldy = np.sqrt(np.mean((Efieldy - exact_efieldy) ** 2))
 
         exact_efield = exact_solution_grad(rad, rmin, rmax, phi1, phi2) * cellmask

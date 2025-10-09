@@ -75,30 +75,35 @@ namespace user_transport
 
         if(solved_comp==POT_ID)
         {
-          // We are solving -B del.(beta * grad(phi))=source
-          // in vidyut where B=1 and beta=-1
-          // This is unlike the species equations where
-          // B=1 and beta > 0
-          // FVM for cell i at the boundary
-          //(-B beta grad(phi).\hat{n}|internal
-          //-B beta grad(phi).\hat{n}|boundary)/h = source
-          // now grad(phi).\hat{n} is always (phi_d-phi_i)/(h/2)
-          // therefore, diagonal contribution is always +B beta/(0.5*h^2)
-          // rhs contribution is always +B beta phi_d/(0.5*h^2)
-          // remember B*beta=-1 for Poisson
-          // and B*beta=beta>0 for other equations
-
-          // for both left or right being the interior cell
-          // Dirichlet condition works out to the same sign
-          amrex::Real phi_dirc = 0.0;
           if (0.5*(prob_parm.inner_radius+prob_parm.outer_radius) < rad){
-            phi_dirc = prob_parm.outer_voltage;
+            if (prob_parm.outer_dirichlet) {
+              amrex::Real phi_dirc = prob_parm.outer_voltage;
+              acoeff(intcell) -= 1.0 / (0.5 * dx2);
+              rhs(intcell, rhs_comp) -= phi_dirc / (0.5 * dx2);
+            } else {
+              amrex::Real dphidr =
+                  (prob_parm.outer_voltage - prob_parm.inner_voltage) /
+                  std::log(prob_parm.outer_radius / prob_parm.inner_radius) /
+                  prob_parm.outer_radius;
+              amrex::Real dphidn =
+                  dphidr * std::fabs(xloc[dir]) / prob_parm.outer_radius;
+              rhs(intcell, rhs_comp) -= dphidn / dx[dir];
+            }
+          } else {
+            if (prob_parm.inner_dirichlet) {
+              amrex::Real phi_dirc = prob_parm.inner_voltage;
+              acoeff(intcell) -= 1.0 / (0.5 * dx2);
+              rhs(intcell, rhs_comp) -= phi_dirc / (0.5 * dx2);
+            } else {
+              amrex::Real dphidr =
+                  (prob_parm.outer_voltage - prob_parm.inner_voltage) /
+                  std::log(prob_parm.outer_radius / prob_parm.inner_radius) /
+                  prob_parm.inner_radius;
+              amrex::Real dphidn =
+                  -dphidr * std::fabs(xloc[dir]) / prob_parm.inner_radius;
+              rhs(intcell, rhs_comp) -= dphidn / dx[dir];
+            }
           }
-          else{
-            phi_dirc = prob_parm.inner_voltage;
-          }
-          acoeff(intcell)-= 1.0/(0.5*dx2);
-          rhs(intcell,rhs_comp)   -= phi_dirc/(0.5*dx2);
         }
         else
         {
