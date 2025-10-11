@@ -70,10 +70,10 @@ amrex::Real charge_flux(int i,int j,int k, int sgn, int dir, int eidx,
         }
     }
 
-    amrex::Print()<<"sgn,q_times_flux before:"<<sgn<<"\t"<<q_times_flux<<"\n";
+    //amrex::Print()<<"sgn,q_times_flux before:"<<sgn<<"\t"<<q_times_flux<<"\n";
     //electron flux, -1 is charge, and then nc/4
     //q_times_flux += (-1.0)*sb_arr(icell,eidx)*sqrt(8.0*K_B*etemp/PI/ME)*0.25;
-    amrex::Print()<<"sgn,q_times_flux after:"<<sgn<<"\t"<<q_times_flux<<"\n";
+    //amrex::Print()<<"sgn,q_times_flux after:"<<sgn<<"\t"<<q_times_flux<<"\n";
     
     q_times_flux*=ECHARGE;
     return(q_times_flux);
