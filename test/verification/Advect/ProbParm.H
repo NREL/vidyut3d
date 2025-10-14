@@ -8,8 +8,8 @@ using namespace amrex::literals;
 
 struct ProbParm
 {
-    int one_dim=0;
-    amrex::Real blobrad = 0.1; 
+    int one_dim = 0;
+    amrex::Real blobrad = 0.1;
     amrex::Real velx = 1.0;
     amrex::Real vely = 0.0;
     amrex::Real velz = 0.0;

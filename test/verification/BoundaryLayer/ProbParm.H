@@ -10,6 +10,6 @@ struct ProbParm
 {
     amrex::Real r1 = 0.0; // source term for species 1
     amrex::Real r2 = 1.0; // source term for species 2
-    int axdir=0;
+    int axdir = 0;
 };
 #endif
