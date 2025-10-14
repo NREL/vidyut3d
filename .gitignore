@@ -1,0 +1,9 @@
+.DS_Store
+Backtrace*
+plt*
+chk*
+tmp_build_dir
+.ccls
+.ccls-cache
+vidyut*.ex
+__pycache__
