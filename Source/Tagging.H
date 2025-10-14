@@ -47,29 +47,35 @@ void stategrad_based_refinement(
 
         amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> gradv = {{0.0}};
 
-        amrex::Real gradxplus = std::abs(state(i + 1, j, k, comp) - state(i, j, k, comp));
-        amrex::Real gradxminus = std::abs(state(i, j, k, comp) - state(i - 1, j, k, comp));
+        amrex::Real gradxplus =
+            std::abs(state(i + 1, j, k, comp) - state(i, j, k, comp));
+        amrex::Real gradxminus =
+            std::abs(state(i, j, k, comp) - state(i - 1, j, k, comp));
         gradv[0] = amrex::max(gradxplus, gradxminus);
 #if AMREX_SPACEDIM > 1
-        amrex::Real gradyplus = std::abs(state(i, j + 1, k, comp) - state(i, j, k, comp));
-        amrex::Real gradyminus = std::abs(state(i, j, k, comp) - state(i, j - 1, k, comp));
+        amrex::Real gradyplus =
+            std::abs(state(i, j + 1, k, comp) - state(i, j, k, comp));
+        amrex::Real gradyminus =
+            std::abs(state(i, j, k, comp) - state(i, j - 1, k, comp));
         gradv[1] = amrex::max(gradyplus, gradyminus);
 #if AMREX_SPACEDIM == 3
-        amrex::Real gradzplus = std::abs(state(i, j, k + 1, comp) - state(i, j, k, comp));
-        amrex::Real gradzminus = std::abs(state(i, j, k, comp) - state(i, j, k - 1, comp));
+        amrex::Real gradzplus =
+            std::abs(state(i, j, k + 1, comp) - state(i, j, k, comp));
+        amrex::Real gradzminus =
+            std::abs(state(i, j, k, comp) - state(i, j, k - 1, comp));
         gradv[2] = amrex::max(gradzplus, gradzminus);
 #endif
 #endif
 
 #if AMREX_SPACEDIM > 1
-        if (amrex::max(AMREX_D_DECL(gradv[0], gradv[1], gradv[2])) > refine_phigrad[c])
+        if (amrex::max(AMREX_D_DECL(gradv[0], gradv[1], gradv[2])) >
+            refine_phigrad[c])
 #else
         if (gradv[0] > refine_phigrad[c])
 #endif
         {
             tag(i, j, k) = tagval;
         }
-
     }
 }
 
