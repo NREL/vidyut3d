@@ -23,7 +23,7 @@ struct AmrCoreFill
         const int orig_comp) const
     {
         // do something for external Dirichlet (BCType::ext_dir)
-        // NOTE: we dont need ext_dir as we are doing 
+        // NOTE: we dont need ext_dir as we are doing
         // linear solves for all equations
         // we are spoofing fillpatch to foextrap
         // we may lose order of accuracy at boundaries for
@@ -35,8 +35,9 @@ struct AmrCoreFill
           const amrex::Real* prob_hi = geom.ProbHi();
           const amrex::Real* dx = geom.CellSize();
           const amrex::Real x[AMREX_SPACEDIM] = {
-          AMREX_D_DECL(prob_lo[0] + (iv[0] + 0.5) * dx[0], 
-          prob_lo[1] + (iv[1] + 0.5) * dx[1], prob_lo[2] + (iv[2] + 0.5) * dx[2])};
+          AMREX_D_DECL(prob_lo[0] + (iv[0] + 0.5) * dx[0],
+          prob_lo[1] + (iv[1] + 0.5) * dx[1], prob_lo[2] + (iv[2] + 0.5) *
+        dx[2])};
 
           const int* bc = bcr->data();
 
@@ -62,7 +63,7 @@ struct AmrCoreFill
 };
 
 namespace {
-    static AmrCoreFill amrcore_fill_func;
+static AmrCoreFill amrcore_fill_func;
 }
 
 #endif

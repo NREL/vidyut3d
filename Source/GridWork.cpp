@@ -14,7 +14,8 @@
 // Make a new level using provided BoxArray and DistributionMapping and
 // fill with interpolated coarse level data.
 // overrides the pure virtual function in AmrCore
-void Vidyut::MakeNewLevelFromCoarse(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
+void Vidyut::MakeNewLevelFromCoarse(
+    int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
     BL_PROFILE("vidyut::MakeNewLevelFromCoarse()");
     const int ncomp = phi_new[lev - 1].nComp();
@@ -32,7 +33,8 @@ void Vidyut::MakeNewLevelFromCoarse(int lev, Real time, const BoxArray& ba, cons
 // Remake an existing level using provided BoxArray and DistributionMapping and
 // fill with existing fine and coarse data.
 // overrides the pure virtual function in AmrCore
-void Vidyut::RemakeLevel(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
+void Vidyut::RemakeLevel(
+    int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
     BL_PROFILE("vidyut::RemakeLevel()");
     const int ncomp = phi_new[lev].nComp();
@@ -59,10 +61,11 @@ void Vidyut::ClearLevel(int lev)
     phi_old[lev].clear();
 }
 
-// Make a new level from scratch using provided BoxArray and DistributionMapping.
-// Only used during initialization.
-// overrides the pure virtual function in AmrCore
-void Vidyut::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
+// Make a new level from scratch using provided BoxArray and
+// DistributionMapping. Only used during initialization. overrides the pure
+// virtual function in AmrCore
+void Vidyut::MakeNewLevelFromScratch(
+    int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
     BL_PROFILE("vidyut::MakeNewLevelFromScratch()");
     const int nghost = 0;
@@ -90,7 +93,7 @@ void Vidyut::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba, con
             initdomaindata(tbx, fab, geomData, localprobparm);
         });
     }
-    
+
     amrex::MultiFab::Copy(phi_old[lev], phi_new[lev], 0, 0, ncomp, 0);
 }
 
@@ -100,20 +103,24 @@ void Vidyut::AverageDown()
     BL_PROFILE("vidyut::AverageDown()");
     for (int lev = finest_level - 1; lev >= 0; --lev)
     {
-        amrex::average_down(phi_new[lev + 1], phi_new[lev], geom[lev + 1], 
-                            geom[lev], 0, phi_new[lev].nComp(), refRatio(lev));
+        amrex::average_down(
+            phi_new[lev + 1], phi_new[lev], geom[lev + 1], geom[lev], 0,
+            phi_new[lev].nComp(), refRatio(lev));
     }
 }
 
-// more flexible version of AverageDown() that lets you average down across multiple levels
+// more flexible version of AverageDown() that lets you average down across
+// multiple levels
 void Vidyut::AverageDownTo(int crse_lev)
 {
-    amrex::average_down(phi_new[crse_lev + 1], phi_new[crse_lev], geom[crse_lev + 1], 
-                        geom[crse_lev], 0, phi_new[crse_lev].nComp(), refRatio(crse_lev));
+    amrex::average_down(
+        phi_new[crse_lev + 1], phi_new[crse_lev], geom[crse_lev + 1],
+        geom[crse_lev], 0, phi_new[crse_lev].nComp(), refRatio(crse_lev));
 }
 
-// compute a new multifab by coping in phi from valid region and filling ghost cells
-// works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
+// compute a new multifab by coping in phi from valid region and filling ghost
+// cells works for single level and 2-level cases (fill fine grid ghost by
+// interpolating from coarse)
 void Vidyut::FillPatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 {
     BL_PROFILE("vidyut::FillPatch()");
@@ -124,8 +131,10 @@ void Vidyut::FillPatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
         GetData(0, time, smf, stime);
 
         GpuBndryFuncFab<AmrCoreFill> gpu_bndry_func(amrcore_fill_func);
-        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> physbc(geom[lev], bcspec, gpu_bndry_func);
-        amrex::FillPatchSingleLevel(mf, time, smf, stime, 0, icomp, ncomp, geom[lev], physbc, 0);
+        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> physbc(
+            geom[lev], bcspec, gpu_bndry_func);
+        amrex::FillPatchSingleLevel(
+            mf, time, smf, stime, 0, icomp, ncomp, geom[lev], physbc, 0);
     } else
     {
         Vector<MultiFab*> cmf, fmf;
@@ -136,18 +145,22 @@ void Vidyut::FillPatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
         Interpolater* mapper = &cell_cons_interp;
 
         GpuBndryFuncFab<AmrCoreFill> gpu_bndry_func(amrcore_fill_func);
-        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> cphysbc(geom[lev - 1], bcspec, gpu_bndry_func);
-        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> fphysbc(geom[lev], bcspec, gpu_bndry_func);
+        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> cphysbc(
+            geom[lev - 1], bcspec, gpu_bndry_func);
+        PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> fphysbc(
+            geom[lev], bcspec, gpu_bndry_func);
 
         amrex::FillPatchTwoLevels(
-            mf, time, cmf, ctime, fmf, ftime, 0, icomp, ncomp, geom[lev - 1], geom[lev], 
-            cphysbc, 0, fphysbc, 0, refRatio(lev - 1), mapper, bcspec, 0);
+            mf, time, cmf, ctime, fmf, ftime, 0, icomp, ncomp, geom[lev - 1],
+            geom[lev], cphysbc, 0, fphysbc, 0, refRatio(lev - 1), mapper,
+            bcspec, 0);
     }
 }
 
 // fill an entire multifab by interpolating from the coarser level
 // this comes into play when a new level of refinement appears
-void Vidyut::FillCoarsePatch(int lev, Real time, MultiFab& mf, int icomp, int ncomp)
+void Vidyut::FillCoarsePatch(
+    int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 {
     BL_PROFILE("vidyut::FillCoarsePatch()");
     BL_ASSERT(lev > 0);
@@ -163,9 +176,12 @@ void Vidyut::FillCoarsePatch(int lev, Real time, MultiFab& mf, int icomp, int nc
     }
 
     GpuBndryFuncFab<AmrCoreFill> gpu_bndry_func(amrcore_fill_func);
-    PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> cphysbc(geom[lev - 1], bcspec, gpu_bndry_func);
-    PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> fphysbc(geom[lev], bcspec, gpu_bndry_func);
+    PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> cphysbc(
+        geom[lev - 1], bcspec, gpu_bndry_func);
+    PhysBCFunct<GpuBndryFuncFab<AmrCoreFill>> fphysbc(
+        geom[lev], bcspec, gpu_bndry_func);
 
-    amrex::InterpFromCoarseLevel(mf, time, *cmf[0], 0, icomp, ncomp, geom[lev - 1], geom[lev], 
-                                 cphysbc, 0, fphysbc, 0, refRatio(lev - 1), mapper, bcspec, 0);
+    amrex::InterpFromCoarseLevel(
+        mf, time, *cmf[0], 0, icomp, ncomp, geom[lev - 1], geom[lev], cphysbc,
+        0, fphysbc, 0, refRatio(lev - 1), mapper, bcspec, 0);
 }

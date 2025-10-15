@@ -8,7 +8,7 @@ using namespace amrex::literals;
 
 struct ProbParm
 {
-    int axdir=0;
-    amrex::Real n0=1e6;
+    int axdir = 0;
+    amrex::Real n0 = 1e6;
 };
 #endif

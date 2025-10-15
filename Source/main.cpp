@@ -25,13 +25,13 @@ int main(int argc, char* argv[])
 
         // initialize AMR data
         vidyut_obj.InitData();
-        
+
         // wallclock time
         const Real strt_evolve = amrex::second();
 
         // advance solution to final time
         vidyut_obj.Evolve();
-        
+
         // wallclock time
         Real end_evolve = amrex::second() - strt_evolve;
 
@@ -39,9 +39,12 @@ int main(int argc, char* argv[])
         Real end_total = amrex::second() - strt_total;
 
         // print wallclock time
-        ParallelDescriptor::ReduceRealMax(end_total, ParallelDescriptor::IOProcessorNumber());
-        amrex::Print() << "\nEvolve_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
-        amrex::Print() << "\nTotal_Time: " <<  ParallelDescriptor::NProcs()<<"\t"<<end_total << '\n';
+        ParallelDescriptor::ReduceRealMax(
+            end_total, ParallelDescriptor::IOProcessorNumber());
+        amrex::Print() << "\nEvolve_Time: " << ParallelDescriptor::NProcs()
+                       << "\t" << end_total << '\n';
+        amrex::Print() << "\nTotal_Time: " << ParallelDescriptor::NProcs()
+                       << "\t" << end_total << '\n';
 
         // destroy timer for profiling
         BL_PROFILE_VAR_STOP(pmain);

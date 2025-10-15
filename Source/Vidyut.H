@@ -19,7 +19,6 @@
 #include <UnivConstants.H>
 #include <VarDefines.H>
 
-
 using namespace amrex;
 
 class Vidyut : public amrex::AmrCore
@@ -42,89 +41,129 @@ public:
     // Make a new level using provided BoxArray and DistributionMapping and
     // fill with interpolated coarse level data.
     // overrides the pure virtual function in AmrCore
-    virtual void MakeNewLevelFromCoarse(int lev, amrex::Real time, 
-                                        const amrex::BoxArray& ba, 
-                                        const amrex::DistributionMapping& dm) override;
+    virtual void MakeNewLevelFromCoarse(
+        int lev,
+        amrex::Real time,
+        const amrex::BoxArray& ba,
+        const amrex::DistributionMapping& dm) override;
 
-    // Remake an existing level using provided BoxArray and DistributionMapping and
-    // fill with existing fine and coarse data.
-    // overrides the pure virtual function in AmrCore
-    virtual void RemakeLevel(int lev, amrex::Real time, 
-                             const amrex::BoxArray& ba, 
-                             const amrex::DistributionMapping& dm) override;
+    // Remake an existing level using provided BoxArray and DistributionMapping
+    // and fill with existing fine and coarse data. overrides the pure virtual
+    // function in AmrCore
+    virtual void RemakeLevel(
+        int lev,
+        amrex::Real time,
+        const amrex::BoxArray& ba,
+        const amrex::DistributionMapping& dm) override;
 
     // Delete level data
     // overrides the pure virtual function in AmrCore
     virtual void ClearLevel(int lev) override;
 
-    // Make a new level from scratch using provided BoxArray and DistributionMapping.
-    // Only used during initialization.
-    // overrides the pure virtual function in AmrCore
-    virtual void MakeNewLevelFromScratch(int lev, amrex::Real time, 
-                                         const amrex::BoxArray& ba, 
-                                         const amrex::DistributionMapping& dm) override;
+    // Make a new level from scratch using provided BoxArray and
+    // DistributionMapping. Only used during initialization. overrides the pure
+    // virtual function in AmrCore
+    virtual void MakeNewLevelFromScratch(
+        int lev,
+        amrex::Real time,
+        const amrex::BoxArray& ba,
+        const amrex::DistributionMapping& dm) override;
 
     // tag all cells for refinement
     // overrides the pure virtual function in AmrCore
-    virtual void ErrorEst(int lev, amrex::TagBoxArray& tags, 
-                          amrex::Real time, int ngrow) override;
+    virtual void
+    ErrorEst(int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow)
+        override;
 
-    void compute_scalar_transport_flux(int startspec, int numspec,
-                                       int lev, MultiFab& Sborder, 
-                                       Array<MultiFab,AMREX_SPACEDIM>& flux, 
-                                       Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                       Real time);
+    void compute_scalar_transport_flux(
+        int startspec,
+        int numspec,
+        int lev,
+        MultiFab& Sborder,
+        Array<MultiFab, AMREX_SPACEDIM>& flux,
+        Vector<int>& bc_lo,
+        Vector<int>& bc_hi,
+        Real time);
 
-    void compute_axisym_correction(int startspec, int numspec,
-                                   int lev, MultiFab& Sborder, 
-                                   MultiFab& dsdt,
-                                   Real time);
+    void compute_axisym_correction(
+        int startspec,
+        int numspec,
+        int lev,
+        MultiFab& Sborder,
+        MultiFab& dsdt,
+        Real time);
 
-    void compute_dsdt(int startspec, int numspec, int lev,
-                      Array<MultiFab,AMREX_SPACEDIM>& flux, 
-                      MultiFab& rxn_src,
-                      MultiFab& dsdt,
-                      Real time, Real dt);
+    void compute_dsdt(
+        int startspec,
+        int numspec,
+        int lev,
+        Array<MultiFab, AMREX_SPACEDIM>& flux,
+        MultiFab& rxn_src,
+        MultiFab& dsdt,
+        Real time,
+        Real dt);
 
-    void solve_potential(Real current_time, Vector<MultiFab>& Sborder, 
-                         Vector<int>& bc_lo, Vector<int>& bc_hi,
-                         Vector<Array<MultiFab,AMREX_SPACEDIM>>& efield_ec);
+    void solve_potential(
+        Real current_time,
+        Vector<MultiFab>& Sborder,
+        Vector<int>& bc_lo,
+        Vector<int>& bc_hi,
+        Vector<Array<MultiFab, AMREX_SPACEDIM>>& efield_ec);
 
+    void update_explsrc_at_all_levels(
+        int startspec,
+        int numspec,
+        Vector<MultiFab>& Sborder,
+        Vector<MultiFab>& rxn_src,
+        Vector<MultiFab>& expl_src,
+        Vector<int>& bc_lo,
+        Vector<int>& bc_hi,
+        amrex::Real cur_time);
 
-    void update_explsrc_at_all_levels(int startspec, int numspec, 
-                                      Vector<MultiFab>& Sborder,
-                                      Vector<MultiFab>& rxn_src, 
-                                      Vector<MultiFab>& expl_src, 
-                                      Vector<int>& bc_lo, Vector<int>& bc_hi,
-                                      amrex::Real cur_time);
+    void update_rxnsrc_at_all_levels(
+        Vector<MultiFab>& Sborder,
+        Vector<MultiFab>& rxn_src,
+        amrex::Real cur_time);
 
-    void update_rxnsrc_at_all_levels(Vector<MultiFab>& Sborder,
-                                     Vector<MultiFab>& rxn_src, 
-                                     amrex::Real cur_time);
+    void implicit_solve_scalar(
+        Real current_time,
+        Real dt,
+        int startspec,
+        int numspec,
+        Vector<MultiFab>& Sborder,
+        Vector<MultiFab>& Sborder_old,
+        Vector<MultiFab>& dsdt_expl,
+        Vector<int>& bc_lo,
+        Vector<int>& bc_hi,
+        Vector<Array<MultiFab, AMREX_SPACEDIM>>& grad_fc);
 
-    void implicit_solve_scalar(Real current_time,Real dt,int startspec,int numspec,
-                               Vector<MultiFab>& Sborder, Vector<MultiFab>& Sborder_old,
-                               Vector<MultiFab>& dsdt_expl,
-                               Vector<int>& bc_lo, Vector<int>& bc_hi,
-                               Vector<Array<MultiFab,AMREX_SPACEDIM>>& grad_fc);
+    void solve_photoionization(
+        Real current_time,
+        Vector<MultiFab>& Sborder,
+        Vector<int>& bc_lo,
+        Vector<int>& bc_hi,
+        Vector<MultiFab>& photoion_src,
+        int sph_id);
 
-    void solve_photoionization(Real current_time, Vector<MultiFab>& Sborder, 
-                               Vector<int>& bc_lo, Vector<int>& bc_hi,
-                               Vector<MultiFab>& photoion_src, int sph_id);
+    void compute_elecenergy_source(
+        int lev,
+        MultiFab& Sborder,
+        MultiFab& rxnsrc,
+        Array<MultiFab, AMREX_SPACEDIM>& efield,
+        Array<MultiFab, AMREX_SPACEDIM>& gradne,
+        MultiFab& dsdt,
+        Real time,
+        Real dt,
+        int floor_jh);
 
-    void compute_elecenergy_source(int lev, 
-                                   MultiFab& Sborder, 
-                                   MultiFab& rxnsrc, 
-                                   Array<MultiFab,AMREX_SPACEDIM>& efield,
-                                   Array<MultiFab,AMREX_SPACEDIM>& gradne, 
-                                   MultiFab& dsdt,
-                                   Real time, Real dt,int floor_jh);
-
-    void compute_electemp_lfa(int lev,MultiFab& Sborder,amrex::Real time);
+    void compute_electemp_lfa(int lev, MultiFab& Sborder, amrex::Real time);
 
     // compute dt from CFL considerations
-    void find_time_scales(int lev,amrex::Real& dt_edrift,amrex::Real &dt_ediff,
-                          amrex::Real& dt_diel_relax);
+    void find_time_scales(
+        int lev,
+        amrex::Real& dt_edrift,
+        amrex::Real& dt_ediff,
+        amrex::Real& dt_diel_relax);
 
     static ProbParm* h_prob_parm;
     static ProbParm* d_prob_parm;
@@ -157,10 +196,8 @@ public:
     int max_step = std::numeric_limits<int>::max();
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
 
-
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";
-
 
     amrex::Vector<int> pot_bc_lo{ROBINBC, ROBINBC, ROBINBC};
     amrex::Vector<int> pot_bc_hi{ROBINBC, ROBINBC, ROBINBC};
@@ -185,10 +222,10 @@ public:
     amrex::Real diffusive_cfl = 1.0;
     amrex::Real dielectric_cfl = 1.0;
 
-    amrex::Real fixed_dt=1e-12;
+    amrex::Real fixed_dt = 1e-12;
     int adaptive_dt = 0;
-    amrex::Real dt_min=1e-14;
-    amrex::Real dt_max=1e-9;
+    amrex::Real dt_min = 1e-14;
+    amrex::Real dt_max = 1e-9;
     amrex::Real adaptive_dt_delay = 0.0;
     amrex::Real dt_stretch = std::numeric_limits<amrex::Real>::max();
 
@@ -196,12 +233,12 @@ public:
     amrex::Real linsolve_abstol = 1e-10;
     amrex::Real linsolve_bot_reltol = 1e-10;
     amrex::Real linsolve_bot_abstol = -1.0;
-    amrex::Real min_species_density=1e-20;
-    amrex::Real min_electron_density=1e12;
-    amrex::Real min_electron_temp=300.0;
+    amrex::Real min_species_density = 1e-20;
+    amrex::Real min_electron_density = 1e12;
+    amrex::Real min_electron_temp = 300.0;
 
-    amrex::Real gas_pressure=P_NTP;
-    amrex::Real gas_temperature=T_NTP;
+    amrex::Real gas_pressure = P_NTP;
+    amrex::Real gas_temperature = T_NTP;
 
     amrex::Vector<std::string> plasma_param_names;
     amrex::Vector<std::string> allvarnames;
@@ -211,74 +248,82 @@ public:
     int linsolve_num_final_smooth = 8;
     int linsolve_num_bottom_smooth = 0;
 
-    int linsolve_maxiter=100;
-    int linsolve_max_coarsening_level=10;
-    int bound_specden=0;
-    int hyp_order=1;
-    int ngrow_for_fillpatch=2;
-    int weno_scheme=3; //WENO-Z by default
-    int track_surf_charge=0;
+    int linsolve_maxiter = 100;
+    int linsolve_max_coarsening_level = 10;
+    int bound_specden = 0;
+    int hyp_order = 1;
+    int ngrow_for_fillpatch = 2;
+    int weno_scheme = 3; // WENO-Z by default
+    int track_surf_charge = 0;
 
     // Include physics
-    int elecenergy_solve=0;
-    int do_reactions=1;
-    int do_transport=1;
-    int do_spacechrg=1;
+    int elecenergy_solve = 0;
+    int do_reactions = 1;
+    int do_transport = 1;
+    int do_spacechrg = 1;
     int user_defined_potential = 0;
     int user_defined_species = 0;
     int user_defined_vel = 0;
     int user_defined_photoionization = 0;
-    int do_bg_reactions=0;
-    int do_photoionization=0;
-    int photoion_ID=-1;
-    int multicompsolves=0;
-    int comp_ion_chunks=NUM_IONS;
-    int comp_neutral_chunks=NUM_NEUTRALS;
+    int do_bg_reactions = 0;
+    int do_photoionization = 0;
+    int photoion_ID = -1;
+    int multicompsolves = 0;
+    int comp_ion_chunks = NUM_IONS;
+    int comp_neutral_chunks = NUM_NEUTRALS;
 
     // Voltage options
-    int voltage_profile=0;
+    int voltage_profile = 0;
     amrex::Vector<amrex::Real> voltage_amp_lo{0.0, 0.0, 0.0};
     amrex::Vector<amrex::Real> voltage_amp_hi{0.0, 0.0, 0.0};
-    amrex::Real voltage_freq=1.0; 
-    amrex::Real voltage_dur=0.0; 
-    amrex::Real voltage_center=0.0; 
+    amrex::Real voltage_freq = 1.0;
+    amrex::Real voltage_dur = 0.0;
+    amrex::Real voltage_center = 0.0;
 
-    int floor_jh=0;
+    int floor_jh = 0;
 
-    void update_cc_efields(amrex::Vector<MultiFab>& Sborder); 
+    void update_cc_efields(amrex::Vector<MultiFab>& Sborder);
 
-    void update_surf_charge(Vector<MultiFab>& Sborder,
-                            Real current_time, Real dt);
+    void
+    update_surf_charge(Vector<MultiFab>& Sborder, Real current_time, Real dt);
 
-    //IB functions
-    void set_solver_mask(Vector<iMultiFab>& solvermask,
-        Vector<MultiFab>& Sborder);
+    // IB functions
+    void
+    set_solver_mask(Vector<iMultiFab>& solvermask, Vector<MultiFab>& Sborder);
 
-    void set_explicit_fluxes_at_ib(int lev,MultiFab& rhs,
+    void set_explicit_fluxes_at_ib(
+        int lev,
+        MultiFab& rhs,
         MultiFab& acoeff,
         MultiFab& Sborder,
         Real time,
         int compid,
         int rhscompid);
 
-    void null_bcoeff_at_ib(int lev,Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff, 
-                                                MultiFab& Sborder,
-                                                int numcomps);
+    void null_bcoeff_at_ib(
+        int lev,
+        Array<MultiFab, AMREX_SPACEDIM>& face_bcoeff,
+        MultiFab& Sborder,
+        int numcomps);
 
-    void correct_efields_ib(Vector<MultiFab>& Sborder,
-        Vector< Array<MultiFab,AMREX_SPACEDIM> >& efield_fc,Real time);
+    void correct_efields_ib(
+        Vector<MultiFab>& Sborder,
+        Vector<Array<MultiFab, AMREX_SPACEDIM>>& efield_fc,
+        Real time);
 
-    void null_field_in_covered_cells(Vector<MultiFab>& fld,
-        Vector<MultiFab>& Sborder,int startcomp,int numcomp);
-
+    void null_field_in_covered_cells(
+        Vector<MultiFab>& fld,
+        Vector<MultiFab>& Sborder,
+        int startcomp,
+        int numcomp);
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)
     int regrid_int = 2;
-    int num_timestep_correctors=1;
+    int num_timestep_correctors = 1;
 
 #ifdef AMREX_USE_HYPRE
-    int use_hypre=0;
+    int use_hypre = 0;
 #endif
 
     // plotfile prefix and frequency
@@ -296,16 +341,15 @@ public:
     // Electron species index
     int E_IDX = 0;
 
-    int using_ib=0;
+    int using_ib = 0;
 
-    int using_LFA=0;
+    int using_LFA = 0;
 
     // Monitor file options
     int monitor_file_int = -1;
 
-    int solver_verbose=1;
-    int evolve_verbose=1;
-
+    int solver_verbose = 1;
+    int evolve_verbose = 1;
 
 private:
     ////////////////
@@ -317,24 +361,35 @@ private:
     // set covered coarse cells to be the average of overlying fine cells
     void AverageDown();
 
-    // more flexible version of AverageDown() that lets you average down across multiple levels
+    // more flexible version of AverageDown() that lets you average down across
+    // multiple levels
     void AverageDownTo(int crse_lev);
 
-    // compute a new multifab by coping in phi from valid region and filling ghost cells
-    // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
-    void FillPatch(int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    // compute a new multifab by coping in phi from valid region and filling
+    // ghost cells works for single level and 2-level cases (fill fine grid
+    // ghost by interpolating from coarse)
+    void FillPatch(
+        int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
 
     // fill an entire multifab by interpolating from the coarser level
     // this comes into play when a new level of refinement appears
-    void FillCoarsePatch(int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    void FillCoarsePatch(
+        int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
 
     // utility to copy in data from phi_old and/or phi_new into another multifab
-    void GetData(int lev, amrex::Real time, 
-                 amrex::Vector<amrex::MultiFab*>& data, amrex::Vector<amrex::Real>& datatime);
+    void GetData(
+        int lev,
+        amrex::Real time,
+        amrex::Vector<amrex::MultiFab*>& data,
+        amrex::Vector<amrex::Real>& datatime);
 
     // a wrapper for EstTimeStep(0
-    void ComputeDt(amrex::Real cur_time, amrex::Real dt_delay, amrex::Real dt_edrift, 
-                   amrex::Real dt_ediff, amrex::Real dt_diel_relax);
+    void ComputeDt(
+        amrex::Real cur_time,
+        amrex::Real dt_delay,
+        amrex::Real dt_edrift,
+        amrex::Real dt_ediff,
+        amrex::Real dt_diel_relax);
 
     // put together an array of multifabs for writing
     amrex::Vector<const amrex::MultiFab*> PlotFileMF() const;
@@ -353,9 +408,8 @@ private:
 
     Vector<int> bg_specid_list;
 
-    // Creates monitor file showing the maximum domain value of all variables 
+    // Creates monitor file showing the maximum domain value of all variables
     void WriteMonitorFile(amrex::Real time);
-
 };
 
 #endif

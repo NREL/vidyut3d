@@ -1,19 +1,37 @@
-name: CIvidyut                                                                                                                                        
-on: 
-   push:
-     branches: [ main, hackathon_2025 ]
-   pull_request:
-     branches: [ main, hackathon_2025 ]
+name: CIvidyut
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{github.ref}}-${{github.head_ref}}-ci
+  cancel-in-progress: true
 
 jobs:
+  formatting:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Clone
+      uses: actions/checkout@v4
+    - name: Check formatting
+      uses: DoozyX/clang-format-lint-action@v0.20
+      with:
+        source: './Source ./test'
+        exclude: '.'
+        extensions: 'H,h,cpp'
+        clangFormatVersion: 20
   cputest:
+    needs: formatting
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
     - name: System Dependencies
-      run: | 
+      run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
         build-essential g++ gfortran libopenmpi-dev openmpi-bin
@@ -35,19 +53,19 @@ jobs:
       run: |
           cd MMS2
           mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=1
-          ./l2err/*.ex -dir 0 plt00001 
+          ./l2err/*.ex -dir 0 plt00001
           mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=1
           ./l2err/*.ex -dir 1 plt00001
           mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=1
           ./l2err/*.ex -dir 2 plt00001
           mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=2
-          ./l2err/*.ex -dir 0 plt00001 
+          ./l2err/*.ex -dir 0 plt00001
           mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=2
           ./l2err/*.ex -dir 1 plt00001
           mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=2
           ./l2err/*.ex -dir 2 plt00001
           mpirun -n 2 ./*.ex inputs_x vidyut.hyp_order=5
-          ./l2err/*.ex -dir 0 plt00001 
+          ./l2err/*.ex -dir 0 plt00001
           mpirun -n 2 ./*.ex inputs_y vidyut.hyp_order=5
           ./l2err/*.ex -dir 1 plt00001
           mpirun -n 2 ./*.ex inputs_z vidyut.hyp_order=5
