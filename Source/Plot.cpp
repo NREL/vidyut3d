@@ -32,13 +32,15 @@ Vector<const MultiFab*> Vidyut::PlotFileMF() const
 void Vidyut::WritePlotFile(int plotfilenum) const
 {
     BL_PROFILE("Vidyut::WritePlotFile()");
-    const std::string& plotfilename = amrex::Concatenate(plot_file, plotfilenum, 5);
+    const std::string& plotfilename =
+        amrex::Concatenate(plot_file, plotfilenum, 5);
     const auto& mf = PlotFileMF();
 
     // amrex::Print() << "Writing plotfile " << plotfilename << "\n";
 
-    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level + 1, mf, 
-                                   allvarnames, Geom(), t_new[0], istep, refRatio());
+    amrex::WriteMultiLevelPlotfile(
+        plotfilename, finest_level + 1, mf, allvarnames, Geom(), t_new[0],
+        istep, refRatio());
 }
 
 void Vidyut::WriteCheckpointFile(int chkfilenum) const
@@ -46,21 +48,25 @@ void Vidyut::WriteCheckpointFile(int chkfilenum) const
 
     BL_PROFILE("Vidyut::WriteCheckpointFile()");
     // chk00010            write a checkpoint file with this root directory
-    // chk00010/Header     this contains information you need to save (e.g., finest_level, t_new, etc.) and also
+    // chk00010/Header     this contains information you need to save (e.g.,
+    // finest_level, t_new, etc.) and also
     //                     the BoxArrays at each level
     // chk00010/Level_0/
     // chk00010/Level_1/
-    // etc.                these subdirectories will hold the MultiFab data at each level of refinement
+    // etc.                these subdirectories will hold the MultiFab data at
+    // each level of refinement
 
     // checkpoint file name, e.g., chk00010
-    const std::string& checkpointname = amrex::Concatenate(chk_file, chkfilenum);
+    const std::string& checkpointname =
+        amrex::Concatenate(chk_file, chkfilenum);
 
     amrex::Print() << "Writing checkpoint " << checkpointname << "\n";
 
     const int nlevels = finest_level + 1;
 
     // ---- prebuild a hierarchy of directories
-    // ---- dirName is built first.  if dirName exists, it is renamed.  then build
+    // ---- dirName is built first.  if dirName exists, it is renamed.  then
+    // build
     // ---- dirName/subDirPrefix_0 .. dirName/subDirPrefix_nlevels-1
     // ---- if callBarrier is true, call ParallelDescriptor::Barrier()
     // ---- after all directories are built
@@ -75,8 +81,9 @@ void Vidyut::WriteCheckpointFile(int chkfilenum) const
         VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
         std::ofstream HeaderFile;
         HeaderFile.rdbuf()->pubsetbuf(io_buffer.dataPtr(), io_buffer.size());
-        HeaderFile.open(HeaderFileName.c_str(), std::ofstream::out | 
-                        std::ofstream::trunc | std::ofstream::binary);
+        HeaderFile.open(
+            HeaderFileName.c_str(),
+            std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
         if (!HeaderFile.good())
         {
             amrex::FileOpenFailed(HeaderFileName);
@@ -122,8 +129,9 @@ void Vidyut::WriteCheckpointFile(int chkfilenum) const
     // write the MultiFab data to, e.g., chk00010/Level_0/
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        VisMF::Write(phi_new[lev], 
-                     amrex::MultiFabFileFullPrefix(lev, checkpointname, "Level_", "phi"));
+        VisMF::Write(
+            phi_new[lev], amrex::MultiFabFileFullPrefix(
+                              lev, checkpointname, "Level_", "phi"));
     }
 }
 
@@ -195,7 +203,8 @@ void Vidyut::ReadCheckpointFile()
         // create a distribution mapping
         DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-        // set BoxArray grids and DistributionMapping dmap in AMReX_AmrMesh.H class
+        // set BoxArray grids and DistributionMapping dmap in AMReX_AmrMesh.H
+        // class
         SetBoxArray(lev, ba);
         SetDistributionMap(lev, dm);
 
@@ -209,42 +218,50 @@ void Vidyut::ReadCheckpointFile()
     // read in the MultiFab data
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        VisMF::Read(phi_new[lev], amrex::MultiFabFileFullPrefix(lev, restart_chkfile, "Level_", "phi"));
+        VisMF::Read(
+            phi_new[lev], amrex::MultiFabFileFullPrefix(
+                              lev, restart_chkfile, "Level_", "phi"));
     }
 }
 
-void Vidyut::WriteMonitorFile(amrex::Real time){
+void Vidyut::WriteMonitorFile(amrex::Real time)
+{
     BL_PROFILE("Vidyut::WriteMonitorFile()");
-    for (int lev = 0; lev <= finest_level; ++lev){
+    for (int lev = 0; lev <= finest_level; ++lev)
+    {
         // Check to see if monitor file exists already, and create if it doesn't
         std::string baseName = "MonitorFile_Level";
         std::string datString = ".dat";
         std::string intString = std::to_string(lev);
         std::string monitorFileName = (baseName + intString + datString);
-        if (ParallelDescriptor::IOProcessor()){
-            if(access(monitorFileName.c_str(), F_OK) == -1){
-            // if (!std::filesystem::exists(monitorFileName.c_str())){
-            // {
+        if (ParallelDescriptor::IOProcessor())
+        {
+            if (access(monitorFileName.c_str(), F_OK) == -1)
+            {
+                // if (!std::filesystem::exists(monitorFileName.c_str())){
+                // {
                 std::ofstream MonitorFile;
                 MonitorFile.open(monitorFileName.c_str(), std::ios::out);
                 MonitorFile << "# (1)time\t";
-                for(int i=0; i<NVAR; i++) MonitorFile << "(" << std::to_string(i+2) << ")" << allvarnames[i] << "\t";
+                for (int i = 0; i < NVAR; i++)
+                    MonitorFile << "(" << std::to_string(i + 2) << ")"
+                                << allvarnames[i] << "\t";
                 MonitorFile << std::endl;
-                MonitorFile.close();    
+                MonitorFile.close();
             }
         }
 
         // Output maximum value in domain for each variable
-        if (ParallelDescriptor::IOProcessor()){
+        if (ParallelDescriptor::IOProcessor())
+        {
             std::ofstream MonitorFile;
-            MonitorFile.open(monitorFileName.c_str(), std::ios::out | std::ios::app);
+            MonitorFile.open(
+                monitorFileName.c_str(), std::ios::out | std::ios::app);
             MonitorFile << time << "\t";
-            for(int i=0; i<NVAR; i++) MonitorFile << phi_new[lev].max(i,0,false) << "\t";
+            for (int i = 0; i < NVAR; i++)
+                MonitorFile << phi_new[lev].max(i, 0, false) << "\t";
             MonitorFile << std::endl;
-            MonitorFile.close();    
+            MonitorFile.close();
         }
-        
-
-
     }
 }
