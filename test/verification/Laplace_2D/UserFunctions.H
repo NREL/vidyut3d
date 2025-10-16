@@ -40,6 +40,130 @@ AMREX_GPU_DEVICE AMREX_INLINE void get_photoion_rhs(
     Real Pg)
 {}
 
+AMREX_GPU_DEVICE AMREX_INLINE amrex::Real surfaceval(
+    amrex::Real x,
+    amrex::Real y,
+    ProbParm const& prob_parm,
+    GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+    GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+    int inner)
+{
+    amrex::Real rad = std::sqrt(x * x + y * y);
+    amrex::Real surfval = 0;
+    if (inner)
+    {
+        surfval = rad - prob_parm.inner_radius;
+    } else
+    {
+        surfval = prob_parm.outer_radius - rad;
+    }
+    return (surfval);
+}
+
+AMREX_GPU_DEVICE AMREX_INLINE amrex::Real surfacefunc(
+    amrex::Real x,
+    amrex::Real y,
+    ProbParm const& prob_parm,
+    GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+    GpuArray<Real, AMREX_SPACEDIM> prob_hi)
+{
+    amrex::Real rad = std::sqrt(x * x + y * y);
+    Real sgn = 0.0;
+    if ((prob_parm.inner_radius <= rad) && (rad <= prob_parm.outer_radius))
+    {
+        sgn = 1.0;
+    } else
+    {
+        sgn = -1.0;
+    }
+    return (sgn);
+}
+
+AMREX_GPU_DEVICE AMREX_INLINE void get_surface_point(
+    IntVect cutcell,
+    GpuArray<Real, AMREX_SPACEDIM> prob_lo,
+    GpuArray<Real, AMREX_SPACEDIM> prob_hi,
+    GpuArray<int, AMREX_SPACEDIM> domlo,
+    GpuArray<int, AMREX_SPACEDIM> domhi,
+    GpuArray<Real, AMREX_SPACEDIM> dx,
+    ProbParm const& prob_parm,
+    Real xib[AMREX_SPACEDIM])
+{
+    int niter = 50;
+    Real tol = 1e-10;
+
+    // guess
+    xib[0] = prob_lo[0] + (cutcell[0] + 0.5) * dx[0];
+    xib[1] = prob_lo[1] + (cutcell[1] + 0.5) * dx[1];
+    amrex::Real radib = std::sqrt(xib[0] * xib[0] + xib[1] * xib[1]);
+    amrex::Real midrad =
+        0.5 * (prob_parm.inner_radius + prob_parm.outer_radius);
+    int inner = (radib < midrad) ? 1 : 0;
+
+    amrex::Real sgn_ib =
+        surfacefunc(xib[0], xib[1], prob_parm, prob_lo, prob_hi);
+
+    // complementary point to ib
+    // if xib is inside cib_c is outside
+    // if xib is outside xib_c is inside
+    Real xib_c[AMREX_SPACEDIM];
+    Real xmid[AMREX_SPACEDIM];
+
+    for (int jj = 0; jj < AMREX_SPACEDIM; jj++)
+    {
+        int found = 0;
+        for (int ii = 0; ii < AMREX_SPACEDIM; ii++)
+        {
+            xib_c[0] = prob_lo[0] + (cutcell[0] + ii) * dx[0];
+            xib_c[1] = prob_lo[1] + (cutcell[1] + jj) * dx[1];
+
+            if (surfacefunc(xib_c[0], xib_c[1], prob_parm, prob_lo, prob_hi) !=
+                sgn_ib)
+            {
+                found = 1;
+                break;
+            }
+        }
+        if (found)
+        {
+            break;
+        }
+    }
+
+    int iter = 0;
+    for (iter = 0; iter < niter; iter++)
+    {
+        xmid[0] = 0.5 * (xib_c[0] + xib[0]);
+        xmid[1] = 0.5 * (xib_c[1] + xib[1]);
+
+        if (amrex::Math::abs(surfaceval(
+                xmid[0], xmid[1], prob_parm, prob_lo, prob_hi, inner)) < tol)
+        {
+            break;
+        }
+
+        Real sgnmid =
+            surfacefunc(xmid[0], xmid[1], prob_parm, prob_lo, prob_hi);
+        Real sgn1 = surfacefunc(xib[0], xib[1], prob_parm, prob_lo, prob_hi);
+        Real sgn2 =
+            surfacefunc(xib_c[0], xib_c[1], prob_parm, prob_lo, prob_hi);
+
+        if (sgnmid == sgn1)
+        {
+            xib[0] = xmid[0];
+            xib[1] = xmid[1];
+        } else
+        {
+            xib_c[0] = xmid[0];
+            xib_c[1] = xmid[1];
+        }
+    }
+
+    // final value
+    xib[0] = xmid[0];
+    xib[1] = xmid[1];
+}
+
 AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
     IntVect face,
     int dir,
@@ -63,7 +187,7 @@ AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
     IntVect lcell = face;
     IntVect rcell = face;
     lcell[dir] -= 1;
-    amrex::Real xloc[2];
+    amrex::Real xloc[2], xib[2];
     xloc[0] = prob_lo[0] + (lcell[0] + 0.5) * dx[0];
     xloc[1] = prob_lo[1] + (lcell[1] + 0.5) * dx[1];
     xloc[dir] += 0.5 * dx[dir];
@@ -71,9 +195,13 @@ AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
 
     // interior cell
     IntVect intcell = (sgn == 1) ? lcell : rcell;
+    IntVect cutcell = (sgn == 1) ? rcell : lcell;
     amrex::Real outward_normal[AMREX_SPACEDIM] = {0.0};
     outward_normal[dir] = sgn;
     amrex::Real dx2 = dx[dir] * dx[dir];
+
+    get_surface_point(
+        cutcell, prob_lo, prob_hi, domlo, domhi, dx, prob_parm, xib);
 
     amrex::Real ndens = 0.0;
     for (int sp = 0; sp < NUM_SPECIES; sp++) ndens += sb_arr(intcell, sp);
@@ -85,8 +213,18 @@ AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
             if (prob_parm.outer_dirichlet)
             {
                 amrex::Real phi_dirc = prob_parm.outer_voltage;
-                acoeff(intcell) -= 1.0 / (0.5 * dx2);
-                rhs(intcell, rhs_comp) -= phi_dirc / (0.5 * dx2);
+
+                amrex::Real ccibvec[AMREX_SPACEDIM];
+                ccibvec[0] = prob_lo[0] + (intcell[0] + 0.5) * dx[0] - xib[0];
+                ccibvec[1] = prob_lo[1] + (intcell[1] + 0.5) * dx[1] - xib[1];
+
+                amrex::Real d_ccib2 =
+                    ccibvec[0] * ccibvec[0] + ccibvec[1] * ccibvec[1];
+
+                acoeff(intcell) += (1.0 / d_ccib2) * ccibvec[dir] *
+                                   outward_normal[dir] / dx[dir];
+                rhs(intcell, rhs_comp) += (phi_dirc / d_ccib2) * ccibvec[dir] *
+                                          outward_normal[dir] / dx[dir];
             } else
             {
                 amrex::Real dphidr =
@@ -102,8 +240,18 @@ AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
             if (prob_parm.inner_dirichlet)
             {
                 amrex::Real phi_dirc = prob_parm.inner_voltage;
-                acoeff(intcell) -= 1.0 / (0.5 * dx2);
-                rhs(intcell, rhs_comp) -= phi_dirc / (0.5 * dx2);
+
+                amrex::Real ccibvec[AMREX_SPACEDIM];
+                ccibvec[0] = prob_lo[0] + (intcell[0] + 0.5) * dx[0] - xib[0];
+                ccibvec[1] = prob_lo[1] + (intcell[1] + 0.5) * dx[1] - xib[1];
+
+                amrex::Real d_ccib2 =
+                    ccibvec[0] * ccibvec[0] + ccibvec[1] * ccibvec[1];
+
+                acoeff(intcell) += (1.0 / d_ccib2) * ccibvec[dir] *
+                                   outward_normal[dir] / dx[dir];
+                rhs(intcell, rhs_comp) += (phi_dirc / d_ccib2) * ccibvec[dir] *
+                                          outward_normal[dir] / dx[dir];
             } else
             {
                 amrex::Real dphidr =
