@@ -361,7 +361,6 @@ void Vidyut::solve_potential(
                                     captured_gastemp, captured_gaspres,
                                     app_voltage, int_currents,
                                     int_current_areas, int_current_surfaces);
-                                    app_voltage);
                             }
                         });
                 }

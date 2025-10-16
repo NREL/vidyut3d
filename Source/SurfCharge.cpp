@@ -53,9 +53,6 @@ amrex::Real charge_flux(
     amrex::Real numdens = 0.0;
     for (int sp = 0; sp < NUM_SPECIES; sp++) numdens += sb_arr(icell, sp);
 
-    amrex::Real efield_n = sb_arr(icell, EFX_ID + dir) * outward_normal[dir];
-    amrex::Real numdens = 0.0;
-    for (int sp = 0; sp < NUM_SPECIES; sp++) numdens += sb_arr(icell, sp);
     for (int sp = 0; sp < NUM_SPECIES; sp++)
     {
         amrex::Real chrg = plasmachem::get_charge(sp);

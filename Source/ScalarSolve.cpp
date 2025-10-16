@@ -415,9 +415,6 @@ void Vidyut::implicit_solve_scalar(
     int electron_flag = 0;
     int electron_energy_flag = 0;
 
-    int electron_flag = 0;
-    int electron_energy_flag = 0;
-
     // FIXME: may be a better way
     if (numspec == 1)
     {

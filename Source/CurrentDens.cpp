@@ -172,18 +172,18 @@ void Vidyut::compute_current_density_at_level(
                             }
 
                             Real Esum = 0.0;
-                            Real efx = (sborder_arr(lcell, EFX_ID) * mask_L +
+                            amrex::Real efx = (sborder_arr(lcell, EFX_ID) * mask_L +
                                         sborder_arr(rcell, EFX_ID) * mask_R) /
                                        mask_tot;
                             Esum += amrex::Math::powi<2>(efx);
 #if AMREX_SPACEDIM > 1
-                            Real efy = (sborder_arr(lcell, EFY_ID) * mask_L +
+                            amrex::Real efy = (sborder_arr(lcell, EFY_ID) * mask_L +
                                         sborder_arr(rcell, EFY_ID) * mask_R) /
                                        mask_tot;
 
                             Esum += amrex::Math::powi<2>(efy);
 #if AMREX_SPACEDIM == 3
-                            efz = (sborder_arr(lcell, EFZ_ID) * mask_L +
+                            amrex::Real efz = (sborder_arr(lcell, EFZ_ID) * mask_L +
                                    sborder_arr(rcell, EFZ_ID) * mask_R) /
                                   mask_tot;
 
