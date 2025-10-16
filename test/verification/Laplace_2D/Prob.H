@@ -60,18 +60,34 @@ void initdomaindata(
                     phi(i, j, k, sp) = 0.0;
                 }
 
-                Real y = prob_lo[1] + (0.5 + j) * dx[1];
-                Real x = prob_lo[0] + (0.5 + i) * dx[0];
-                Real rad = sqrt(x * x + y * y);
+                // Real y = prob_lo[1] + (0.5 + j) * dx[1];
+                // Real x = prob_lo[0] + (0.5 + i) * dx[0];
+                // Real rad = sqrt(x * x + y * y);
+                // if ((prob_parm->inner_radius < rad) &&
+                //     (rad < prob_parm->outer_radius))
+                // {
+                //     phi(i, j, k, CMASK_ID) = 1;
+                // } else
+                // {
+                //     phi(i, j, k, CMASK_ID) = 0;
+                // }
 
-                if ((prob_parm->inner_radius < rad) &&
-                    (rad < prob_parm->outer_radius))
+                for (int jj = 0; jj < 2; jj++)
                 {
-                    phi(i, j, k, CMASK_ID) = 1;
-                } else
-                {
-                    phi(i, j, k, CMASK_ID) = 0;
+                    for (int ii = 0; ii < 2; ii++)
+                    {
+                        Real xx = prob_lo[0] + (i + ii) * dx[0];
+                        Real yy = prob_lo[1] + (j + jj) * dx[1];
+                        Real rad = sqrt(xx * xx + yy * yy);
+
+                        if ((prob_parm->inner_radius <= rad) &&
+                            (rad <= prob_parm->outer_radius))
+                        {
+                            phi(i, j, k, CMASK_ID) += 1.0;
+                        }
+                    }
                 }
+                phi(i, j, k, CMASK_ID) *= 0.25;
 
                 phi(i, j, k, E_ID) = 1e12;
                 phi(i, j, k, S1_ID) = 1e12;
