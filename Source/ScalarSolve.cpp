@@ -102,6 +102,10 @@ void Vidyut::update_explsrc_at_all_levels(
             flux[lev][idim].define(ba, dmap[lev], numspec, 0);
             flux[lev][idim].setVal(0.0);
         }
+    }
+
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
         expl_src[lev].setVal(0.0);
     }
 
@@ -407,6 +411,9 @@ void Vidyut::implicit_solve_scalar(
             int_current_surfaces[i] = current_loc_surfaces[i];
         }
     }
+
+    int electron_flag = 0;
+    int electron_energy_flag = 0;
 
     int electron_flag = 0;
     int electron_energy_flag = 0;

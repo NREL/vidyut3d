@@ -1,17 +1,14 @@
 #include "Chemistry.H"
 
 // save atomic weights into array
-void atomicWeight(amrex::Real *  awt)
+void atomicWeight(amrex::Real* awt)
 {
-    awt[0] = 0.000549; // E
+    awt[0] = 0.000549;  // E
     awt[1] = 39.950000; // Ar
 }
 
 // get atomic weight for all elements
-void CKAWT( amrex::Real *  awt)
-{
-    atomicWeight(awt);
-}
+void CKAWT(amrex::Real* awt) { atomicWeight(awt); }
 
 // Returns the vector of strings of element names
 void CKSYME_STR(amrex::Vector<std::string>& ename)

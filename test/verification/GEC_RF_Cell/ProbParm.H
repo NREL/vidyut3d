@@ -9,13 +9,13 @@ using namespace amrex::literals;
 
 struct ProbParm
 {
-    amrex::Real dgap=0.0254;
-    amrex::Real R1=0.0538;
-    amrex::Real f=13.56e6;
-    amrex::Real ionden_init=1e14;
-    amrex::Real V1=400.0;
-    amrex::Real V2=0.0;
-    amrex::Real bg_gasden=1.0;
-    amrex::Real gama=0.02;
+    amrex::Real dgap = 0.0254;
+    amrex::Real R1 = 0.0538;
+    amrex::Real f = 13.56e6;
+    amrex::Real ionden_init = 1e14;
+    amrex::Real V1 = 400.0;
+    amrex::Real V2 = 0.0;
+    amrex::Real bg_gasden = 1.0;
+    amrex::Real gama = 0.02;
 };
 #endif
