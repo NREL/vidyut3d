@@ -5,7 +5,6 @@
 #include <AMReX_FArrayBox.H>
 #include <AMReX_REAL.H>
 #include <Chemistry.H>
-#include <VarDefines.H>
 
 using namespace amrex;
 namespace user_transport {
@@ -72,83 +71,8 @@ AMREX_GPU_DEVICE AMREX_INLINE void bc_ib(
     ProbParm const& prob_parm,
     Real Tg,
     Real Pg)
-{
-    IntVect lcell = face;
-    IntVect rcell = face;
-    lcell[dir] -= 1;
-    amrex::Real xloc;
-    xloc =
-        prob_lo[prob_parm.axdir] + face[prob_parm.axdir] * dx[prob_parm.axdir];
+{}
 
-    // interior cell
-    IntVect intcell = (sgn == 1) ? lcell : rcell;
-
-    amrex::Real outward_normal[AMREX_SPACEDIM] = {0.0};
-    outward_normal[dir] = sgn;
-    amrex::Real dx2 = dx[dir] * dx[dir];
-
-    if (solved_comp == POT_ID)
-    {
-        // We are solving del^2 (phi)=source
-        // in vidyut
-        // so del(phi)|i+1/2 - del(phi)|i-1/2 = source
-
-        // for both left or right being the interior cell
-        // Dirichlet condition works out to the same sign
-        amrex::Real phi_dirc = 0.0;
-        acoeff(intcell) -= 1.0 / (0.5 * dx2);
-        rhs(intcell, rhs_comp) -= phi_dirc / (0.5 * dx2);
-    } else if (
-        solved_comp == E_ID || solved_comp == HEp_ID || solved_comp == EEN_ID)
-    {
-        amrex::Real dircval_left = prob_parm.n0;
-        amrex::Real alpha = ECHARGE / EPS0;
-        amrex::Real dircval_right = 1.0 / alpha + prob_parm.n0;
-        int left_side = (xloc < 0.5) ? 1 : 0;
-        if (solved_comp == HEp_ID)
-        {
-            dircval_right = 1.0 / (2.0 * alpha) + prob_parm.n0;
-        }
-
-        amrex::Real ndens = 0.0;
-        for (int sp = 0; sp < NUM_SPECIES; sp++) ndens += sb_arr(intcell, sp);
-
-        amrex::Real emag = std::sqrt(
-            amrex::Math::powi<2>(sb_arr(intcell, EFX_ID)) +
-            amrex::Math::powi<2>(sb_arr(intcell, EFY_ID)) +
-            amrex::Math::powi<2>(sb_arr(intcell, EFZ_ID)));
-
-        amrex::Real Dcoeff =
-            specDiff(solved_comp, sb_arr(intcell, ETEMP_ID), ndens, emag, Tg);
-
-        amrex::Real mu =
-            specMob(solved_comp, sb_arr(intcell, ETEMP_ID), ndens, emag, Tg);
-        amrex::Real vel = mu * sb_arr(intcell, EFX_ID + dir);
-
-        acoeff(intcell) += Dcoeff / (0.5 * dx2);
-
-        amrex::Real dircval = (left_side) ? dircval_left : dircval_right;
-
-        rhs(intcell, rhs_comp) += Dcoeff * dircval / (0.5 * dx2);
-
-        if (sgn == 1) // left cell is internal
-        {
-            amrex::Real upwindval =
-                (vel > 0.0) ? sb_arr(intcell, solved_comp) : dircval;
-            rhs(intcell, rhs_comp) -= upwindval * vel / dx[dir];
-        } else // right cell is internal
-        {
-            amrex::Real upwindval =
-                (vel > 0.0) ? dircval : sb_arr(intcell, solved_comp);
-            rhs(intcell, rhs_comp) += upwindval * vel / dx[dir];
-        }
-    } else if (solved_comp == HE_ID)
-    {
-        // Homogenous Neumann
-    } else
-    {
-    }
-}
 AMREX_GPU_HOST_DEVICE
 AMREX_FORCE_INLINE
 int is_dielectric(
@@ -163,7 +87,7 @@ int is_dielectric(
     Real time,
     ProbParm const& prob_parm)
 {
-    return (0);
+    return (1);
 }
 
 AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
@@ -173,7 +97,7 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
     int dir,
     int sgn,
     Array4<Real> const& phi,
-    Array4<Real> const& bcarr,
+    Array4<Real> const& bc_arr,
     Array4<Real> const& robin_a,
     Array4<Real> const& robin_b,
     Array4<Real> const& robin_f,
@@ -189,10 +113,6 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
     GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
     GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 {
-    // note: bdryLo/bdryHi grabs the face indices from bx that are at the
-    // boundary since they are face indices, the bdry normal index is 0/n+1, n
-    // is number of cells so the ghost cell index at left side is i-1 while it
-    // is i on the right
     IntVect cell_int{AMREX_D_DECL(i, j, k)};
     IntVect ghost_cell{AMREX_D_DECL(i, j, k)};
     amrex::Real outward_normal[AMREX_SPACEDIM] = {0.0};
@@ -212,12 +132,40 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
     { // lo sides
         robin_a(ghost_cell) = 1.0;
         robin_b(ghost_cell) = 0.0;
-        robin_f(ghost_cell) = 0.0;
-    } else
+        amrex::Real V =
+            prob_parm.V *
+            std::cos(2.0 * PI * prob_parm.f * time - prob_parm.phase);
+        amrex::Real phic = phi(cell_int, POT_ID);
+        amrex::Real sig = phi(cell_int, SRFCH_ID);
+        amrex::Real delta = dx[0] * 0.5;
+        amrex::Real t = prob_parm.dielthick;
+        amrex::Real K = prob_parm.dielconst;
+        amrex::Real phib = (phic + sig * delta / EPS0 + V * K * delta / t) /
+                           (K * delta / t + 1.0);
+        robin_f(ghost_cell) = phib;
+        bc_arr(ghost_cell) = phib;
+        amrex::AllPrint() << "sig left:" << sig << "\t" << phib << "\n";
+    } else if (sgn == 1)
     {
+        amrex::Real V = 0.0;
+        amrex::Real phic = phi(cell_int, POT_ID);
+        amrex::Real sig = phi(cell_int, SRFCH_ID);
+        amrex::Real delta = dx[0] * 0.5;
+        amrex::Real t = prob_parm.dielthick;
+        amrex::Real K = prob_parm.dielconst;
+        amrex::Real phib = (phic + sig * delta / EPS0 + V * K * delta / t) /
+                           (K * delta / t + 1.0);
         robin_a(ghost_cell) = 1.0;
         robin_b(ghost_cell) = 0.0;
+        robin_f(ghost_cell) = phib;
+        bc_arr(ghost_cell) = phib;
+        amrex::AllPrint() << "sig right:" << sig << "\t" << phib << "\n";
+    } else
+    {
+        robin_a(ghost_cell) = 0.0;
+        robin_b(ghost_cell) = 1.0;
         robin_f(ghost_cell) = 0.0;
+        bc_arr(ghost_cell) = 0.0;
     }
 }
 
@@ -285,7 +233,7 @@ AMREX_GPU_DEVICE AMREX_INLINE void species_bc(
     int spec_id,
     int bcspec_id,
     Array4<Real> const& phi,
-    Array4<Real> const& bcarr,
+    Array4<Real> const& bc_arr,
     Array4<Real> const& robin_a,
     Array4<Real> const& robin_b,
     Array4<Real> const& robin_f,
@@ -301,58 +249,105 @@ AMREX_GPU_DEVICE AMREX_INLINE void species_bc(
     GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
 {
-    // note: bdryLo/bdryHi grabs the face indices from bx that are at the
-    // boundary since they are face indices, the bdry normal index is 0/n+1, n
-    // is number of cells so the ghost cell index at left side is i-1 while it
-    // is i on the right
     IntVect cell_int{AMREX_D_DECL(i, j, k)};
     IntVect ghost_cell{AMREX_D_DECL(i, j, k)};
     amrex::Real outward_normal[AMREX_SPACEDIM] = {0.0};
-    outward_normal[dir] = sgn;
+    outward_normal[dir] = Real(sgn);
 
     int gcell_adjust, cell_adjust;
 
+    // ghost_cell is one behind
     gcell_adjust = (sgn == -1) ? -1 : 0;
+    // cell is one behind
     cell_adjust = (sgn == 1) ? -1 : 0;
 
     ghost_cell[dir] += gcell_adjust;
     cell_int[dir] += cell_adjust;
 
-    if (sgn == -1)
+    // default
+    robin_a(ghost_cell, bcspec_id) = 0.0;
+    robin_b(ghost_cell, bcspec_id) = 1.0;
+    robin_f(ghost_cell, bcspec_id) = 0.0;
+
+    amrex::Real ndens = 0.0;
+    for (int sp = 0; sp < NUM_SPECIES; sp++) ndens += phi(cell_int, sp);
+
+    if (spec_id == E_ID)
     {
-        // lo sides
-        // default homogenous Neumann
-        robin_a(ghost_cell, bcspec_id) = 0.0;
-        robin_b(ghost_cell, bcspec_id) = 1.0;
-        robin_f(ghost_cell, bcspec_id) = 0.0;
+        amrex::Real ne = phi(cell_int, E_ID);
+        amrex::Real efieldmag = std::sqrt(
+            amrex::Math::powi<2>(phi(cell_int, EFX_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFY_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFZ_ID)));
 
-        if (spec_id == E_ID || spec_id == HEp_ID || spec_id == EEN_ID)
-        {
-            bcarr(ghost_cell, bcspec_id) = 0.0 + prob_parm.n0;
-        }
+        amrex::Real D =
+            specDiff(spec_id, phi(cell_int, ETEMP_ID), ndens, efieldmag, Tg);
 
-    } else
+        amrex::Real Te = phi(cell_int, ETEMP_ID);
+        amrex::Real cbar = sqrt(8.0 * K_B * Te / PI / ME);
+        amrex::Real flx = ne * cbar / 4.0 * outward_normal[dir];
+
+        // why -flx/D?
+        // because diffusive flux -D dc/dx = flx
+        // so dc/dx = -flx/D
+        bc_arr(ghost_cell, bcspec_id) = (-flx / D);
+    }
+
+    if (spec_id == ARp_ID || spec_id == AR2p_ID)
     {
-        robin_a(ghost_cell, bcspec_id) = 0.0;
-        robin_b(ghost_cell, bcspec_id) = 1.0;
-        robin_f(ghost_cell, bcspec_id) = 0.0;
+        amrex::Real efieldmag = std::sqrt(
+            amrex::Math::powi<2>(phi(cell_int, EFX_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFY_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFZ_ID)));
 
-        amrex::Real alpha = ECHARGE / EPS0;
+        amrex::Real mu =
+            specMob(spec_id, phi(cell_int, ETEMP_ID), ndens, efieldmag, Tg);
 
-        if (spec_id == E_ID)
-        {
-            bcarr(ghost_cell, bcspec_id) = 1.0 / alpha + prob_parm.n0;
-        }
+        amrex::Real D =
+            specDiff(spec_id, phi(cell_int, ETEMP_ID), ndens, efieldmag, Tg);
 
-        if (spec_id == HEp_ID)
-        {
-            bcarr(ghost_cell, bcspec_id) = 1.0 / (2.0 * alpha) + prob_parm.n0;
-        }
+        amrex::Real efield = phi(cell_int, EFX_ID + dir);
+        amrex::Real ion_drift_flux = mu * phi(cell_int, spec_id) * efield;
+        amrex::Real ion_drift_flux_dotn = ion_drift_flux * outward_normal[dir];
 
-        if (spec_id == EEN_ID)
-        {
-            bcarr(ghost_cell, bcspec_id) = 1.0 / alpha + prob_parm.n0;
-        }
+        // if driftvel is pointing towards the wall
+        // then flux=v n - D dndx = v n
+        // else  flux = v n - D dndx = 0
+        bc_arr(ghost_cell, bcspec_id) =
+            (ion_drift_flux_dotn >= 0.0) ? (-ion_drift_flux / D) : 0.0;
+    }
+
+    if (spec_id == ARm_ID || spec_id == AR2m_ID)
+    {
+        amrex::Real efieldmag = std::sqrt(
+            amrex::Math::powi<2>(phi(cell_int, EFX_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFY_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFZ_ID)));
+
+        amrex::Real D =
+            specDiff(spec_id, phi(cell_int, ETEMP_ID), ndens, efieldmag, Tg);
+
+        amrex::Real cbar = sqrt(8.0 * K_B * Tg / PI / (39.948 * M_AMU));
+        amrex::Real flx = phi(i, j, k, spec_id) * cbar / 4.0 * Real(sgn);
+        bc_arr(ghost_cell, bcspec_id) = (-flx / D);
+    }
+
+    if (spec_id == EEN_ID)
+    {
+        amrex::Real ne = phi(cell_int, E_ID);
+        amrex::Real efieldmag = std::sqrt(
+            amrex::Math::powi<2>(phi(cell_int, EFX_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFY_ID)) +
+            amrex::Math::powi<2>(phi(cell_int, EFZ_ID)));
+
+        amrex::Real Te = phi(cell_int, ETEMP_ID);
+
+        amrex::Real D = specDiff(spec_id, Te, ndens, efieldmag, Tg);
+
+        amrex::Real cbar = sqrt(8.0 * K_B * Te / PI / ME);
+
+        amrex::Real flx = (2.0 * K_B * Te) * ne * cbar / 4.0 * Real(sgn);
+        bc_arr(ghost_cell, bcspec_id) = (-flx / D);
     }
 }
 
@@ -367,21 +362,18 @@ AMREX_GPU_DEVICE AMREX_INLINE amrex::Real compute_vel(
     amrex::Real Tg,
     amrex::Real Pg)
 {
-    amrex::Real vel = 0.0;
-    if (dir == prob_parm.axdir)
-    {
-        amrex::Real efieldmag = std::sqrt(
-            amrex::Math::powi<2>(phi(cellid, EFX_ID)) +
-            amrex::Math::powi<2>(phi(cellid, EFY_ID)) +
-            amrex::Math::powi<2>(phi(cellid, EFZ_ID)));
+    amrex::Real efieldmag = std::sqrt(
+        amrex::Math::powi<2>(phi(cellid, EFX_ID)) +
+        amrex::Math::powi<2>(phi(cellid, EFY_ID)) +
+        amrex::Math::powi<2>(phi(cellid, EFZ_ID)));
 
-        amrex::Real ndens = 1.0; // dummy
-        amrex::Real mu =
-            specMob(specid, phi(cellid, ETEMP_ID), ndens, efieldmag, Tg);
-        vel = mu * phi(cellid, EFX_ID + dir);
-    }
+    amrex::Real ndens = 0.0;
+    for (int sp = 0; sp < NUM_SPECIES; sp++) ndens += phi(cellid, sp);
 
-    return (vel);
+    amrex::Real mu =
+        specMob(specid, phi(cellid, ETEMP_ID), ndens, efieldmag, Tg);
+
+    return (mu * phi(cellid, EFX_ID + dir));
 }
 } // namespace user_transport
 #endif

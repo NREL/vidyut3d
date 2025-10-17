@@ -45,6 +45,12 @@ Vidyut::Vidyut()
     plasma_param_names[10] = "SurfaceCharge";
     plasma_param_names[11] = "PhotoIon_Src";
     plasma_param_names[12] = "cellmask";
+    plasma_param_names[13] = "Ecurden_X";
+    plasma_param_names[14] = "Ecurden_Y";
+    plasma_param_names[15] = "Ecurden_Z";
+    plasma_param_names[16] = "Icurden_X";
+    plasma_param_names[17] = "Icurden_Y";
+    plasma_param_names[18] = "Icurden_Z";
 
     allvarnames.resize(NVAR);
     for (int i = 0; i < NUM_SPECIES; i++)
@@ -171,8 +177,10 @@ Vidyut::Vidyut()
 
     if (using_ib && track_surf_charge)
     {
-        amrex::Print() << "**Surface charge on IB not implemented***\n";
-        amrex::Print() << "coming soon..";
+        amrex::Print()
+            << "**Warning: Surface charge on IB not implemented***\n";
+        amrex::Print()
+            << "**Surface charge on physical boundaries will be tracked***\n";
     }
 
     // Check inputs for axisymmetric geometry
@@ -420,6 +428,7 @@ void Vidyut::ReadParameters()
         pp.query("track_surf_charge", track_surf_charge);
         pp.query("solver_verbose", solver_verbose);
         pp.query("evolve_verbose", evolve_verbose);
+        pp.query("track_current_den", track_current_den);
 
         if (hyp_order == 1) // first order upwind
         {
@@ -461,6 +470,30 @@ void Vidyut::ReadParameters()
         if (using_ib)
         {
             ngrow_for_fillpatch = 3;
+        }
+
+        pp.query("track_integrated_currents", track_integrated_currents);
+        if (track_integrated_currents)
+        {
+
+            print_current_int = plot_int;
+            pp.query("print_current_int", print_current_int);
+            Vector<int> current_loc_surfaces_vec;
+            pp.queryarr("current_loc_surfaces", current_loc_surfaces_vec);
+            ncurrent_locs = current_loc_surfaces_vec.size();
+
+            if (ncurrent_locs > MAX_CURRENT_LOCS)
+            {
+                amrex::Print()
+                    << "ncurrent locs is greater than maximum allowed ("
+                    << MAX_CURRENT_LOCS << ")\n";
+                amrex::Abort("Reduce the number of ncurrent locs\n");
+            }
+
+            for (int i = 0; i < ncurrent_locs; i++)
+            {
+                current_loc_surfaces[i] = current_loc_surfaces_vec[i];
+            }
         }
     }
 }

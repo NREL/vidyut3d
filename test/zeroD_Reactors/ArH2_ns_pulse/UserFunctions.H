@@ -8,6 +8,18 @@
 
 using namespace amrex;
 namespace user_transport {
+AMREX_GPU_DEVICE AMREX_INLINE amrex::Real current_collector_value(
+    IntVect cellid,
+    int locid,
+    int surfaceloc,
+    GpuArray<Real, AMREX_SPACEDIM> problo,
+    GpuArray<Real, AMREX_SPACEDIM> probhi,
+    GpuArray<int, AMREX_SPACEDIM> domlo,
+    GpuArray<int, AMREX_SPACEDIM> domhi,
+    GpuArray<Real, AMREX_SPACEDIM> dx)
+{
+    return (0.0);
+}
 AMREX_GPU_DEVICE AMREX_INLINE void get_photoion_acoeff(
     int i,
     int j,
@@ -94,7 +106,10 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
     ProbParm const& prob_parm,
     Real Tg,
     Real Pg,
-    Real app_voltage)
+    Real app_voltage,
+    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 {
     IntVect cell_int{AMREX_D_DECL(i, j, k)};
     IntVect ghost_cell{AMREX_D_DECL(i, j, k)};
@@ -183,7 +198,10 @@ AMREX_GPU_DEVICE AMREX_INLINE void species_bc(
     const Real time,
     ProbParm const& prob_parm,
     Real Tg,
-    Real Pg)
+    Real Pg,
+    GpuArray<Real, MAX_CURRENT_LOCS> int_currents,
+    GpuArray<Real, MAX_CURRENT_LOCS> int_current_areas,
+    GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces)
 
 {
     const int im1 = (dir == 0) ? i - 1 : i;

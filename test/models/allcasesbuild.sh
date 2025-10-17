@@ -1,7 +1,7 @@
 #!/bin/bash
 TOPDIR=${PWD}
 
-declare -a allcases=('Ar_DC_1d' 'Axisymmetric_streamer_Ar' 'ionelec_DC_1d' 'OffsetElectrodesRF' 'RingElectrodeRF' 'Streamer3d')
+declare -a allcases=('Ar_DC_1d' 'Axisymmetric_streamer_Ar' 'ionelec_DC_1d' 'OffsetElectrodesRF' 'RingElectrodeRF' 'Streamer3d' 'Ar_RF_Sputter3d' 'ArH2_MultiStreamers3d')
 export VIDYUT_DIR=${TOPDIR}/../../
 for case in "${allcases[@]}";
 do

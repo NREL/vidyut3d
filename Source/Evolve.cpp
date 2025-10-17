@@ -42,6 +42,24 @@ void Vidyut::Evolve()
     amrex::Real dt_edrift, dt_ediff, dt_diel_relax;
     amrex::Real dt_edrift_lev, dt_ediff_lev, dt_diel_relax_lev;
 
+    if (track_integrated_currents)
+    {
+        PrintToFile("integrated_currents") << "time (sec)" << "\t";
+        for (int locs = 0; locs < ncurrent_locs; locs++)
+        {
+            PrintToFile("integrated_currents")
+                << "current_surface_" << locs << current_loc_surfaces[locs]
+                << "\t";
+        }
+        for (int locs = 0; locs < ncurrent_locs; locs++)
+        {
+            PrintToFile("integrated_currents")
+                << "surface_area_" << locs << current_loc_surfaces[locs]
+                << "\t";
+        }
+        PrintToFile("integrated_currents") << "\n";
+    }
+
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         amrex::Real strt_time = amrex::second();
@@ -512,6 +530,24 @@ void Vidyut::Evolve()
                 update_surf_charge(Sborder, cur_time + time_offset, dt_common);
             }
 
+            if (track_current_den)
+            {
+                // getting the latest species data
+                for (int lev = 0; lev <= finest_level; lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(
+                        lev, cur_time + dt_common, Sborder[lev], 0,
+                        Sborder[lev].nComp());
+                }
+                compute_current_den(Sborder);
+
+                if (track_integrated_currents)
+                {
+                    compute_integrated_currents(Sborder);
+                }
+            }
+
             if (niter < num_timestep_correctors - 1)
             {
                 // copy new to old and update time
@@ -598,6 +634,25 @@ void Vidyut::Evolve()
             WriteMonitorFile(cur_time);
         }
 
+        if (track_integrated_currents)
+        {
+            if (print_current_int > 0 && (step + 1) % print_current_int == 0)
+            {
+                PrintToFile("integrated_currents") << cur_time << "\t";
+                for (int locs = 0; locs < ncurrent_locs; locs++)
+                {
+                    PrintToFile("integrated_currents")
+                        << integrated_currents[locs] << "\t";
+                }
+                for (int locs = 0; locs < ncurrent_locs; locs++)
+                {
+                    PrintToFile("integrated_currents")
+                        << integrated_current_areas[locs] << "\t";
+                }
+                PrintToFile("integrated_currents") << "\n";
+            }
+        }
+
         if (cur_time >= stop_time - 1.e-6 * dt_common) break;
 
         // local cleanup
@@ -613,5 +668,20 @@ void Vidyut::Evolve()
     {
         plotfilenum++;
         WritePlotFile(plotfilenum);
+        if (track_integrated_currents)
+        {
+            PrintToFile("integrated_currents") << cur_time << "\t";
+            for (int locs = 0; locs < ncurrent_locs; locs++)
+            {
+                PrintToFile("integrated_currents")
+                    << integrated_currents[locs] << "\t";
+            }
+            for (int locs = 0; locs < ncurrent_locs; locs++)
+            {
+                PrintToFile("integrated_currents")
+                    << integrated_current_areas[locs] << "\t";
+            }
+            PrintToFile("integrated_currents") << "\n";
+        }
     }
 }

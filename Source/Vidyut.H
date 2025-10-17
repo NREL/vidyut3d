@@ -158,6 +158,15 @@ public:
 
     void compute_electemp_lfa(int lev, MultiFab& Sborder, amrex::Real time);
 
+    void compute_current_den(Vector<MultiFab>& Sborder);
+    void compute_integrated_currents(Vector<MultiFab>& Sborder);
+
+    void compute_current_density_at_level(
+        int lev,
+        MultiFab& Sborder,
+        Array<MultiFab, AMREX_SPACEDIM>& ecurrden,
+        Array<MultiFab, AMREX_SPACEDIM>& icurrden);
+
     // compute dt from CFL considerations
     void find_time_scales(
         int lev,
@@ -255,6 +264,7 @@ public:
     int ngrow_for_fillpatch = 2;
     int weno_scheme = 3; // WENO-Z by default
     int track_surf_charge = 0;
+    int track_current_den = 0;
 
     // Include physics
     int elecenergy_solve = 0;
@@ -350,6 +360,13 @@ public:
 
     int solver_verbose = 1;
     int evolve_verbose = 1;
+
+    int track_integrated_currents = 0;
+    amrex::Real integrated_currents[MAX_CURRENT_LOCS] = {0.0};
+    amrex::Real integrated_current_areas[MAX_CURRENT_LOCS] = {0.0};
+    int ncurrent_locs = 0;
+    int current_loc_surfaces[MAX_CURRENT_LOCS] = {-1};
+    int print_current_int = -1;
 
 private:
     ////////////////

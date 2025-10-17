@@ -1,12 +1,12 @@
-max_step  = 200000
-stop_time = 2e-3
+max_step  = 2000000
+stop_time = 20e-6
 
 # PROBLEM SIZE & GEOMETRY
 geometry.is_periodic =  0  1  1
 geometry.coord_sys   =  0       # 0 => cart
 geometry.prob_lo     =  0.0   0.0     0.0 
-geometry.prob_hi     =  0.02  0.00015625 0.00015625 
-amr.n_cell           =   128  2  2
+geometry.prob_hi     =  0.005  0.00015625 0.00015625 
+amr.n_cell           =   256  2  2
 
 #use 4 cells minimum for hyp_order 5
 #other wise we wont have enough ghost cells 
@@ -26,6 +26,12 @@ amr.regrid_int      = 5       # how often to regrid
 
 # TIME STEP CONTROL
 vidyut.dt             = 1e-11
+vidyut.adaptive_dt    = 1
+vidyut.advective_cfl  = 0.3
+vidyut.diffusive_cfl  = 100.0
+vidyut.dielectric_cfl = 10.0
+vidyut.num_timestep_correctors = 1
+vidyut.hyp_order = 5
 
 #vidyut.user_defined_potential = 1
 #vidyut.user_defined_species = 1
@@ -60,29 +66,29 @@ vidyut.neutral_bc_hi = 3 0 0
 
 # PLOTFILES
 amr.plot_file  = plt    # root name of plot file
-amr.plot_int   = 1000     # number of timesteps between plot files
+amr.plot_int   = 10000     # number of timesteps between plot files
 
 # CHECKPOINT
 amr.chk_file = chk      # root name of checkpoint file
 amr.chk_int  = -1       # number of timesteps between checkpoint files
 
 vidyut.bound_specden=1
-vidyut.min_species_density=1e10
-vidyut.min_electron_density=1e10
+vidyut.min_species_density=1e11
+vidyut.min_electron_density=1e11
 vidyut.linsolve_maxiter=500
 vidyut.linsolve_reltol=1e-9
 
-vidyut.elecenergy_solve=1
+vidyut.elecenergy_solve = 1
 
-vidyut.voltage_profile = 0
-vidyut.voltage_amp_lo = -300.0 0.0 0.0
-vidyut.voltage_amp_hi = 0.0 0.0 0.0
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
+vidyut.track_surf_charge = 1
+vidyut.track_current_den = 1
 
-vidyut.gas_pressure=133.0
+vidyut.gas_pressure=400.0
 vidyut.gas_temperature=300.0
 vidyut.bg_species_ids=1
-
-vidyut.track_current_den=1
-vidyut.track_integrated_currents=1
-vidyut.current_loc_surfaces=0 1
-vidyut.print_current_int=100
+prob.V=500.0
+prob.f=100e3
+prob.phase=0.52

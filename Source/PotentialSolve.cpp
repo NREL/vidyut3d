@@ -33,6 +33,19 @@ void Vidyut::solve_potential(
     ProbParm const* localprobparm = d_prob_parm;
     int linsolve_verbose = solver_verbose;
 
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_currents = {{0.0}};
+    amrex::GpuArray<amrex::Real, MAX_CURRENT_LOCS> int_current_areas = {{0.0}};
+    amrex::GpuArray<int, MAX_CURRENT_LOCS> int_current_surfaces = {{0}};
+    if (track_integrated_currents)
+    {
+        for (int i = 0; i < ncurrent_locs; i++)
+        {
+            int_currents[i] = integrated_currents[i];
+            int_current_areas[i] = integrated_current_areas[i];
+            int_current_surfaces[i] = current_loc_surfaces[i];
+        }
+    }
+
     // First initialization of MLMG solver
     LPInfo info;
     info.setAgglomeration(true);
@@ -307,7 +320,8 @@ void Vidyut::solve_potential(
                                     robin_a_arr, robin_b_arr, robin_f_arr,
                                     prob_lo, prob_hi, dx, time, *localprobparm,
                                     captured_gastemp, captured_gaspres,
-                                    app_voltage);
+                                    app_voltage, int_currents,
+                                    int_current_areas, int_current_surfaces);
                             } else
                             {
                                 plasmachem_transport::potential_bc(
@@ -315,7 +329,8 @@ void Vidyut::solve_potential(
                                     robin_a_arr, robin_b_arr, robin_f_arr,
                                     prob_lo, prob_hi, dx, time, *localprobparm,
                                     captured_gastemp, captured_gaspres,
-                                    app_voltage);
+                                    app_voltage, int_currents,
+                                    int_current_areas, int_current_surfaces);
                             }
                         });
                 }
@@ -335,7 +350,8 @@ void Vidyut::solve_potential(
                                     robin_a_arr, robin_b_arr, robin_f_arr,
                                     prob_lo, prob_hi, dx, time, *localprobparm,
                                     captured_gastemp, captured_gaspres,
-                                    app_voltage);
+                                    app_voltage, int_currents,
+                                    int_current_areas, int_current_surfaces);
                             } else
                             {
                                 plasmachem_transport::potential_bc(
@@ -343,7 +359,8 @@ void Vidyut::solve_potential(
                                     robin_a_arr, robin_b_arr, robin_f_arr,
                                     prob_lo, prob_hi, dx, time, *localprobparm,
                                     captured_gastemp, captured_gaspres,
-                                    app_voltage);
+                                    app_voltage, int_currents,
+                                    int_current_areas, int_current_surfaces);
                             }
                         });
                 }
