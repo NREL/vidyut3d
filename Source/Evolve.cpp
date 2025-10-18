@@ -544,7 +544,7 @@ void Vidyut::Evolve()
 
                 if (track_integrated_currents)
                 {
-                    compute_integrated_currents(Sborder);
+                    compute_integrated_currents();
                 }
             }
 

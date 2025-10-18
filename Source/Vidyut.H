@@ -159,7 +159,7 @@ public:
     void compute_electemp_lfa(int lev, MultiFab& Sborder, amrex::Real time);
 
     void compute_current_den(Vector<MultiFab>& Sborder);
-    void compute_integrated_currents(Vector<MultiFab>& Sborder);
+    void compute_integrated_currents();
 
     void compute_current_density_at_level(
         int lev,
