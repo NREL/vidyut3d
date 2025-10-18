@@ -284,8 +284,8 @@ void Vidyut::compute_current_density_at_level(
                                 eidx, etemp, ndens, efield_mag,
                                 captured_gastemp);
                             e_j_arr[idim](face) =
-                            -ECHARGE * (mu_e * nspec[eidx] * face_efield -
-                                        dcoeff_e * face_specden_grad[eidx]);
+                                -ECHARGE * (mu_e * nspec[eidx] * face_efield -
+                                            dcoeff_e * face_specden_grad[eidx]);
                         }
                     });
             }
@@ -349,12 +349,12 @@ void Vidyut::compute_integrated_currents()
                         bx, [=, &si_part](int i, int j, int k) noexcept {
                             IntVect cellid(AMREX_D_DECL(i, j, k));
                             si_part += cellarea * outward_normal *
-                            (fab(cellid, ECURX_ID + dir) +
-                             fab(cellid, ICURX_ID + dir)) *
-                            mask_arr(cellid) *
-                            user_transport::current_collector_value(
-                                cellid, locs, surfloc, problo,
-                                probhi, domlo, domhi, dx);
+                                       (fab(cellid, ECURX_ID + dir) +
+                                        fab(cellid, ICURX_ID + dir)) *
+                                       mask_arr(cellid) *
+                                       user_transport::current_collector_value(
+                                           cellid, locs, surfloc, problo,
+                                           probhi, domlo, domhi, dx);
                         });
                     return si_part;
                 });
