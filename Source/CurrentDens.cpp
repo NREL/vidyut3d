@@ -197,11 +197,11 @@ void Vidyut::compute_current_density_at_level(
 
                             // could just average EFX/Y/Z field to get this
                             // but feel this is more accurate
-                            Real face_efield = 0.0;
-                            Real face_specden_grad[NUM_SPECIES] = {0.0};
+                            amrex::Real face_efield = 0.0;
+                            amrex::Real face_specden_grad[NUM_SPECIES] = {0.0};
                             if (regular_interface)
                             {
-                                if (!left_phys_boundary || !right_phys_boundary)
+                                if (!left_phys_boundary && !right_phys_boundary)
                                 {
                                     face_efield = -1.0 *
                                                   (sborder_arr(rcell, POT_ID) -
@@ -280,12 +280,12 @@ void Vidyut::compute_current_density_at_level(
                             amrex::Real mu_e = specMob(
                                 eidx, etemp, ndens, efield_mag,
                                 captured_gastemp);
-                            amrex::Real dcoeff_e = specMob(
+                            amrex::Real dcoeff_e = specDiff(
                                 eidx, etemp, ndens, efield_mag,
                                 captured_gastemp);
                             e_j_arr[idim](face) =
-                                -ECHARGE * (mu_e * nspec[eidx] * face_efield -
-                                            dcoeff_e * face_specden_grad[eidx]);
+                            -ECHARGE * (mu_e * nspec[eidx] * face_efield -
+                                        dcoeff_e * face_specden_grad[eidx]);
                         }
                     });
             }
@@ -293,7 +293,7 @@ void Vidyut::compute_current_density_at_level(
     }
 }
 
-void Vidyut::compute_integrated_currents(Vector<MultiFab>& Sborder)
+void Vidyut::compute_integrated_currents()
 {
     for (int locs = 0; locs < ncurrent_locs; locs++)
     {
@@ -339,7 +339,7 @@ void Vidyut::compute_integrated_currents(Vector<MultiFab>& Sborder)
             }
 
             current += amrex::ReduceSum(
-                Sborder[lev], level_mask, 0,
+                phi_new[lev], level_mask, 0,
                 [=] AMREX_GPU_HOST_DEVICE(
                     Box const& bx, Array4<Real const> const& fab,
                     Array4<int const> const& mask_arr) -> Real {
@@ -349,18 +349,18 @@ void Vidyut::compute_integrated_currents(Vector<MultiFab>& Sborder)
                         bx, [=, &si_part](int i, int j, int k) noexcept {
                             IntVect cellid(AMREX_D_DECL(i, j, k));
                             si_part += cellarea * outward_normal *
-                                       (fab(cellid, ECURX_ID + dir) +
-                                        fab(cellid, ICURX_ID + dir)) *
-                                       mask_arr(cellid) *
-                                       user_transport::current_collector_value(
-                                           cellid, locs, surfloc, problo,
-                                           probhi, domlo, domhi, dx);
+                            (fab(cellid, ECURX_ID + dir) +
+                             fab(cellid, ICURX_ID + dir)) *
+                            mask_arr(cellid) *
+                            user_transport::current_collector_value(
+                                cellid, locs, surfloc, problo,
+                                probhi, domlo, domhi, dx);
                         });
                     return si_part;
                 });
 
             surfarea += amrex::ReduceSum(
-                Sborder[lev], level_mask, 0,
+                phi_new[lev], level_mask, 0,
                 [=] AMREX_GPU_HOST_DEVICE(
                     Box const& bx, Array4<Real const> const& fab,
                     Array4<int const> const& mask_arr) -> Real {
@@ -369,7 +369,7 @@ void Vidyut::compute_integrated_currents(Vector<MultiFab>& Sborder)
                     amrex::Loop(
                         bx, [=, &si_part](int i, int j, int k) noexcept {
                             IntVect cellid(AMREX_D_DECL(i, j, k));
-                            si_part += cellarea *
+                            si_part += cellarea * mask_arr(cellid) *
                                        user_transport::current_collector_value(
                                            cellid, locs, surfloc, problo,
                                            probhi, domlo, domhi, dx);
