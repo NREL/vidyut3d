@@ -10,7 +10,6 @@ concurrency:
   group: ${{github.ref}}-${{github.head_ref}}-ci
   cancel-in-progress: true
 
-
 jobs:
   formatting:
     runs-on: ubuntu-24.04
