@@ -27,7 +27,7 @@ jobs:
     needs: formatting
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: System Dependencies
@@ -36,18 +36,41 @@ jobs:
         sudo apt-get install -y --no-install-recommends \
         build-essential g++ gfortran libopenmpi-dev openmpi-bin
         git clone https://github.com/AMReX-Codes/amrex
+    - name: Install Ccache
+      run: |
+        wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+        tar xvf ccache-4.8-linux-x86_64.tar.xz
+        sudo cp -f ccache-4.8-linux-x86_64/ccache /usr/local/bin/
+        echo "NPROCS=$(nproc)" >> $GITHUB_ENV
+        echo "CCACHE_COMPRESS=1" >> $GITHUB_ENV
+        echo "CCACHE_COMPRESSLEVEL=10" >> $GITHUB_ENV
+        echo "CCACHE_LOGFILE=${{github.workspace}}/ccache.log.txt" >> $GITHUB_ENV
+        echo "CCACHE_MAXSIZE=100M" >> $GITHUB_ENV
+    - name: Set Up Ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{github.workflow}}-${{github.job}}-git-${{github.sha}}
+        restore-keys: |
+             ccache-${{github.workflow}}-${{github.job}}-git-
     - name: Build Regression
       working-directory: ./test/verification/
       run: |
-        cd MMS2
-        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        ccache -z
+         cd MMS2
+        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
-        make -j AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
         cd ../../
         cd MMS3
-        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
-        make -j AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
+    - name: Regression ccache report
+      working-directory: ./test/verification/
+      run: |
+        ccache -s
+        du -hs ~/.cache/ccache
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
