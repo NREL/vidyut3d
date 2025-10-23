@@ -68,6 +68,9 @@ jobs:
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
         make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
+        cd ../../
+        cd GEC_RF_Cell
+        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
@@ -98,6 +101,10 @@ jobs:
           ./l2err/*.ex plt00001
           mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=4
           ./l2err/*.ex plt00001
+          cd ..
+          cd GEC_RF_Cell
+          mpirun -n 2 ./*.ex inputs max_step=2
+          cp -r plt00001 dev-plt00001
     - name: Checkout Reference Version
       if: env.DO_REF_COMPARE == 'true'
       run : |
@@ -117,6 +124,11 @@ jobs:
       run : |
         cd GEC_RF_Cell
         mpirun -n 2 ./*.ex inputs max_step=2
+    - name: Test Reference and Compare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./test/verification/
+      run : |
+        cd
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
