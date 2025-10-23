@@ -71,6 +71,7 @@ jobs:
         cd ../../
         cd GEC_RF_Cell
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+        ccache -s
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
@@ -118,6 +119,7 @@ jobs:
         ccache -z
         cd GEC_RF_Cell
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+        ccache -s
     - name: Run Reference Version
       working-directory: ./test/verification/
       if: env.DO_REF_COMPARE == 'true'
@@ -131,6 +133,7 @@ jobs:
         ccache -z
         cd ../../amrex/Tools/Plotfile
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex programs=fcompare
+        ccache -s
     - name: Test Reference and Compare
       if: env.DO_REF_COMPARE == 'true'
       working-directory: ./test/verification/
@@ -140,5 +143,4 @@ jobs:
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
-        ccache -s
         du -hs ~/.cache/ccache
