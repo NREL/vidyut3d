@@ -129,7 +129,7 @@ jobs:
       working-directory: ./test/verification/
       run : |
         ccache -z
-        cd ../../../amrex/Tools/Plotfile
+        cd ../../amrex/Tools/Plotfile
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex programs=fcompare
     - name: Test Reference and Compare
       if: env.DO_REF_COMPARE == 'true'
