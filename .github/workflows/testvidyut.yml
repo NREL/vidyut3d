@@ -124,11 +124,19 @@ jobs:
       run : |
         cd GEC_RF_Cell
         mpirun -n 2 ./*.ex inputs max_step=2
+    - name: Build fcompare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./test/verification/
+      run : |
+        ccache -z
+        cd ../../../amrex/Tools/Plotfile
+        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex programs=fcompare
     - name: Test Reference and Compare
       if: env.DO_REF_COMPARE == 'true'
       working-directory: ./test/verification/
       run : |
-        cd
+        cd GEC_RF_Cell
+        ../../../amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
