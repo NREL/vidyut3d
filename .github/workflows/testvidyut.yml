@@ -104,7 +104,7 @@ jobs:
           cd ..
           cd GEC_RF_Cell
           mpirun -n 2 ./*.ex inputs max_step=2
-          cp -r plt00001 dev-plt00001
+          mv plt00001 dev-plt00001
     - name: Checkout Reference Version
       if: env.DO_REF_COMPARE == 'true'
       run : |
