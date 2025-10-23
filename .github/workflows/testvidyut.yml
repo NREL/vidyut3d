@@ -26,6 +26,8 @@ jobs:
   cputest:
     needs: formatting
     runs-on: ubuntu-latest
+    env:
+      DO_REF_COMPARE: ${{github.event_name != 'push'}}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -57,7 +59,7 @@ jobs:
       working-directory: ./test/verification/
       run: |
         ccache -z
-         cd MMS2
+        cd MMS2
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
         make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
@@ -66,11 +68,6 @@ jobs:
         make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
         cd l2err
         make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
-    - name: Regression ccache report
-      working-directory: ./test/verification/
-      run: |
-        ccache -s
-        du -hs ~/.cache/ccache
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
@@ -101,3 +98,27 @@ jobs:
           ./l2err/*.ex plt00001
           mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=4
           ./l2err/*.ex plt00001
+    - name: Checkout Reference Version
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        git remote add reference https://github.com/NREL/vidyut3d.git
+        git fetch reference main --depth=1
+        git checkout reference/main
+    - name: Build Reference Version
+      working-directory: ./test/verification/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        ccache -z
+        cd GEC_RF_Cell
+        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+    - name: Run Reference Version
+      working-directory: ./test/verification/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        cd GEC_RF_Cell
+        mpirun -n 2 ./*.ex inputs max_step=2
+    - name: Regression ccache report
+      working-directory: ./test/verification/
+      run: |
+        ccache -s
+        du -hs ~/.cache/ccache
