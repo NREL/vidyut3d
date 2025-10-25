@@ -17,13 +17,15 @@ void amrex_probinit(ProbParm& h_prob_parm, ProbParm& d_prob_parm)
 {
     // read problem specific parmparse parameters here
     amrex::ParmParse pp("prob");
-    pp.query("init_E", h_prob_parm.init_E);
-    pp.query("init_I", h_prob_parm.init_I);
-    pp.query("init_etemp", h_prob_parm.init_etemp);
-    pp.query("V1", h_prob_parm.V1);
-    pp.query("V2", h_prob_parm.V2);
-    pp.query("nscale", h_prob_parm.ns);
-    pp.query("potscale", h_prob_parm.phis);
+    pp.query("Ar_frac", h_prob_parm.Ar_frac);
+    pp.query("CO2_frac", h_prob_parm.CO2_frac);
+    pp.query("seedion_frac", h_prob_parm.seedion_frac);
+    h_prob_parm.H2_frac=1.0-h_prob_parm.Ar_frac-h_prob_parm.CO2_frac;
+
+    amrex::ParmParse ppv("vidyut");
+    pp.query("gas_pressure", h_prob_parm.pres);
+    pp.query("gas_temperature", h_prob_parm.temp);
+
 
 #ifdef AMREX_USE_GPU
     amrex::Gpu::htod_memcpy(&d_prob_parm, &h_prob_parm, sizeof(ProbParm));
@@ -46,6 +48,9 @@ void initdomaindata(
     const Real* AMREX_RESTRICT prob_lo = geomdata.ProbLo();
     const Real* AMREX_RESTRICT prob_hi = geomdata.ProbHi();
     const Real* AMREX_RESTRICT dx = geomdata.CellSize();
+    
+    int chrgspec[NUM_SPECIES] = {0};
+    CKCHRG(chrgspec);
 
     for (int k = lo.z; k <= hi.z; ++k)
     {
@@ -58,16 +63,36 @@ void initdomaindata(
                 Real y = prob_lo[1] + (0.5 + j) * dx[1];
                 Real x = prob_lo[0] + (0.5 + i) * dx[0];
 
+                Real numden=prob_parm->pres/K_B/prob_parm->temp;
+
                 // No masking of reactor cells
                 phi(i, j, k, CMASK_ID) = 1.0;
+                for (int sp = 0; sp < NUM_SPECIES; sp++)
+                {
+                    phi(i, j, k, sp) = prob_parm->seedion_frac*0.001*numden;
+                }
 
-                phi(i, j, k, 0) = 1e9;               // electron num dens.
-                phi(i, j, k, 38) = 0.9 * 2.446e25;   // Ar num dens.
-                phi(i, j, k, 3) = 0.075 * 2.446e25;  // H2 num dens.
-                phi(i, j, k, 12) = 0.025 * 2.446e25; // CO2 num dens.
-                phi(i, j, k, ETEMP_ID) = 300;
+                phi(i, j, k, ARp_ID)  = prob_parm->seedion_frac*numden/3.0;
+                phi(i, j, k, H2p_ID)  = prob_parm->seedion_frac*numden/3.0;
+                phi(i, j, k, CO2p_ID) = prob_parm->seedion_frac*numden/3.0;
+
+                amrex::Real net_ion_charge = 0.0;
+                for (int sp = 0; sp < NUM_SPECIES; sp++)
+                {
+                    if (sp != E_ID)
+                    {
+                        net_ion_charge += phi(i, j, k, sp) * chrgspec[sp];
+                    }
+                }
+                phi(i, j, k, E_ID) = net_ion_charge;
+
+                phi(i, j, k, AR_ID) = prob_parm->Ar_frac*numden;
+                phi(i, j, k, H2_ID) = prob_parm->H2_frac*numden; 
+                phi(i, j, k, CO2_ID) = prob_parm->CO2_frac*numden;
+
+                phi(i, j, k, ETEMP_ID) = 0.5*eV;
                 phi(i, j, k, EEN_ID) =
-                    1.5 * phi(i, j, k, 0) * K_B * phi(i, j, k, ETEMP_ID);
+                1.5 * phi(i, j, k, 0) * K_B * phi(i, j, k, ETEMP_ID);
                 phi(i, j, k, EFX_ID) = 0.0;
                 phi(i, j, k, EFY_ID) = 0.0;
                 phi(i, j, k, EFZ_ID) = 0.0;

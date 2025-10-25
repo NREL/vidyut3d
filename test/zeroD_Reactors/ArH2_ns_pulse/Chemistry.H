@@ -50,7 +50,7 @@ void CKINU(const int i, int& nspec, int* ki, int* nu);
 // note add a gpu constant array to
 // work on gpu
 #ifdef AMREX_USE_GPU
-AMREX_GPU_CONSTANT const amrex::Real redef_ee_array[LFA_NDATA, 2] = {
+AMREX_GPU_CONSTANT const amrex::Real redef_ee_array[LFA_NDATA][2] = {
     {2.4848, 1.1964},    {3.4393, 1.4586},   {4.6837, 1.9177},
     {6.2755, 2.5694},    {8.8284, 3.4426},   {12.0226, 4.1577},
     {16.3726, 4.6562},   {22.2964, 5.0213},  {30.8611, 5.2639},
