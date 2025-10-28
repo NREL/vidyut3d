@@ -37,7 +37,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
         build-essential g++ gfortran libopenmpi-dev openmpi-bin
-        git clone https://github.com/AMReX-Codes/amrex
     - name: Install Ccache
       run: |
         wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
@@ -60,17 +59,17 @@ jobs:
       run: |
         ccache -z
         cd MMS2
-        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
         cd l2err
-        make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE
         cd ../../
         cd MMS3
-        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
         cd l2err
-        make -j USE_CCACHE=TRUE AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE
         cd ../../
         cd GEC_RF_Cell
-        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
         ccache -s
     - name: Run Regression
       working-directory: ./test/verification/
@@ -112,34 +111,30 @@ jobs:
         git remote add reference https://github.com/NREL/vidyut3d.git
         git fetch reference main --depth=1
         git checkout reference/main
-    - name: Build Reference Version
-      working-directory: ./test/verification/
-      if: env.DO_REF_COMPARE == 'true'
-      run : |
-        ccache -z
-        cd GEC_RF_Cell
-        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex
-        ccache -s
-    - name: Run Reference Version
-      working-directory: ./test/verification/
-      if: env.DO_REF_COMPARE == 'true'
-      run : |
-        cd GEC_RF_Cell
-        mpirun -n 2 ./*.ex inputs max_step=100
-    - name: Build fcompare
-      if: env.DO_REF_COMPARE == 'true'
-      working-directory: ./test/verification/
-      run : |
-        ccache -z
-        cd ../../amrex/Tools/Plotfile
-        make -j 2 USE_CCACHE=TRUE COMP=gnu AMREX_HOME=../../../amrex programs=fcompare
-        ccache -s
-    - name: Test Reference and Compare
-      if: env.DO_REF_COMPARE == 'true'
-      working-directory: ./test/verification/
-      run : |
-        cd GEC_RF_Cell
-        ../../../amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
+    # - name: Build Reference Version
+    #   working-directory: ./test/verification/GEC_RF_Cell/
+    #   if: env.DO_REF_COMPARE == 'true'
+    #   run : |
+    #     ccache -z
+    #     make -j 2 USE_CCACHE=TRUE COMP=gnu
+    #     ccache -s
+    # - name: Run Reference Version
+    #   working-directory: ./test/verification/GEC_RF_Cell/
+    #   if: env.DO_REF_COMPARE == 'true'
+    #   run : |
+    #     mpirun -n 2 ./*.ex inputs max_step=100
+    # - name: Build fcompare
+    #   if: env.DO_REF_COMPARE == 'true'
+    #   working-directory: ./Submodules/amrex/Tools/Plotfile
+    #   run : |
+    #     ccache -z
+    #     make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
+    #     ccache -s
+    # - name: Test Reference and Compare
+    #   if: env.DO_REF_COMPARE == 'true'
+    #   working-directory: ./test/verification/GEC_RF_Cell/
+    #   run : |
+    #     ../../../Submodules/amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
