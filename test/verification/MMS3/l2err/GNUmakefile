@@ -7,6 +7,7 @@ BL_NO_FORT=TRUE
 
 DIM = 3
 
+AMREX_HOME ?= ../../../../Submodules/amrex
 
 include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 EBASE := l2err
