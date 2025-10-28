@@ -126,10 +126,9 @@ jobs:
         mpirun -n 2 ./*.ex inputs max_step=100
     - name: Build fcompare
       if: env.DO_REF_COMPARE == 'true'
-      working-directory: .
+      working-directory: ./Submodules/amrex/Tools/Plotfile
       run : |
         ccache -z
-        cd ./Submodules/amrex/Tools/Plotfile
         make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
         ccache -s
     - name: Test Reference and Compare
