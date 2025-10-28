@@ -112,7 +112,7 @@ jobs:
         git fetch reference main --depth=1
         git checkout reference/main
     - name: Build Reference Version
-      working-directory: ./test/verification/
+      working-directory: ./test/verification/GEC_RF_Cell/
       if: env.DO_REF_COMPARE == 'true'
       run : |
         ccache -z
@@ -120,25 +120,23 @@ jobs:
         make -j 2 USE_CCACHE=TRUE COMP=gnu
         ccache -s
     - name: Run Reference Version
-      working-directory: ./test/verification/
+      working-directory: ./test/verification/GEC_RF_Cell/
       if: env.DO_REF_COMPARE == 'true'
       run : |
-        cd GEC_RF_Cell
         mpirun -n 2 ./*.ex inputs max_step=100
     - name: Build fcompare
       if: env.DO_REF_COMPARE == 'true'
-      working-directory: ./test/verification/
+      working-directory: .
       run : |
         ccache -z
-        cd ../../amrex/Tools/Plotfile
+        cd ./Submodules/amrex/Tools/Plotfile
         make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
         ccache -s
     - name: Test Reference and Compare
       if: env.DO_REF_COMPARE == 'true'
-      working-directory: ./test/verification/
+      working-directory: ./test/verification/GEC_RF_Cell/
       run : |
-        cd GEC_RF_Cell
-        ../../../amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
+        ../../../Submodules/amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
