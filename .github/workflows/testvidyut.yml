@@ -116,7 +116,6 @@ jobs:
       if: env.DO_REF_COMPARE == 'true'
       run : |
         ccache -z
-        cd GEC_RF_Cell
         make -j 2 USE_CCACHE=TRUE COMP=gnu
         ccache -s
     - name: Run Reference Version
