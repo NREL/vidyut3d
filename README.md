@@ -18,9 +18,9 @@ Vidyut is a massively-parallel plasma-fluid solver for low-temperature plasmas (
 
 # Build instructions
 * gcc and an MPI library (openMPI/MPICH) for CPU builds. cuda-11.0 is also required for GPU builds
-* This tool depends on the AMReX library (https://github.com/AMReX-Codes/amrex)
+* This tool depends on the AMReX library (https://github.com/AMReX-Codes/amrex) (a submodule of this software)
 * Each example/run case must include a Prob.H, ProbParm.H, UserFunctions.H, and UserSources.H - see examples to get started 
-* Navigate to the test/run case directory, and make sure the AMREX_HOME variable in the GNUMakefile is set to your AMReX repository
+* Navigate to the test/run case directory
 * Build executable using the GNUMakefile (set USE_MPI and USE_CUDA=TRUE/FALSE depending on architecture and desired parallel execution) and run "make"
 * Several test cases can be found in the test directory for getting started using the code
 
