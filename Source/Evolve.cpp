@@ -527,6 +527,14 @@ void Vidyut::Evolve()
 
             if (track_surf_charge)
             {
+                // getting the latest species data
+                for (int lev = 0; lev <= finest_level; lev++)
+                {
+                    Sborder[lev].setVal(0.0);
+                    FillPatch(
+                        lev, cur_time + dt_common, Sborder[lev], 0,
+                        Sborder[lev].nComp());
+                }
                 update_surf_charge(Sborder, cur_time + time_offset, dt_common);
             }
 

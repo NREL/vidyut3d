@@ -46,9 +46,15 @@ amrex::Real charge_flux(
     amrex::Real q_times_flux = 0.0;
 
     // linear interpolation among two cells
-    amrex::Real efield_n = (1.5 * sb_arr(icell, EFX_ID + dir) -
-                            0.5 * sb_arr(icell_prvs, EFX_ID + dir)) *
-                           outward_normal[dir];
+    //amrex::Real efield_n1 = (1.5 * sb_arr(icell, EFX_ID + dir) -
+    //                        0.5 * sb_arr(icell_prvs, EFX_ID + dir)) *
+    //                       outward_normal[dir];
+    
+    amrex::Real phi_boundary = (1.5 * sb_arr(icell, POT_ID) -
+                            0.5 * sb_arr(icell_prvs, POT_ID));
+   
+    //doesnt matter the sgn, always directed outward 
+    amrex::Real efield_n = -(phi_boundary-sb_arr(icell,POT_ID))/dx[dir];
 
     amrex::Real numdens = 0.0;
     for (int sp = 0; sp < NUM_SPECIES; sp++) numdens += sb_arr(icell, sp);
