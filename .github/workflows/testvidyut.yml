@@ -111,30 +111,30 @@ jobs:
         git remote add reference https://github.com/NREL/vidyut3d.git
         git fetch reference main --depth=1
         git checkout reference/main
-    # - name: Build Reference Version
-    #   working-directory: ./test/verification/GEC_RF_Cell/
-    #   if: env.DO_REF_COMPARE == 'true'
-    #   run : |
-    #     ccache -z
-    #     make -j 2 USE_CCACHE=TRUE COMP=gnu
-    #     ccache -s
-    # - name: Run Reference Version
-    #   working-directory: ./test/verification/GEC_RF_Cell/
-    #   if: env.DO_REF_COMPARE == 'true'
-    #   run : |
-    #     mpirun -n 2 ./*.ex inputs max_step=100
-    # - name: Build fcompare
-    #   if: env.DO_REF_COMPARE == 'true'
-    #   working-directory: ./Submodules/amrex/Tools/Plotfile
-    #   run : |
-    #     ccache -z
-    #     make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
-    #     ccache -s
-    # - name: Test Reference and Compare
-    #   if: env.DO_REF_COMPARE == 'true'
-    #   working-directory: ./test/verification/GEC_RF_Cell/
-    #   run : |
-    #     ../../../Submodules/amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
+    - name: Build Reference Version
+      working-directory: ./test/verification/GEC_RF_Cell/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        ccache -z
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
+        ccache -s
+    - name: Run Reference Version
+      working-directory: ./test/verification/GEC_RF_Cell/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        mpirun -n 2 ./*.ex inputs max_step=100
+    - name: Build fcompare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./Submodules/amrex/Tools/Plotfile
+      run : |
+        ccache -z
+        make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
+        ccache -s
+    - name: Test Reference and Compare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./test/verification/GEC_RF_Cell/
+      run : |
+        ../../../Submodules/amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
     - name: Regression ccache report
       working-directory: ./test/verification/
       run: |
