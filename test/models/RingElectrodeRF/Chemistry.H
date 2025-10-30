@@ -214,7 +214,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(
     // amrex::Real elecmob=-0.1132*Pres_ratio;
 
     amrex::Real Pg = ndens * K_B * T;
-    amrex::Real EbyN = emag / ndens / 1e-21;
+    amrex::Real EbyN_cutoff = 0.1;
+    amrex::Real EbyN = std::max(EbyN_cutoff, emag / ndens / 1e-21);
     amrex::Real meanE = 1.5 * Te / eV;
 
     // mobility from
