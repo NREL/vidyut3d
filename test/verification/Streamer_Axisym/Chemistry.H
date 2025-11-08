@@ -186,7 +186,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(
 {
     // mobility is scaled by charge
     amrex::Real mob = 0.0;
-    amrex::Real elecmob = -2.3987 * std::pow(emag, -0.26);
+    amrex::Real elecmob = -2.3987 * std::pow(std::max(1e-10, emag), -0.26);
     if (specid == E_ID)
     {
         mob = elecmob;
@@ -259,7 +259,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void productionRate(
 
     // Convert E/N (Td) to |E|
     amrex::Real ndens = mixture * 6.02214076e23;
-    amrex::Real efield_mag = EN * ndens * 1e-21;
+    amrex::Real efield_mag = std::max(1e-10, EN * ndens * 1e-21);
 
     {
         // reaction 0:  N2 + E => E + N2p + E
