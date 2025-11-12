@@ -810,6 +810,25 @@ void Vidyut::correct_efields_ib(
     }
 }
 
+void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
+{
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        const auto& sb_arrays = Sborder[lev].arrays();
+        amrex::ParallelFor(
+            Sborder[lev], Sborder[lev].nGrowVect(), Sborder[lev].nComp(),
+            [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k, int n) noexcept {
+                auto& statefab = sb_arrays[nbx];
+                if (n != CMASK_ID)
+                {
+                    statefab(i, j, k, n) = (statefab(i, j, k, n) < 0.99)
+                                               ? 1000.0
+                                               : statefab(i, j, k, n);
+                }
+            });
+    }
+}
+
 void Vidyut::null_field_in_covered_cells(
     Vector<MultiFab>& fld,
     Vector<MultiFab>& Sborder,
