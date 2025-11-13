@@ -832,27 +832,19 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
                 auto& statefab = sb_arrays[nbx];
                 if ((n != CMASK_ID))
                 {
-                    if ((statefab(i, j, k, n) < 1 - 1e-16))
+                    if ((statefab(i, j, k, CMASK_ID) < 1 - 1e-16) &&
+                        (statefab(i, j, k, CMASK_ID) > 0.0 + 1e-16))
                     {
                         const IntVect cutcell{AMREX_D_DECL(i, j, k)};
                         amrex::Real xib[AMREX_SPACEDIM];
                         user_transport::get_surface_point(
                             cutcell, prob_lo, prob_hi, domlo, domhi, dx,
                             *localprobparm, xib);
-
-                        // statefab(i, j, k, n) = (statefab(i, j, k, n) < 0.99)
-                        //                                ? 1000.0
-                        //                                : statefab(i, j, k,
-                        //                                n);
-                        amrex::Print()
-                            << "xib: " << xib[0] << " " << xib[1] << " "
-                            << sqrt(xib[0] * xib[0] + xib[1] * xib[1])
-                            << std::endl;
                         statefab(i, j, k, n) =
                             sqrt(xib[0] * xib[0] + xib[1] * xib[1]);
                     } else
                     {
-                        statefab(i, j, k, n) = 0.0;
+                        // statefab(i, j, k, n) = 0.0;
                     }
                 }
             });
