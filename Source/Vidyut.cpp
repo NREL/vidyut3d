@@ -801,7 +801,7 @@ void Vidyut::correct_efields_ib(
                     ndens += s_arr(i, j, k, sp);
                 ndens =
                     ndens -
-                    s_arr(i, j, k, E_ID); // Only use heavy species denstities
+                    s_arr(i, j, k, E_ID); // Only use heavy species densities
 
                 for (int dim = 0; dim < AMREX_SPACEDIM; dim++)
                     Esum += Evect[dim] * Evect[dim];
@@ -815,8 +815,8 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
     for (int lev = 0; lev <= finest_level; lev++)
     {
         const auto& sb_arrays = Sborder[lev].arrays();
-        auto prob_lo = geom[lev].ProbLoArray();
-        auto prob_hi = geom[lev].ProbHiArray();
+        const auto prob_lo = geom[lev].ProbLoArray();
+        const auto prob_hi = geom[lev].ProbHiArray();
         const int* domlo_arr = geom[lev].Domain().loVect();
         const int* domhi_arr = geom[lev].Domain().hiVect();
         const GpuArray<int, AMREX_SPACEDIM> domlo = {
@@ -830,21 +830,76 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
             Sborder[lev], Sborder[lev].nGrowVect(), Sborder[lev].nComp(),
             [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k, int n) noexcept {
                 auto& statefab = sb_arrays[nbx];
+                const IntVect iv{AMREX_D_DECL(i, j, k)};
                 if ((n != CMASK_ID))
                 {
-                    if ((statefab(i, j, k, CMASK_ID) < 1 - 1e-16) &&
-                        (statefab(i, j, k, CMASK_ID) > 0.0 + 1e-16))
+                    if ((statefab(iv, CMASK_ID) < (1 - 1e-16)) &&
+                        (statefab(iv, CMASK_ID) > 1e-16))
                     {
-                        const IntVect cutcell{AMREX_D_DECL(i, j, k)};
                         amrex::Real xib[AMREX_SPACEDIM];
                         user_transport::get_surface_point(
-                            cutcell, prob_lo, prob_hi, domlo, domhi, dx,
+                            iv, prob_lo, prob_hi, domlo, domhi, dx,
                             *localprobparm, xib);
-                        statefab(i, j, k, n) =
-                            sqrt(xib[0] * xib[0] + xib[1] * xib[1]);
-                    } else
-                    {
-                        // statefab(i, j, k, n) = 0.0;
+
+                        const amrex::Real xi =
+                            (xib[0] - (prob_lo[0] + iv[0] * dx[0])) / dx[0];
+                        const amrex::Real yi =
+                            (xib[1] - (prob_lo[1] + iv[1] * dx[1])) / dx[1];
+#if (AMREX_SPACEDIM == 3)
+                        const amrex::Real zi =
+                            (xib[2] - (prob_lo[2] + iv[2] * dx[2])) / dx[2];
+#endif
+
+                        amrex::Real interp_val = 0.0;
+                        amrex::Real weight_sum = 0.0;
+
+#if (AMREX_SPACEDIM == 3)
+                        for (int kk = -1; kk <= 1; kk++)
+                        {
+#endif
+                            for (int jj = -1; jj <= 1; jj++)
+                            {
+                                for (int ii = -1; ii <= 1; ii++)
+                                {
+                                    const IntVect ivn =
+                                        iv + IntVect(AMREX_D_DECL(ii, jj, kk));
+                                    if (((ivn[0] >= domlo[0]) &&
+                                         (ivn[0] <= domhi[0])) &&
+                                        ((ivn[1] >= domlo[1]) &&
+                                         (ivn[1] <= domhi[1])) &&
+#if (AMREX_SPACEDIM == 3)
+                                        ((ivn[2] >= domlo[2]) &&
+                                         (ivn[2] <= domhi[2])) &&
+#endif
+                                        (statefab(ivn, CMASK_ID) >=
+                                         (1 - 1e-16)))
+                                    {
+                                        const amrex::Real dx = xi - (ii + 0.5);
+                                        const amrex::Real dy = yi - (jj + 0.5);
+                                        const amrex::Real dz =
+                                            AMREX_D_PICK(0, 0, zi - (kk + 0.5));
+                                        const amrex::Real dist =
+                                            sqrt(dx * dx + dy * dy + dz * dz);
+
+                                        if (dist > 1e-16)
+                                        {
+                                            const amrex::Real weight =
+                                                1.0 / dist;
+                                            interp_val +=
+                                                weight * statefab(ivn, n);
+                                            weight_sum += weight;
+                                        }
+                                    }
+                                }
+                            }
+#if (AMREX_SPACEDIM == 3)
+                        }
+#endif
+
+                        if (weight_sum > 1e-16)
+                        {
+                            statefab(i, j, k, n) = interp_val / weight_sum;
+                        }
                     }
                 }
             });
