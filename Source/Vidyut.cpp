@@ -810,7 +810,8 @@ void Vidyut::correct_efields_ib(
     }
 }
 
-void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
+void Vidyut::interpolate_fields_ib(
+    Vector<MultiFab>& Sborder, int startcomp, int numcomp)
 {
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -827,7 +828,7 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
         ProbParm const* localprobparm = d_prob_parm;
 
         amrex::ParallelFor(
-            Sborder[lev], Sborder[lev].nGrowVect(), Sborder[lev].nComp(),
+            Sborder[lev], Sborder[lev].nGrowVect(), numcomp,
             [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k, int n) noexcept {
                 auto& statefab = sb_arrays[nbx];
                 const IntVect iv{AMREX_D_DECL(i, j, k)};
@@ -886,7 +887,8 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
                                             const amrex::Real weight =
                                                 1.0 / dist;
                                             interp_val +=
-                                                weight * statefab(ivn, n);
+                                                weight *
+                                                statefab(ivn, startcomp + n);
                                             weight_sum += weight;
                                         }
                                     }
@@ -898,7 +900,8 @@ void Vidyut::interpolate_fields_ib(Vector<MultiFab>& Sborder)
 
                         if (weight_sum > 1e-16)
                         {
-                            statefab(i, j, k, n) = interp_val / weight_sum;
+                            statefab(i, j, k, startcomp + n) =
+                                interp_val / weight_sum;
                         }
                     }
                 }
