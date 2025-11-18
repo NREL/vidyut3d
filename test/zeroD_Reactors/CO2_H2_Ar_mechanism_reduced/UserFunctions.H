@@ -116,7 +116,7 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
     IntVect ghost_cell{AMREX_D_DECL(i, j, k)};
     amrex::Real outward_normal[AMREX_SPACEDIM] = {0.0};
     outward_normal[dir] = sgn;
-    
+
     int gcell_adjust, cell_adjust;
 
     // ghost_cell is one behind
@@ -126,38 +126,37 @@ AMREX_GPU_DEVICE AMREX_INLINE void potential_bc(
 
     ghost_cell[dir] += gcell_adjust;
     cell_int[dir] += cell_adjust;
-    
+
     robin_a(ghost_cell) = 1.0;
     robin_b(ghost_cell) = 0.0;
     robin_f(ghost_cell) = 0.0;
-    bc_arr(ghost_cell)=0.0;
-    
-    if(sgn==-1 && dir==0)
-    {
-        amrex::Real voltage=0.0;
-        amrex::Real pulse_reptime=1.0/prob_parm.pulse_freq;
-        int pulsenum=int(time*prob_parm.pulse_freq);
-        amrex::Real inpulse_time=time-pulsenum*pulse_reptime;
-        amrex::Real pw=prob_parm.pulse_width;
-        amrex::Real half_pw=0.5*pw;
-        int inside_pulse=(inpulse_time<pw);
+    bc_arr(ghost_cell) = 0.0;
 
-        if(inside_pulse)
+    if (sgn == -1 && dir == 0)
+    {
+        amrex::Real voltage = 0.0;
+        amrex::Real pulse_reptime = 1.0 / prob_parm.pulse_freq;
+        int pulsenum = int(time * prob_parm.pulse_freq);
+        amrex::Real inpulse_time = time - pulsenum * pulse_reptime;
+        amrex::Real pw = prob_parm.pulse_width;
+        amrex::Real half_pw = 0.5 * pw;
+        int inside_pulse = (inpulse_time < pw);
+
+        if (inside_pulse)
         {
-            if(inpulse_time < half_pw)
+            if (inpulse_time < half_pw)
             {
-                voltage = prob_parm.Vns*(inpulse_time/half_pw);
-            }
-            else
+                voltage = prob_parm.Vns * (inpulse_time / half_pw);
+            } else
             {
-                voltage = prob_parm.Vns*(2.0-inpulse_time/half_pw);
+                voltage = prob_parm.Vns * (2.0 - inpulse_time / half_pw);
             }
         }
-        bc_arr(ghost_cell)=voltage;
+        bc_arr(ghost_cell) = voltage;
     }
-    if(sgn==1 && dir==0)
+    if (sgn == 1 && dir == 0)
     {
-        bc_arr(ghost_cell)=0.0;
+        bc_arr(ghost_cell) = 0.0;
     }
 }
 
