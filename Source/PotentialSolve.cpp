@@ -452,7 +452,6 @@ void Vidyut::solve_potential(
                 s_arr(i, j, k, REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
             });
     }
-    interpolate_fields_ib(phi_new, 0, phi_new[0].nComp());
 
     // clean-up
     potential.clear();
