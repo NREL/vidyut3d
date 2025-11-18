@@ -18,4 +18,6 @@ USE_CUDA   = FALSE
 Bpack   := ./Make.package 
 Blocs   := . 
 
+DEFINES += -DENABLE_IB_FIELD_INTERPOLATION
+
 include ${VIDYUT_DIR}/test/Make.vidyut

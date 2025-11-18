@@ -810,7 +810,7 @@ void Vidyut::correct_efields_ib(
     }
 }
 
-#if 0
+#ifdef ENABLE_IB_FIELD_INTERPOLATION
 void Vidyut::interpolate_fields_ib(
     Vector<MultiFab>& Sborder, int startcomp, int numcomp)
 {

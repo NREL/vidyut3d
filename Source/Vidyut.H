@@ -321,7 +321,7 @@ public:
         Vector<Array<MultiFab, AMREX_SPACEDIM>>& efield_fc,
         Real time);
 
-#if 0
+#ifdef ENABLE_IB_FIELD_INTERPOLATION
     void interpolate_fields_ib(
         Vector<MultiFab>& Sborder, int startcomp, int numcomp);
 #endif
