@@ -22,6 +22,10 @@ void amrex_probinit(ProbParm& h_prob_parm, ProbParm& d_prob_parm)
     pp.query("seedion_frac", h_prob_parm.seedion_frac);
     h_prob_parm.H2_frac=1.0-h_prob_parm.Ar_frac-h_prob_parm.CO2_frac;
 
+    pp.query("Vns",h_prob_parm.Vns);
+    pp.query("pulse_freq",h_prob_parm.pulse_freq);
+    pp.query("pulse_width",h_prob_parm.pulse_width);
+
     amrex::ParmParse ppv("vidyut");
     pp.query("gas_pressure", h_prob_parm.pres);
     pp.query("gas_temperature", h_prob_parm.temp);

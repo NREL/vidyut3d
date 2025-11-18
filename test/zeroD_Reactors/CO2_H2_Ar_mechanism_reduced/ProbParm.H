@@ -15,5 +15,8 @@ struct ProbParm
     amrex::Real pres=101325.0;
     amrex::Real temp=300.0;
     amrex::Real seedion_frac=1e-8;
+    amrex::Real Vns=800.0;
+    amrex::Real pulse_freq=1e4;
+    amrex::Real pulse_width=3e-8;
 };
 #endif

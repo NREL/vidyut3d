@@ -1,5 +1,5 @@
 max_step  = 10000000
-stop_time = 3e-8
+stop_time = 10000e-9
 
 # PROBLEM SIZE & GEOMETRY
 geometry.is_periodic =  0  1  1
@@ -19,23 +19,28 @@ amr.max_grid_size   = 2
 amr.regrid_int      = 5       # how often to regrid
 
 # TIME STEP CONTROL
-vidyut.dt             = 1e-13
+vidyut.dt             = 4e-12
 
+#not using multicompsolves as 
+#this chemistry hasnt ordered the
+#species correctly - ie contigous 
+#specie numbers for ions/neutrals
 vidyut.multicompsolves=0
 
 # Voltage
-vidyut.voltage_profile = 2
-vidyut.voltage_amp_lo = 1000.0 0.0 0.0
-vidyut.voltage_amp_hi = 0.0 0.0 0.0  # voltage for Ar/CO2/H2
-vidyut.voltage_freq = 1.0e6
-vidyut.voltage_dur = 3.0e-8
-vidyut.voltage_center = 1.5e-8
+prob.Vns=700.0
+prob.pulse_freq=10e6
+prob.pulse_width=30e-9
 
 #0 - periodic
 #1 - Dirichlet
 #2 - Homogenous Neumann
 #3 - Inhomogenous Neumann
 #4 - Robin
+
+vidyut.user_defined_potential = 1
+vidyut.user_defined_species = 1
+vidyut.user_defined_vel = 1
 
 vidyut.pot_bc_lo = 1 0 0
 vidyut.pot_bc_hi = 1 0 0
@@ -80,6 +85,6 @@ prob.seedion_frac=1e-10
 vidyut.gas_pressure=101325.0
 vidyut.gas_temperature=300.0
 
-prob.Ar_frac=0.0
+prob.Ar_frac=0.1
 prob.CO2_frac=0.25
 prob.seedion_frac=1e-10
