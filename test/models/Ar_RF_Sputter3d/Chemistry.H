@@ -131,7 +131,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(
     const amrex::Real T)
 {
     amrex::Real N0 = 2.686763e25;
-    amrex::Real EbyN = emag / ndens / 1e-21;
+    amrex::Real EbyN_cutoff = 0.1;
+    amrex::Real EbyN = std::max(EbyN_cutoff, emag / ndens / 1e-21);
     amrex::Real meanE = 1.5 * Te / eV;
     amrex::Real cm2_to_m2 = 1e-4;
     amrex::Real cm_to_m = 1e-2;

@@ -1,5 +1,5 @@
-AMREX_HOME ?= ../../../..
 VIDYUT_DIR   ?= ../../../vidyut3d
+AMREX_HOME   ?= $(abspath $(lastword $(VIDYUT_DIR)/Submodules/amrex))
 
 TOP := $(VIDYUT_DIR)
 

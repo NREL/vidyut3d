@@ -26,8 +26,10 @@ jobs:
   cputest:
     needs: formatting
     runs-on: ubuntu-latest
+    env:
+      DO_REF_COMPARE: ${{github.event_name != 'push'}}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: System Dependencies
@@ -35,19 +37,40 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
         build-essential g++ gfortran libopenmpi-dev openmpi-bin
-        git clone https://github.com/AMReX-Codes/amrex
+    - name: Install Ccache
+      run: |
+        wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+        tar xvf ccache-4.8-linux-x86_64.tar.xz
+        sudo cp -f ccache-4.8-linux-x86_64/ccache /usr/local/bin/
+        echo "NPROCS=$(nproc)" >> $GITHUB_ENV
+        echo "CCACHE_COMPRESS=1" >> $GITHUB_ENV
+        echo "CCACHE_COMPRESSLEVEL=10" >> $GITHUB_ENV
+        echo "CCACHE_LOGFILE=${{github.workspace}}/ccache.log.txt" >> $GITHUB_ENV
+        echo "CCACHE_MAXSIZE=100M" >> $GITHUB_ENV
+    - name: Set Up Ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{github.workflow}}-${{github.job}}-git-${{github.sha}}
+        restore-keys: |
+             ccache-${{github.workflow}}-${{github.job}}-git-
     - name: Build Regression
       working-directory: ./test/verification/
       run: |
+        ccache -z
         cd MMS2
-        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
         cd l2err
-        make -j AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE
         cd ../../
         cd MMS3
-        make -j 2 COMP=gnu AMREX_HOME=../../../amrex
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
         cd l2err
-        make -j AMREX_HOME=../../../../amrex
+        make -j USE_CCACHE=TRUE
+        cd ../../
+        cd GEC_RF_Cell
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
+        ccache -s
     - name: Run Regression
       working-directory: ./test/verification/
       run: |
@@ -78,3 +101,41 @@ jobs:
           ./l2err/*.ex plt00001
           mpirun -n 2 ./*.ex inputs vidyut.num_timestep_correctors=4
           ./l2err/*.ex plt00001
+          cd ..
+          cd GEC_RF_Cell
+          mpirun -n 2 ./*.ex inputs max_step=100
+          mv plt00001 dev-plt00001
+    - name: Checkout Reference Version
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        git remote add reference https://github.com/NREL/vidyut3d.git
+        git fetch reference main --depth=1
+        git checkout reference/main
+    - name: Build Reference Version
+      working-directory: ./test/verification/GEC_RF_Cell/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        ccache -z
+        make -j 2 USE_CCACHE=TRUE COMP=gnu
+        ccache -s
+    - name: Run Reference Version
+      working-directory: ./test/verification/GEC_RF_Cell/
+      if: env.DO_REF_COMPARE == 'true'
+      run : |
+        mpirun -n 2 ./*.ex inputs max_step=100
+    - name: Build fcompare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./Submodules/amrex/Tools/Plotfile
+      run : |
+        ccache -z
+        make -j 2 USE_CCACHE=TRUE COMP=gnu programs=fcompare
+        ccache -s
+    - name: Test Reference and Compare
+      if: env.DO_REF_COMPARE == 'true'
+      working-directory: ./test/verification/GEC_RF_Cell/
+      run : |
+        ../../../Submodules/amrex/Tools/Plotfile/fcompare*.ex plt00001 dev-plt00001
+    - name: Regression ccache report
+      working-directory: ./test/verification/
+      run: |
+        du -hs ~/.cache/ccache

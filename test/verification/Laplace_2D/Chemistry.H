@@ -6,21 +6,20 @@
 
 /* Elements
 0  E
-1  N
+1  H
 */
 
 // Species
 #define E_ID 0
-#define N2_ID 1
-#define N2p_ID 2
+#define S1_ID 1
+#define S2_ID 2
 
 #define NUM_ELEMENTS 2
 #define NUM_SPECIES 3
-#define NUM_IONS 1
-#define FIRST_ION 2
-// skipping N2_ID solves anyway
-#define NUM_NEUTRALS 0
-#define FIRST_NEUTRAL 0
+#define FIRST_ION 0
+#define NUM_IONS 0
+#define FIRST_NEUTRAL 1
+#define NUM_NEUTRALS 2
 #define NUM_REACTIONS 1
 
 #define NUM_FIT 4
@@ -50,36 +49,36 @@ CKINDX(int& mm, int& kk, int& ii, int& nfit)
 #ifdef AMREX_USE_GPU
 AMREX_GPU_CONSTANT const amrex::Real global_imw[3] = {
     1822.8884868472639482, // E
-    0.0356964374955379,    // N2
-    0.0356964374955379,    // N2p
+    0.9920634920634921,    // S1
+    0.9920634920634921,    // S2
 };
 #endif
 const amrex::Real h_global_imw[3] = {
     1822.8884868472639482, // E
-    0.0356964374955379,    // N2
-    0.0356964374955379,    // N2p
+    0.9920634920634921,    // S1
+    0.9920634920634921,    // S2
 };
 
 //  molecular weights
 #ifdef AMREX_USE_GPU
 AMREX_GPU_CONSTANT const amrex::Real global_mw[3] = {
-    0.000549,  // E
-    28.014000, // N2
-    28.014000, // N2p
+    0.000549, // E
+    1.008000, // S1
+    1.008000, // S2
 };
 #endif
 const amrex::Real h_global_mw[3] = {
-    0.000549,  // E
-    28.014000, // N2
-    28.014000, // N2p
+    0.000549, // E
+    1.008000, // S1
+    1.008000, // S2
 };
 
 //  inverse molecular weights
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_imw(amrex::Real* imw_new)
 {
     imw_new[0] = 1822.8884868472639482; // E
-    imw_new[1] = 0.0356964374955379;    // N2
-    imw_new[2] = 0.0356964374955379;    // N2p
+    imw_new[1] = 0.9920634920634921;    // S1
+    imw_new[2] = 0.9920634920634921;    // S2
 }
 
 //  inverse molecular weight
@@ -94,9 +93,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real imw(const int n)
 //  molecular weights
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_mw(amrex::Real* mw_new)
 {
-    mw_new[0] = 0.000549;  // E
-    mw_new[1] = 28.014000; // N2
-    mw_new[2] = 28.014000; // N2p
+    mw_new[0] = 0.000549; // E
+    mw_new[1] = 1.008000; // S1
+    mw_new[2] = 1.008000; // S2
 }
 
 //  molecular weight
@@ -136,18 +135,18 @@ gibbs(amrex::Real* species, const amrex::Real* tc)
             2.500251500000000e+00 * tc[0] - 0.000000000000000e+00 * tc[1] -
             0.000000000000000e+00 * tc[2] - 0.000000000000000e+00 * tc[3] -
             0.000000000000000e+00 * tc[4];
-        // species 1: N2
+        // species 1: S1
         species[1] =
-            -1.020899900000000e+03 * invT - 6.516950000000001e-01 -
-            3.298677000000000e+00 * tc[0] - 7.041202000000000e-04 * tc[1] +
-            6.605369999999999e-07 * tc[2] - 4.701262500000001e-10 * tc[3] +
-            1.222427000000000e-13 * tc[4];
-        // species 2: N2p
+            +2.547365990000000e+04 * invT + 2.946682853000000e+00 -
+            2.500000000000000e+00 * tc[0] - 3.526664095000000e-13 * tc[1] +
+            3.326532733333333e-16 * tc[2] - 1.917346933333333e-19 * tc[3] +
+            4.638661660000000e-23 * tc[4];
+        // species 2: S2
         species[2] =
-            -1.020899900000000e+03 * invT - 6.516950000000001e-01 -
-            3.298677000000000e+00 * tc[0] - 7.041202000000000e-04 * tc[1] +
-            6.605369999999999e-07 * tc[2] - 4.701262500000001e-10 * tc[3] +
-            1.222427000000000e-13 * tc[4];
+            +2.547365990000000e+04 * invT + 2.946682853000000e+00 -
+            2.500000000000000e+00 * tc[0] - 3.526664095000000e-13 * tc[1] +
+            3.326532733333333e-16 * tc[2] - 1.917346933333333e-19 * tc[3] +
+            4.638661660000000e-23 * tc[4];
     } else
     {
         // species 0: E
@@ -156,18 +155,18 @@ gibbs(amrex::Real* species, const amrex::Real* tc)
             2.500251500000000e+00 * tc[0] - 0.000000000000000e+00 * tc[1] -
             0.000000000000000e+00 * tc[2] - 0.000000000000000e+00 * tc[3] -
             0.000000000000000e+00 * tc[4];
-        // species 1: N2
+        // species 1: S1
         species[1] =
-            -9.227977000000000e+02 * invT - 3.053888000000000e+00 -
-            2.926640000000000e+00 * tc[0] - 7.439884000000000e-04 * tc[1] +
-            9.474600000000001e-08 * tc[2] - 8.414198333333333e-12 * tc[3] +
-            3.376675500000000e-16 * tc[4];
-        // species 2: N2p
+            +2.547365990000000e+04 * invT + 2.946682924000000e+00 -
+            2.500000010000000e+00 * tc[0] + 1.154214865000000e-11 * tc[1] -
+            2.692699133333334e-15 * tc[2] + 3.945960291666667e-19 * tc[3] -
+            2.490986785000000e-23 * tc[4];
+        // species 2: S2
         species[2] =
-            -9.227977000000000e+02 * invT - 3.053888000000000e+00 -
-            2.926640000000000e+00 * tc[0] - 7.439884000000000e-04 * tc[1] +
-            9.474600000000001e-08 * tc[2] - 8.414198333333333e-12 * tc[3] +
-            3.376675500000000e-16 * tc[4];
+            +2.547365990000000e+04 * invT + 2.946682924000000e+00 -
+            2.500000010000000e+00 * tc[0] + 1.154214865000000e-11 * tc[1] -
+            2.692699133333334e-15 * tc[2] + 3.945960291666667e-19 * tc[3] -
+            2.490986785000000e-23 * tc[4];
     }
 }
 
@@ -184,22 +183,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(
     const amrex::Real emag,
     const amrex::Real T)
 {
-    // mobility is scaled by charge
-    amrex::Real mob = 0.0;
-    amrex::Real elecmob = -2.3987 * std::pow(std::max(1e-10, emag), -0.26);
-    if (specid == E_ID)
-    {
-        mob = elecmob;
-    }
-    if (specid == N2p_ID)
-    {
-        mob = 0.0;
-    }
-    if (specid == NUM_SPECIES)
-    {
-        mob = (5.0 / 3.0) * elecmob;
-    }
-    return (mob);
+    return (0.0);
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specDiff(
@@ -210,28 +194,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specDiff(
     const amrex::Real T)
 {
     amrex::Real dcoeff = 0.0;
-    amrex::Real elecdcoeff = 4.3628e-3 * std::pow(emag, 0.22);
-    if (specid == E_ID)
-    {
-        dcoeff = elecdcoeff;
-    }
-    if (specid == N2p_ID)
-    {
-        dcoeff = 0.0;
-    }
-    if (specid == NUM_SPECIES)
-    {
-        dcoeff = (5.0 / 3.0) * elecdcoeff;
-    }
-
     return (dcoeff);
 }
 
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void productionRate(
-    amrex::Real* wdot,
-    const amrex::Real* sc,
-    const amrex::Real T,
-    const amrex::Real EN)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+productionRate(amrex::Real* wdot, const amrex::Real* sc, const amrex::Real T)
 {
     const amrex::Real tc[5] = {
         log(T), T, T * T, T * T * T, T * T * T * T}; // temperature cache
@@ -257,25 +224,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void productionRate(
     amrex::Real g_RT[3];
     gibbs(g_RT, tc);
 
-    // Convert E/N (Td) to |E|
-    amrex::Real ndens = mixture * 6.02214076e23;
-    amrex::Real efield_mag = std::max(1e-10, EN * ndens * 1e-21);
-
     {
-        // reaction 0:  N2 + E => E + N2p + E
-        amrex::Real alpha =
-            (1.1944e6 + 4.3666e26 / amrex::Math::powi<3>(efield_mag)) *
-            std::exp(-2.73e7 / efield_mag);
-        amrex::Real eta = 340.75;
-        amrex::Real alpha_bar = alpha - eta;
-        amrex::Real mu_e = 2.3987 * std::pow(efield_mag, -0.26);
-        const amrex::Real k_f = alpha_bar * mu_e * efield_mag;
-        // const amrex::Real qf = k_f * (sc[0] * sc[1]);
-        // const amrex::Real qr = 0.0;
-        // const amrex::Real qdot = qf - qr;
-        wdot[0] += k_f * sc[E_ID];
-        wdot[1] -= k_f * sc[E_ID];
-        wdot[2] += k_f * sc[E_ID];
+        // reaction 0:  E + S1 => E + S1
+        const amrex::Real k_f = 0;
+        const amrex::Real qf = k_f * (sc[0] * sc[1]);
+        const amrex::Real qr = 0.0;
+        const amrex::Real qdot = qf - qr;
+        wdot[0] -= qdot;
+        wdot[0] += qdot;
+        wdot[1] -= qdot;
+        wdot[1] += qdot;
     }
 }
 
@@ -289,15 +247,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKWC(
     amrex::Real* ener_exch)
 {
 
-    productionRate(wdot, C, T, EN);
+    productionRate(wdot, C, T);
 }
 
 //  species unit charge number
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void CKCHRG(int kcharge[])
 {
     kcharge[0] = -1; // E
-    kcharge[1] = 0;  // N2
-    kcharge[2] = 1;  // N2p
+    kcharge[1] = 1;  // S1
+    kcharge[2] = 0;  // S2
 }
 
 // compute electron temperature from EbyN using local field approximation

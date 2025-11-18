@@ -241,7 +241,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real specMob(
     // found in He, so scaling to Ar using molar mass
     amrex::Real ARHpmob = 19.0e-4 * N0 / ndens * 4.0 / 40;
 
-    amrex::Real EbyN = emag / ndens / 1e-21;
+    amrex::Real EbyN_cutoff = 0.1;
+    amrex::Real EbyN = std::max(EbyN_cutoff, emag / ndens / 1e-21);
     amrex::Real meanE = 1.5 * Te / eV;
 
     // fit from bolsig run
