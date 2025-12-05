@@ -206,9 +206,6 @@ void Vidyut::solve_potential(
         // int dstcomp, int numcomp, const IntVect& nghost)
         amrex::Copy(potential[ilev], Sborder[ilev], POT_ID, 0, 1, num_grow);
 
-        solution[ilev].setVal(0.0);
-        // FIXME: for some reason copying in current soln breaks the solver...
-        // amrex::MultiFab::Copy(solution[ilev], potential[ilev], 0, 0, 1, 0);
         rhs[ilev].setVal(0.0);
         acoeff[ilev].setVal(0.0);
 
@@ -381,6 +378,8 @@ void Vidyut::solve_potential(
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
+        potential[ilev].mult(1.0/vidyut_potscale,0,num_grow);
+
         // bc's are stored in the ghost cells of potential
         if (mixedbc)
         {
@@ -404,6 +403,14 @@ void Vidyut::solve_potential(
         mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
     }
 #endif
+    
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        solution[ilev].setVal(0.0);
+        // FIXME: for some reason copying in current soln breaks the solver...
+        // amrex::MultiFab::Copy(solution[ilev], potential[ilev], 0, 0, 1, 0);
+        rhs[ilev].mult(1.0/vidyut_potscale,0,num_grow);
+    }
 
     mlmg.solve(
         GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
@@ -412,6 +419,7 @@ void Vidyut::solve_potential(
 
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
+        solution[ilev].mult(vidyut_potscale,0,num_grow);
         amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, POT_ID, 1, 0);
     }
 
@@ -428,7 +436,7 @@ void Vidyut::solve_potential(
 #endif
 
         const Array<const MultiFab*, AMREX_SPACEDIM> allgrad = {AMREX_D_DECL(
-            &efield_fc[ilev][0], &efield_fc[ilev][1], &efield_fc[ilev][2])};
+                &efield_fc[ilev][0], &efield_fc[ilev][1], &efield_fc[ilev][2])};
         average_face_to_cellcenter(phi_new[ilev], EFX_ID, allgrad);
 
         // Calculate the reduced electric field
@@ -438,15 +446,15 @@ void Vidyut::solve_potential(
             [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
                 auto s_arr = phi_arrays[nbx];
                 RealVect Evect{AMREX_D_DECL(
-                    s_arr(i, j, k, EFX_ID), s_arr(i, j, k, EFY_ID),
-                    s_arr(i, j, k, EFZ_ID))};
+                        s_arr(i, j, k, EFX_ID), s_arr(i, j, k, EFY_ID),
+                        s_arr(i, j, k, EFZ_ID))};
                 Real Esum = 0.0;
                 amrex::Real ndens = 0.0;
                 for (int sp = 0; sp < NUM_SPECIES; sp++)
                     ndens += s_arr(i, j, k, sp);
                 ndens =
-                    ndens -
-                    s_arr(i, j, k, E_ID); // Only use heavy species denstities
+                ndens -
+                s_arr(i, j, k, E_ID); // Only use heavy species denstities
                 for (int dim = 0; dim < AMREX_SPACEDIM; dim++)
                     Esum += Evect[dim] * Evect[dim];
                 s_arr(i, j, k, REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
@@ -492,10 +500,10 @@ void Vidyut::update_cc_efields(Vector<MultiFab>& Sborder)
                 s_arr(i, j, k, EFZ_ID) = 0.0;
 
                 s_arr(i, j, k, EFX_ID) =
-                    get_efield_alongdir(i, j, k, 0, domlo, domhi, dx, s_arr);
+                get_efield_alongdir(i, j, k, 0, domlo, domhi, dx, s_arr);
 #if AMREX_SPACEDIM > 1
                 s_arr(i, j, k, EFY_ID) =
-                    get_efield_alongdir(i, j, k, 1, domlo, domhi, dx, s_arr);
+                get_efield_alongdir(i, j, k, 1, domlo, domhi, dx, s_arr);
 #if AMREX_SPACEDIM == 3
                 s_arr(i, j, k, EFZ_ID) =
                     get_efield_alongdir(i, j, k, 2, domlo, domhi, dx, s_arr);
