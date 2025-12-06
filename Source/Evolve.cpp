@@ -346,9 +346,9 @@ void Vidyut::Evolve()
             if (!multicompsolves)
             {
                 // all species except electrons solve
-                //Note that this can be done with chunk size=1, but cannot
-                //avoid this if loop because some chemistry files may not 
-                //order ions/neutrals as contiguous species
+                // Note that this can be done with chunk size=1, but cannot
+                // avoid this if loop because some chemistry files may not
+                // order ions/neutrals as contiguous species
                 for (unsigned int ind = 0; ind < NUM_SPECIES; ind++)
                 {
                     bool solveflag = true;

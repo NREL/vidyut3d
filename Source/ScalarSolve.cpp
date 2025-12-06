@@ -447,7 +447,7 @@ void Vidyut::implicit_solve_scalar(
     int userdefspec = user_defined_species;
     int eidx = E_IDX;
 
-    Real dt_scaled=dt/vidyut_timescale;
+    Real dt_scaled = dt / vidyut_timescale;
 
     LPInfo info;
     info.setAgglomeration(true);
@@ -463,10 +463,10 @@ void Vidyut::implicit_solve_scalar(
 
     // default to inhomogNeumann since it is defaulted to flux = 0.0 anyways
     std::array<LinOpBCType, AMREX_SPACEDIM> bc_linsolve_lo = {AMREX_D_DECL(
-            LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
+        LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
 
     std::array<LinOpBCType, AMREX_SPACEDIM> bc_linsolve_hi = {AMREX_D_DECL(
-            LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
+        LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
 
     int mixedbc = 0;
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
@@ -539,7 +539,7 @@ void Vidyut::implicit_solve_scalar(
 
     const int num_grow = 1;
 
-    //define all relevant arrays
+    // define all relevant arrays
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         specdata[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
@@ -569,14 +569,14 @@ void Vidyut::implicit_solve_scalar(
     {
         set_solver_mask(solvemask, Sborder);
         linsolve_ptr.reset(new MLABecLaplacian(
-                Geom(0, finest_level), boxArray(0, finest_level),
-                DistributionMap(0, finest_level), GetVecOfConstPtrs(solvemask),
-                info, {}, numspec));
+            Geom(0, finest_level), boxArray(0, finest_level),
+            DistributionMap(0, finest_level), GetVecOfConstPtrs(solvemask),
+            info, {}, numspec));
     } else
     {
         linsolve_ptr.reset(new MLABecLaplacian(
-                Geom(0, finest_level), boxArray(0, finest_level),
-                DistributionMap(0, finest_level), info, {}, numspec));
+            Geom(0, finest_level), boxArray(0, finest_level),
+            DistributionMap(0, finest_level), info, {}, numspec));
     }
 
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
@@ -590,7 +590,7 @@ void Vidyut::implicit_solve_scalar(
         amrex::Copy(
             specdata[ilev], Sborder_old[ilev], startspec, 0, numspec, num_grow);
 
-        //will use time scaling later
+        // will use time scaling later
         acoeff[ilev].setVal(1.0 / dt);
         bcoeff[ilev].setVal(1.0);
 
@@ -636,7 +636,6 @@ void Vidyut::implicit_solve_scalar(
 
         amrex::Copy(
             specdata[ilev], Sborder[ilev], startspec, 0, numspec, num_grow);
-
 
         // fill cell centered diffusion coefficients and rhs
         for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -814,28 +813,31 @@ void Vidyut::implicit_solve_scalar(
             }
         }
 
-        acoeff[ilev].mult(vidyut_timescale,0, 1, num_grow);
+        acoeff[ilev].mult(vidyut_timescale, 0, 1, num_grow);
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
 
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
-        //scaling
-        if(!electron_energy_flag)
+        // scaling
+        if (!electron_energy_flag)
         {
-            for(int sp=0;sp<numspec;sp++)
+            for (int sp = 0; sp < numspec; sp++)
             {
-                specdata[ilev].mult(1.0/vidyut_specscales[startspec+sp],sp, 1, num_grow);
-                robin_f[ilev].mult(1.0/vidyut_specscales[startspec+sp],sp, 1, num_grow);
-                rhs[ilev].mult(vidyut_timescale/vidyut_specscales[startspec+sp],sp, 1, num_grow);
+                specdata[ilev].mult(
+                    1.0 / vidyut_specscales[startspec + sp], sp, 1, num_grow);
+                robin_f[ilev].mult(
+                    1.0 / vidyut_specscales[startspec + sp], sp, 1, num_grow);
+                rhs[ilev].mult(
+                    vidyut_timescale / vidyut_specscales[startspec + sp], sp, 1,
+                    num_grow);
             }
-        }
-        else
+        } else
         {
-            //only 1 spec
-            specdata[ilev].mult(1.0/vidyut_eescale,0, 1, num_grow);
-            robin_f[ilev].mult(1.0/vidyut_eescale,0, 1, num_grow);
-            rhs[ilev].mult(vidyut_timescale/vidyut_eescale,0, 1, num_grow);
+            // only 1 spec
+            specdata[ilev].mult(1.0 / vidyut_eescale, 0, 1, num_grow);
+            robin_f[ilev].mult(1.0 / vidyut_eescale, 0, 1, num_grow);
+            rhs[ilev].mult(vidyut_timescale / vidyut_eescale, 0, 1, num_grow);
         }
         solution[ilev].setVal(0.0);
         amrex::MultiFab::Copy(solution[ilev], specdata[ilev], 0, 0, numspec, 0);
@@ -886,18 +888,18 @@ void Vidyut::implicit_solve_scalar(
     // copy solution back to phi_new
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
-        //scaling back
-        if(!electron_energy_flag)
+        // scaling back
+        if (!electron_energy_flag)
         {
-            for(int sp=0;sp<numspec;sp++)
+            for (int sp = 0; sp < numspec; sp++)
             {
-                solution[ilev].mult(vidyut_specscales[startspec+sp],sp, 1, num_grow);
+                solution[ilev].mult(
+                    vidyut_specscales[startspec + sp], sp, 1, num_grow);
             }
-        }
-        else
+        } else
         {
-            //only 1 spec
-            solution[ilev].mult(vidyut_eescale,0, 1, num_grow);
+            // only 1 spec
+            solution[ilev].mult(vidyut_eescale, 0, 1, num_grow);
         }
 
         // bound species density
@@ -928,7 +930,7 @@ void Vidyut::implicit_solve_scalar(
                                 minspecden)
                             {
                                 soln_arr(i, j, k, specid - startspec) =
-                                minspecden;
+                                    minspecden;
                             }
                         }
                     }
@@ -967,13 +969,13 @@ void Vidyut::implicit_solve_scalar(
                     auto phi_arr = phi_arrays[nbx];
                     auto sb_arr = sborder_arrays[nbx];
                     phi_arr(i, j, k, ETEMP_ID) = twothird / K_B *
-                    phi_arr(i, j, k, EEN_ID) /
-                    sb_arr(i, j, k, eidx);
+                                                 phi_arr(i, j, k, EEN_ID) /
+                                                 sb_arr(i, j, k, eidx);
                     if (phi_arr(i, j, k, ETEMP_ID) < minetemp)
                     {
                         phi_arr(i, j, k, ETEMP_ID) = minetemp;
                         phi_arr(i, j, k, EEN_ID) =
-                        1.5 * K_B * phi_arr(i, j, k, eidx) * minetemp;
+                            1.5 * K_B * phi_arr(i, j, k, eidx) * minetemp;
                     }
                 });
         }

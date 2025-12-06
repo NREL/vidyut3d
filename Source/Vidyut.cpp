@@ -461,30 +461,28 @@ void Vidyut::ReadParameters()
         pp.query("monitor_file_int", monitor_file_int);
         pp.query("num_timestep_correctors", num_timestep_correctors);
         pp.query("floor_jh", floor_jh);
-        
+
         Vector<int> scaling_specid_list;
         Vector<amrex::Real> scale_value_list;
         pp.queryarr("scaling_species_ids", scaling_specid_list);
-        pp.queryarr("scale_values",scale_value_list);
-        pp.query("potential_scale",vidyut_potscale);
-        pp.query("elecenergy_scale",vidyut_eescale);
-        pp.query("time_scale",vidyut_timescale);
+        pp.queryarr("scale_values", scale_value_list);
+        pp.query("potential_scale", vidyut_potscale);
+        pp.query("elecenergy_scale", vidyut_eescale);
+        pp.query("time_scale", vidyut_timescale);
 
-        if(scaling_specid_list.size()!=scale_value_list.size())
+        if (scaling_specid_list.size() != scale_value_list.size())
         {
-            amrex::Print()<<"scaling lists dont have the same length\n";
+            amrex::Print() << "scaling lists dont have the same length\n";
             amrex::Abort();
-
         }
-        for(int i=0;i<NUM_SPECIES;i++)
+        for (int i = 0; i < NUM_SPECIES; i++)
         {
-            vidyut_specscales[i]=1.0;
+            vidyut_specscales[i] = 1.0;
         }
-        for(int i=0;i<scaling_specid_list.size();i++)
+        for (int i = 0; i < scaling_specid_list.size(); i++)
         {
-            vidyut_specscales[scaling_specid_list[i]]=scale_value_list[i];
+            vidyut_specscales[scaling_specid_list[i]] = scale_value_list[i];
         }
-
 
 #ifdef AMREX_USE_HYPRE
         pp.query("use_hypre", use_hypre);
@@ -509,8 +507,8 @@ void Vidyut::ReadParameters()
             if (ncurrent_locs > MAX_CURRENT_LOCS)
             {
                 amrex::Print()
-                << "ncurrent locs is greater than maximum allowed ("
-                << MAX_CURRENT_LOCS << ")\n";
+                    << "ncurrent locs is greater than maximum allowed ("
+                    << MAX_CURRENT_LOCS << ")\n";
                 amrex::Abort("Reduce the number of ncurrent locs\n");
             }
 
