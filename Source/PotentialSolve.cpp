@@ -378,7 +378,7 @@ void Vidyut::solve_potential(
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
-        potential[ilev].mult(1.0/vidyut_potscale,0,num_grow);
+        potential[ilev].mult(1.0/vidyut_potscale,0, 1, num_grow);
 
         // bc's are stored in the ghost cells of potential
         if (mixedbc)
@@ -409,7 +409,7 @@ void Vidyut::solve_potential(
         solution[ilev].setVal(0.0);
         // FIXME: for some reason copying in current soln breaks the solver...
         // amrex::MultiFab::Copy(solution[ilev], potential[ilev], 0, 0, 1, 0);
-        rhs[ilev].mult(1.0/vidyut_potscale,0,num_grow);
+        rhs[ilev].mult(1.0/vidyut_potscale, 0, 1, num_grow);
     }
 
     mlmg.solve(
@@ -417,21 +417,15 @@ void Vidyut::solve_potential(
 
     amrex::Print() << "Solved Potential\n";
 
-    for (int ilev = 0; ilev <= finest_level; ilev++)
-    {
-        solution[ilev].mult(vidyut_potscale,0,num_grow);
-        amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, POT_ID, 1, 0);
-    }
-
     mlmg.getGradSolution(GetVecOfArrOfPtrs(efield_fc));
 
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
-        efield_fc[ilev][0].mult(-1.0, 0, 1);
+        efield_fc[ilev][0].mult(-1.0*vidyut_potscale, 0, 1, 0);
 #if AMREX_SPACEDIM > 1
-        efield_fc[ilev][1].mult(-1.0, 0, 1);
+        efield_fc[ilev][1].mult(-1.0*vidyut_potscale, 0, 1, 0);
 #if AMREX_SPACEDIM == 3
-        efield_fc[ilev][2].mult(-1.0, 0, 1);
+        efield_fc[ilev][2].mult(-1.0*vidyut_potscale, 0, 1, 0);
 #endif
 #endif
 
@@ -459,6 +453,12 @@ void Vidyut::solve_potential(
                     Esum += Evect[dim] * Evect[dim];
                 s_arr(i, j, k, REF_ID) = (pow(Esum, 0.5) / ndens) / 1.0e-21;
             });
+    }
+    
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        solution[ilev].mult(vidyut_potscale,0, 1, num_grow);
+        amrex::MultiFab::Copy(phi_new[ilev], solution[ilev], 0, POT_ID, 1, 0);
     }
 
     // clean-up

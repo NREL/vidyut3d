@@ -463,10 +463,10 @@ void Vidyut::implicit_solve_scalar(
 
     // default to inhomogNeumann since it is defaulted to flux = 0.0 anyways
     std::array<LinOpBCType, AMREX_SPACEDIM> bc_linsolve_lo = {AMREX_D_DECL(
-        LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
+            LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
 
     std::array<LinOpBCType, AMREX_SPACEDIM> bc_linsolve_hi = {AMREX_D_DECL(
-        LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
+            LinOpBCType::Robin, LinOpBCType::Robin, LinOpBCType::Robin)};
 
     int mixedbc = 0;
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
@@ -569,14 +569,14 @@ void Vidyut::implicit_solve_scalar(
     {
         set_solver_mask(solvemask, Sborder);
         linsolve_ptr.reset(new MLABecLaplacian(
-            Geom(0, finest_level), boxArray(0, finest_level),
-            DistributionMap(0, finest_level), GetVecOfConstPtrs(solvemask),
-            info, {}, numspec));
+                Geom(0, finest_level), boxArray(0, finest_level),
+                DistributionMap(0, finest_level), GetVecOfConstPtrs(solvemask),
+                info, {}, numspec));
     } else
     {
         linsolve_ptr.reset(new MLABecLaplacian(
-            Geom(0, finest_level), boxArray(0, finest_level),
-            DistributionMap(0, finest_level), info, {}, numspec));
+                Geom(0, finest_level), boxArray(0, finest_level),
+                DistributionMap(0, finest_level), info, {}, numspec));
     }
 
     linsolve_ptr->setDomainBC(bc_linsolve_lo, bc_linsolve_hi);
@@ -814,26 +814,28 @@ void Vidyut::implicit_solve_scalar(
             }
         }
 
+        acoeff[ilev].mult(vidyut_timescale,0, 1, num_grow);
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
-        acoeff[ilev].mult(vidyut_timescale,0,num_grow);
 
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
-        
+
         //scaling
         if(!electron_energy_flag)
         {
             for(int sp=0;sp<numspec;sp++)
             {
-                specdata[ilev].mult(1.0/vidyut_specscales[startspec+sp],sp,num_grow);
-                rhs[ilev].mult(vidyut_timescale/vidyut_specscales[startspec+sp],sp,num_grow);
+                specdata[ilev].mult(1.0/vidyut_specscales[startspec+sp],sp, 1, num_grow);
+                robin_f[ilev].mult(1.0/vidyut_specscales[startspec+sp],sp, 1, num_grow);
+                rhs[ilev].mult(vidyut_timescale/vidyut_specscales[startspec+sp],sp, 1, num_grow);
             }
         }
         else
         {
             //only 1 spec
-            specdata[ilev].mult(1.0/vidyut_eescale,0,num_grow);
-            rhs[ilev].mult(vidyut_timescale/vidyut_eescale,0,num_grow);
+            specdata[ilev].mult(1.0/vidyut_eescale,0, 1, num_grow);
+            robin_f[ilev].mult(1.0/vidyut_eescale,0, 1, num_grow);
+            rhs[ilev].mult(vidyut_timescale/vidyut_eescale,0, 1, num_grow);
         }
         solution[ilev].setVal(0.0);
         amrex::MultiFab::Copy(solution[ilev], specdata[ilev], 0, 0, numspec, 0);
@@ -865,6 +867,23 @@ void Vidyut::implicit_solve_scalar(
     mlmg.solve(
         GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
 
+    if (electron_flag)
+    {
+        mlmg.getGradSolution(GetVecOfArrOfPtrs(grad_fc));
+
+        for (int ilev = 0; ilev <= finest_level; ilev++)
+        {
+            grad_fc[ilev][0].mult(vidyut_specscales[eidx], 0, 1, 0);
+#if AMREX_SPACEDIM > 1
+            grad_fc[ilev][1].mult(vidyut_specscales[eidx], 0, 1, 0);
+#if AMREX_SPACEDIM == 3
+            grad_fc[ilev][2].mult(vidyut_specscales[eidx], 0, 1, 0);
+#endif
+#endif
+        }
+    }
+
+    // copy solution back to phi_new
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         //scaling back
@@ -872,20 +891,17 @@ void Vidyut::implicit_solve_scalar(
         {
             for(int sp=0;sp<numspec;sp++)
             {
-                solution[ilev].mult(vidyut_specscales[startspec+sp],sp,num_grow);
+                solution[ilev].mult(vidyut_specscales[startspec+sp],sp, 1, num_grow);
             }
         }
         else
         {
             //only 1 spec
-            solution[ilev].mult(vidyut_eescale,0,num_grow);
+            solution[ilev].mult(vidyut_eescale,0, 1, num_grow);
         }
-    }
 
-    // bound species density
-    if (bound_specden && !electron_energy_flag)
-    {
-        for (int ilev = 0; ilev <= finest_level; ilev++)
+        // bound species density
+        if (bound_specden && !electron_energy_flag)
         {
             amrex::Real minelecden = min_electron_density;
             amrex::Real minspecden = min_species_density;
@@ -918,15 +934,6 @@ void Vidyut::implicit_solve_scalar(
                     }
                 });
         }
-    }
-    if (electron_flag)
-    {
-        mlmg.getGradSolution(GetVecOfArrOfPtrs(grad_fc));
-    }
-
-    // copy solution back to phi_new
-    for (int ilev = 0; ilev <= finest_level; ilev++)
-    {
         amrex::MultiFab::Copy(
             phi_new[ilev], solution[ilev], 0, startspec, numspec, 0);
     }
@@ -966,7 +973,7 @@ void Vidyut::implicit_solve_scalar(
                     {
                         phi_arr(i, j, k, ETEMP_ID) = minetemp;
                         phi_arr(i, j, k, EEN_ID) =
-                            1.5 * K_B * phi_arr(i, j, k, eidx) * minetemp;
+                        1.5 * K_B * phi_arr(i, j, k, eidx) * minetemp;
                     }
                 });
         }
