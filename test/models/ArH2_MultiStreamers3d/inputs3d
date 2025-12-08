@@ -109,3 +109,10 @@ prob.rad=0.4e-3
 prob.ampl=5e18
 prob.bg=1e13
 prob.twod=0
+
+#testing scaling
+vidyut.scaling_species_ids=0 3 4 5 6 7 8 9 10 11 12 13 14
+vidyut.scale_values=1e18 1e15 1e15 1e15 1e15 1e15 1e15 1e15 1e15 1e15 1e15 1e15 1e15
+vidyut.time_scale=1e-11
+vidyut.potential_scale=100.0
+vidyut.elecenergy_scale=10.0

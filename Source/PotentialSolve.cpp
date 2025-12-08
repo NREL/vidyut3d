@@ -379,6 +379,7 @@ void Vidyut::solve_potential(
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
 
         potential[ilev].mult(1.0 / vidyut_potscale, 0, 1, num_grow);
+        robin_f[ilev].mult(1.0 / vidyut_potscale, 0, 1, num_grow);
 
         // bc's are stored in the ghost cells of potential
         if (mixedbc)
