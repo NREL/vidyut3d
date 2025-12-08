@@ -441,11 +441,13 @@ void Vidyut::implicit_solve_scalar(
 
     // set A and B, A=1/dt, B=1
     Real ascalar = 1.0;
-    Real bscalar = 1.0;
+    Real bscalar = vidyut_timescale;
     amrex::Real captured_gastemp = gas_temperature;
     amrex::Real captured_gaspres = gas_pressure;
     int userdefspec = user_defined_species;
     int eidx = E_IDX;
+
+    Real dt_scaled = dt / vidyut_timescale;
 
     LPInfo info;
     info.setAgglomeration(true);
@@ -537,6 +539,7 @@ void Vidyut::implicit_solve_scalar(
 
     const int num_grow = 1;
 
+    // define all relevant arrays
     for (int ilev = 0; ilev <= finest_level; ilev++)
     {
         specdata[ilev].define(grids[ilev], dmap[ilev], numspec, num_grow);
@@ -587,6 +590,7 @@ void Vidyut::implicit_solve_scalar(
         amrex::Copy(
             specdata[ilev], Sborder_old[ilev], startspec, 0, numspec, num_grow);
 
+        // will use time scaling later
         acoeff[ilev].setVal(1.0 / dt);
         bcoeff[ilev].setVal(1.0);
 
@@ -632,9 +636,6 @@ void Vidyut::implicit_solve_scalar(
 
         amrex::Copy(
             specdata[ilev], Sborder[ilev], startspec, 0, numspec, num_grow);
-
-        solution[ilev].setVal(0.0);
-        amrex::MultiFab::Copy(solution[ilev], specdata[ilev], 0, 0, numspec, 0);
 
         // fill cell centered diffusion coefficients and rhs
         for (MFIter mfi(phi_new[ilev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -812,10 +813,34 @@ void Vidyut::implicit_solve_scalar(
             }
         }
 
+        acoeff[ilev].mult(vidyut_timescale, 0, 1, num_grow);
         linsolve_ptr->setACoeffs(ilev, acoeff[ilev]);
 
         // set b with diffusivities
         linsolve_ptr->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoeff));
+
+        // scaling
+        if (!electron_energy_flag)
+        {
+            for (int sp = 0; sp < numspec; sp++)
+            {
+                specdata[ilev].mult(
+                    1.0 / vidyut_specscales[startspec + sp], sp, 1, num_grow);
+                robin_f[ilev].mult(
+                    1.0 / vidyut_specscales[startspec + sp], sp, 1, num_grow);
+                rhs[ilev].mult(
+                    vidyut_timescale / vidyut_specscales[startspec + sp], sp, 1,
+                    num_grow);
+            }
+        } else
+        {
+            // only 1 spec
+            specdata[ilev].mult(1.0 / vidyut_eescale, 0, 1, num_grow);
+            robin_f[ilev].mult(1.0 / vidyut_eescale, 0, 1, num_grow);
+            rhs[ilev].mult(vidyut_timescale / vidyut_eescale, 0, 1, num_grow);
+        }
+        solution[ilev].setVal(0.0);
+        amrex::MultiFab::Copy(solution[ilev], specdata[ilev], 0, 0, numspec, 0);
 
         // bc's are stored in the ghost cells
         if (mixedbc)
@@ -844,10 +869,41 @@ void Vidyut::implicit_solve_scalar(
     mlmg.solve(
         GetVecOfPtrs(solution), GetVecOfConstPtrs(rhs), tol_rel, tol_abs);
 
-    // bound species density
-    if (bound_specden && !electron_energy_flag)
+    if (electron_flag)
     {
+        mlmg.getGradSolution(GetVecOfArrOfPtrs(grad_fc));
+
         for (int ilev = 0; ilev <= finest_level; ilev++)
+        {
+            grad_fc[ilev][0].mult(vidyut_specscales[eidx], 0, 1, 0);
+#if AMREX_SPACEDIM > 1
+            grad_fc[ilev][1].mult(vidyut_specscales[eidx], 0, 1, 0);
+#if AMREX_SPACEDIM == 3
+            grad_fc[ilev][2].mult(vidyut_specscales[eidx], 0, 1, 0);
+#endif
+#endif
+        }
+    }
+
+    // copy solution back to phi_new
+    for (int ilev = 0; ilev <= finest_level; ilev++)
+    {
+        // scaling back
+        if (!electron_energy_flag)
+        {
+            for (int sp = 0; sp < numspec; sp++)
+            {
+                solution[ilev].mult(
+                    vidyut_specscales[startspec + sp], sp, 1, num_grow);
+            }
+        } else
+        {
+            // only 1 spec
+            solution[ilev].mult(vidyut_eescale, 0, 1, num_grow);
+        }
+
+        // bound species density
+        if (bound_specden && !electron_energy_flag)
         {
             amrex::Real minelecden = min_electron_density;
             amrex::Real minspecden = min_species_density;
@@ -880,15 +936,6 @@ void Vidyut::implicit_solve_scalar(
                     }
                 });
         }
-    }
-    if (electron_flag)
-    {
-        mlmg.getGradSolution(GetVecOfArrOfPtrs(grad_fc));
-    }
-
-    // copy solution back to phi_new
-    for (int ilev = 0; ilev <= finest_level; ilev++)
-    {
         amrex::MultiFab::Copy(
             phi_new[ilev], solution[ilev], 0, startspec, numspec, 0);
     }

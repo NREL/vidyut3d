@@ -205,6 +205,11 @@ public:
     int max_step = std::numeric_limits<int>::max();
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
 
+    amrex::Real vidyut_specscales[NUM_SPECIES] = {1.0};
+    amrex::Real vidyut_potscale = 1.0;
+    amrex::Real vidyut_eescale = 1.0;
+    amrex::Real vidyut_timescale = 1.0;
+
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";
 

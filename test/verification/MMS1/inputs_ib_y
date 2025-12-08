@@ -64,3 +64,10 @@ amr.plot_int   = 10000     # number of timesteps between plot files
 amr.chk_file = chk      # root name of checkpoint file
 amr.chk_int  = -1       # number of timesteps between checkpoint files
 prob.axial_dir = 1
+
+#for checking scaling
+#vidyut.scaling_species_ids=1
+#vidyut.scale_values=10.0
+#vidyut.time_scale=3.5
+#vidyut.potential_scale=2.0
+#vidyut.elecenergy_scale=4.0
