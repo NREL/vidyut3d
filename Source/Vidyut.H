@@ -421,6 +421,8 @@ private:
     // put together an array of multifabs for writing
     amrex::Vector<const amrex::MultiFab*> PlotFileMF() const;
 
+    std::string intcurrentfilename="integrated_currents";
+
     // write plotfile to disk
     void WritePlotFile(int plotfilenum) const;
 

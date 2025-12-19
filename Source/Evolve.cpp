@@ -44,20 +44,20 @@ void Vidyut::Evolve()
 
     if (track_integrated_currents)
     {
-        PrintToFile("integrated_currents") << "time (sec)" << "\t";
+        PrintToFile(intcurrentfilename) << "time (sec)" << "\t";
         for (int locs = 0; locs < ncurrent_locs; locs++)
         {
-            PrintToFile("integrated_currents")
+            PrintToFile(intcurrentfilename)
                 << "current_surface_" << locs << current_loc_surfaces[locs]
                 << "\t";
         }
         for (int locs = 0; locs < ncurrent_locs; locs++)
         {
-            PrintToFile("integrated_currents")
+            PrintToFile(intcurrentfilename)
                 << "surface_area_" << locs << current_loc_surfaces[locs]
                 << "\t";
         }
-        PrintToFile("integrated_currents") << "\n";
+        PrintToFile(intcurrentfilename) << "\n";
     }
 
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
@@ -649,18 +649,18 @@ void Vidyut::Evolve()
         {
             if (print_current_int > 0 && (step + 1) % print_current_int == 0)
             {
-                PrintToFile("integrated_currents") << cur_time << "\t";
+                PrintToFile(intcurrentfilename) << cur_time << "\t";
                 for (int locs = 0; locs < ncurrent_locs; locs++)
                 {
-                    PrintToFile("integrated_currents")
+                    PrintToFile(intcurrentfilename)
                         << integrated_currents[locs] << "\t";
                 }
                 for (int locs = 0; locs < ncurrent_locs; locs++)
                 {
-                    PrintToFile("integrated_currents")
+                    PrintToFile(intcurrentfilename)
                         << integrated_current_areas[locs] << "\t";
                 }
-                PrintToFile("integrated_currents") << "\n";
+                PrintToFile(intcurrentfilename) << "\n";
             }
         }
 
@@ -681,18 +681,18 @@ void Vidyut::Evolve()
         WritePlotFile(plotfilenum);
         if (track_integrated_currents)
         {
-            PrintToFile("integrated_currents") << cur_time << "\t";
+            PrintToFile(intcurrentfilename) << cur_time << "\t";
             for (int locs = 0; locs < ncurrent_locs; locs++)
             {
-                PrintToFile("integrated_currents")
+                PrintToFile(intcurrentfilename)
                     << integrated_currents[locs] << "\t";
             }
             for (int locs = 0; locs < ncurrent_locs; locs++)
             {
-                PrintToFile("integrated_currents")
+                PrintToFile(intcurrentfilename)
                     << integrated_current_areas[locs] << "\t";
             }
-            PrintToFile("integrated_currents") << "\n";
+            PrintToFile(intcurrentfilename) << "\n";
         }
     }
 }

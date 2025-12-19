@@ -429,6 +429,7 @@ void Vidyut::ReadParameters()
         pp.query("solver_verbose", solver_verbose);
         pp.query("evolve_verbose", evolve_verbose);
         pp.query("track_current_den", track_current_den);
+        pp.query("int_current_filename", intcurrentfilename);
 
         if (hyp_order == 1) // first order upwind
         {
